@@ -1,0 +1,11 @@
+{
+  "react": { "id": 1001, "type": "know_how", "aliases": ["reactjs", "frontend react"] },
+  "typescript": { "id": 1002, "type": "knowledge", "aliases": ["ts"] },
+  "node": { "id": 1003, "type": "know_how", "aliases": ["nodejs", "nestjs"] },
+  "mongodb": { "id": 1004, "type": "knowledge", "aliases": ["mongo", "nosql"] },
+  "devops": { "id": 1005, "type": "know_how", "aliases": ["ci cd", "kubernetes", "docker"] },
+  "securite": { "id": 1006, "type": "knowledge", "aliases": ["sécurité", "cybersecurity", "information security"] },
+  "communication": { "id": 1007, "type": "soft_skill", "aliases": ["communication professionnelle"] },
+  "leadership": { "id": 1008, "type": "soft_skill", "aliases": ["management", "pilotage"] },
+  "gestion de projet": { "id": 1009, "type": "know_how", "aliases": ["project management", "agile"] }
+}

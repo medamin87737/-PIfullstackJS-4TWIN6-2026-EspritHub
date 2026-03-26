@@ -10,22 +10,22 @@ export default function AdminDepartments() {
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex items-center justify-between">
+      <div className="reveal reveal-left flex items-center justify-between animate-slide-up">
         <div>
           <h1 className="text-2xl font-bold text-foreground">Gestion des departements</h1>
           <p className="text-sm text-muted-foreground">{departments.length} departements</p>
         </div>
-        <button onClick={() => { setEditing(null); setShowModal(true) }} className="flex items-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground hover:opacity-90">
+        <button onClick={() => { setEditing(null); setShowModal(true) }} className="button-micro gradient-surface flex items-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium text-primary-foreground">
           <Plus className="h-4 w-4" /> Nouveau
         </button>
       </div>
 
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+      <div className="reveal-grid grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
         {departments.map(dept => {
           const memberCount = users.filter(u => u.departement_id === dept.id).length
           const manager = users.find(u => u.id === dept.manager_id)
           return (
-            <div key={dept.id} className="rounded-xl border border-border bg-card p-5 transition-shadow hover:shadow-md">
+            <div key={dept.id} className="rounded-xl border border-border bg-card p-5 card-animated">
               <div className="flex items-start justify-between">
                 <div className="flex items-center gap-3">
                   <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-secondary/10 text-secondary">
@@ -37,8 +37,8 @@ export default function AdminDepartments() {
                   </div>
                 </div>
                 <div className="flex gap-1">
-                  <button onClick={() => { setEditing(dept); setShowModal(true) }} className="rounded-lg p-1.5 text-muted-foreground hover:bg-accent"><Edit2 className="h-4 w-4" /></button>
-                  <button onClick={() => deleteDepartment(dept.id)} className="rounded-lg p-1.5 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"><Trash2 className="h-4 w-4" /></button>
+                  <button onClick={() => { setEditing(dept); setShowModal(true) }} className="button-micro rounded-lg p-1.5 text-muted-foreground hover:bg-accent"><Edit2 className="h-4 w-4" /></button>
+                  <button onClick={() => deleteDepartment(dept.id)} className="button-micro rounded-lg p-1.5 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"><Trash2 className="h-4 w-4" /></button>
                 </div>
               </div>
               <p className="mt-3 text-xs text-muted-foreground leading-relaxed">{dept.description}</p>
@@ -69,8 +69,8 @@ function DeptModal({ dept, onClose, onSave }: { dept: Department | null; onClose
   const [form, setForm] = useState({ name: dept?.name ?? '', code: dept?.code ?? '', description: dept?.description ?? '' })
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-foreground/50 p-4">
-      <div className="w-full max-w-md rounded-xl border border-border bg-card shadow-xl">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-foreground/50 p-4 animate-fade-in">
+      <div className="w-full max-w-md rounded-xl border border-border bg-card shadow-xl animate-slide-up">
         <div className="flex items-center justify-between border-b border-border px-6 py-4">
           <h2 className="text-lg font-semibold text-card-foreground">{dept ? 'Modifier' : 'Nouveau'} departement</h2>
           <button onClick={onClose} className="rounded-lg p-1 text-muted-foreground hover:bg-accent"><X className="h-5 w-5" /></button>

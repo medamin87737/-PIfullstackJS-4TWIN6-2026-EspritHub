@@ -5,6 +5,11 @@ yarn-debug.log*
 yarn-error.log*
 pnpm-lock.yaml
 
+# --- Python ---
+.venv/
+__pycache__/
+*.pyc
+
 # Build / dist outputs
 dist/
 build/
@@ -34,4 +39,3 @@ Thumbs.db
 # Cursor / editor artifacts
 .cursor/
 terminals/
-

@@ -1,10 +1,11 @@
+import { useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import {
   LayoutDashboard, Users, Building2, Brain, FileQuestion,
   ClipboardList, Sparkles, History, UserCircle, Bell,
   ChevronLeft, ChevronRight, LogOut, BarChart3,
-  FolderOpen, CheckSquare
+  FolderOpen
 } from 'lucide-react'
 import { cn } from '../../../lib/utils'
 import { useI18n } from '../../hooks/useI18n'
@@ -23,19 +24,21 @@ const roleNavItems: Record<string, NavItem[]> = {
     { label: 'Competences', path: '/admin/skills', icon: <Brain className="h-5 w-5" /> },
     { label: 'Questions', path: '/admin/questions', icon: <FileQuestion className="h-5 w-5" /> },
     { label: 'Analytiques', path: '/admin/analytics', icon: <BarChart3 className="h-5 w-5" /> },
+    { label: 'Reformulation', path: '/admin/prompt-rewriter', icon: <Sparkles className="h-5 w-5" /> },
   ],
   HR: [
     { label: 'Dashboard', path: '/hr/dashboard', icon: <LayoutDashboard className="h-5 w-5" /> },
     { label: 'Activites', path: '/hr/activities', icon: <ClipboardList className="h-5 w-5" /> },
-    { label: 'Creer Activite', path: '/hr/create-activity', icon: <FolderOpen className="h-5 w-5" /> },
     { label: 'Import CSV Employes', path: '/hr/import-employees', icon: <Users className="h-5 w-5" /> },
+    { label: 'Demandes Managers', path: '/hr/activity-requests', icon: <ClipboardList className="h-5 w-5" /> },
     { label: 'Historique', path: '/hr/history', icon: <History className="h-5 w-5" /> },
     { label: 'Analytiques', path: '/hr/analytics', icon: <BarChart3 className="h-5 w-5" /> },
+    { label: 'Reformulation', path: '/hr/prompt-rewriter', icon: <Sparkles className="h-5 w-5" /> },
   ],
   MANAGER: [
     { label: 'Dashboard', path: '/manager/dashboard', icon: <LayoutDashboard className="h-5 w-5" /> },
     { label: 'Activites', path: '/manager/activities', icon: <ClipboardList className="h-5 w-5" /> },
-    { label: 'Validations', path: '/manager/validations', icon: <CheckSquare className="h-5 w-5" /> },
+    { label: 'Demander Activite', path: '/manager/activity-requests', icon: <FolderOpen className="h-5 w-5" /> },
     { label: 'Historique', path: '/manager/history', icon: <History className="h-5 w-5" /> },
   ],
   EMPLOYEE: [
@@ -56,6 +59,7 @@ export default function Sidebar({ collapsed, setCollapsed }: SidebarProps) {
   const { user, logout } = useAuth()
   const location = useLocation()
   const t = useI18n()
+  const [isLoggingOut, setIsLoggingOut] = useState(false)
 
   if (!user) return null
 
@@ -68,6 +72,7 @@ export default function Sidebar({ collapsed, setCollapsed }: SidebarProps) {
       if (item.path.endsWith('/skills')) return { ...item, label: t('sidebar.admin.skills') }
       if (item.path.endsWith('/questions')) return { ...item, label: t('sidebar.admin.questions') }
       if (item.path.endsWith('/analytics')) return { ...item, label: t('sidebar.admin.analytics') }
+      if (item.path.endsWith('/prompt-rewriter')) return { ...item, label: t('sidebar.admin.promptRewriter') }
     }
     if (user.role === 'HR') {
       if (item.path.endsWith('/dashboard')) return { ...item, label: t('sidebar.hr.dashboard') }
@@ -75,6 +80,7 @@ export default function Sidebar({ collapsed, setCollapsed }: SidebarProps) {
       if (item.path.endsWith('/create-activity')) return { ...item, label: t('sidebar.hr.createActivity') }
       if (item.path.endsWith('/history')) return { ...item, label: t('sidebar.hr.history') }
       if (item.path.endsWith('/analytics')) return { ...item, label: t('sidebar.hr.analytics') }
+      if (item.path.endsWith('/prompt-rewriter')) return { ...item, label: t('sidebar.hr.promptRewriter') }
     }
     if (user.role === 'MANAGER') {
       if (item.path.endsWith('/dashboard')) return { ...item, label: t('sidebar.manager.dashboard') }
@@ -92,17 +98,56 @@ export default function Sidebar({ collapsed, setCollapsed }: SidebarProps) {
     return item
   })
 
+  const handleLogout = () => {
+    if (isLoggingOut) return
+    setIsLoggingOut(true)
+    setTimeout(() => {
+      logout()
+      setIsLoggingOut(false)
+    }, 1200)
+  }
+
   return (
-    <aside
-      className={cn(
-        'fixed left-0 top-0 z-40 flex h-screen flex-col bg-sidebar text-sidebar-foreground transition-all duration-300',
-        collapsed ? 'w-[72px]' : 'w-[260px]'
+    <>
+      {isLoggingOut && (
+        <div className="fixed inset-0 z-[95] flex items-center justify-center backdrop-blur-md bg-background/40 animate-fade-in">
+          <div className="loader-panel flex flex-col items-center gap-3 px-6 py-5">
+            <div className="loader-pulse-dots" aria-hidden="true">
+              <span />
+              <span />
+              <span />
+            </div>
+            <div className="loader-bars" aria-hidden="true">
+              <span className="bar bar-1" />
+              <span className="bar bar-2" />
+              <span className="bar bar-3" />
+              <span className="bar bar-4" />
+            </div>
+            <p className="text-xs font-medium tracking-[0.22em] text-shimmer">SIGNING OUT</p>
+          </div>
+        </div>
       )}
-    >
+      <aside
+        className={cn(
+          'fixed left-0 top-0 z-40 flex h-screen flex-col bg-sidebar text-sidebar-foreground transition-all duration-300',
+          collapsed ? 'w-[72px]' : 'w-[260px]'
+        )}
+      >
       {/* Logo */}
       <div className="flex h-16 items-center gap-3 border-b border-sidebar-border px-4">
         <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary font-sans text-lg font-bold text-primary-foreground">
-          S
+          <svg
+            viewBox="0 0 24 24"
+            className="h-5 w-5 text-primary-foreground"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2.2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            aria-hidden="true"
+          >
+            <polyline points="13 3 7 14 11 14 9 21 17 9 13 9 15 3" />
+          </svg>
         </div>
         {!collapsed && (
           <div className="flex flex-col overflow-hidden">
@@ -126,7 +171,7 @@ export default function Sidebar({ collapsed, setCollapsed }: SidebarProps) {
                 <Link
                   to={item.path}
                   className={cn(
-                    'flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium nav-item-animated',
+                    'flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium',
                     isActive
                       ? 'bg-sidebar-primary text-sidebar-primary-foreground'
                       : 'text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground'
@@ -145,7 +190,7 @@ export default function Sidebar({ collapsed, setCollapsed }: SidebarProps) {
       {/* User section */}
       <div className="border-t border-sidebar-border p-3">
         <div className={cn('flex items-center gap-3', collapsed && 'justify-center')}>
-          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-sidebar-accent text-xs font-semibold text-sidebar-accent-foreground">
+          <div className="user-avatar-dynamic flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-xs font-semibold text-white">
             {user.name.split(' ').map(n => n[0]).join('').slice(0, 2)}
           </div>
           {!collapsed && (
@@ -155,7 +200,7 @@ export default function Sidebar({ collapsed, setCollapsed }: SidebarProps) {
             </div>
           )}
           {!collapsed && (
-            <button onClick={logout} className="rounded-lg p-1.5 text-sidebar-foreground/60 transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground" title="Deconnexion">
+            <button onClick={handleLogout} className="rounded-lg p-1.5 text-sidebar-foreground/60 transition-all hover:-translate-y-0.5 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground" title="Deconnexion">
               <LogOut className="h-4 w-4" />
             </button>
           )}
@@ -169,6 +214,7 @@ export default function Sidebar({ collapsed, setCollapsed }: SidebarProps) {
       >
         {collapsed ? <ChevronRight className="h-3 w-3" /> : <ChevronLeft className="h-3 w-3" />}
       </button>
-    </aside>
+      </aside>
+    </>
   )
 }

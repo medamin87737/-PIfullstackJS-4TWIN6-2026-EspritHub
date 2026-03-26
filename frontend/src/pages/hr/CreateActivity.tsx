@@ -8,7 +8,7 @@ import type { RequiredSkill } from '../../types';
 export default function CreateActivity() {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const { users, addActivity } = useData();
+  const { users, departments, addActivity, fetchWithAuth } = useData();
 
   const managers = users.filter(u => u.role === 'MANAGER');
 
@@ -43,14 +43,6 @@ export default function CreateActivity() {
   const removeSkill = (i: number) => setSkills(skills.filter((_, idx) => idx !== i));
   const updateSkill = (i: number, updates: Partial<RequiredSkill>) =>
     setSkills(skills.map((s, idx) => idx === i ? { ...s, ...updates } : s));
-
-  // Départements statiques
-  const departments = [
-    { id: '1', name: 'Ressources Humaines' },
-    { id: '2', name: 'Informatique' },
-    { id: '3', name: 'Marketing' },
-    { id: '4', name: 'Finance' }
-  ];
 
   const validate = () => {
     const newErrors: { [key: string]: string } = {};
@@ -116,7 +108,7 @@ export default function CreateActivity() {
 
       console.log('Payload à envoyer :', payload);
 
-      const response = await fetch('http://localhost:3000/activities', {
+      const response = await fetchWithAuth('http://localhost:3000/activities', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),

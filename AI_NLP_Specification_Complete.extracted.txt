@@ -1,0 +1,588 @@
+﻿SYSTÃˆME DE RECOMMANDATION INTELLIGENT
+DES EMPLOYÃ‰S
+â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+SPÃ‰CIFICATION TECHNIQUE COMPLÃˆTE
+MODULE IA / NLP â€” PROMPT ENGINEERING â€” AUTO-AMÃ‰LIORATION
+
+
+1. VUE D'ENSEMBLE DU MODULE IA/NLP
+
+Le module IA/NLP est le cÅ“ur intelligent du systÃ¨me. Il prend en entrÃ©e la description textuelle d'une activitÃ© (formation, mission, audit, certification, projet) et les profils structurÃ©s des employÃ©s, puis produit une liste ordonnÃ©e de candidats avec des scores dÃ©taillÃ©s.
+
+1.1 Position dans l'architecture globale
+
+Couche
+RÃ´le
+Couche Interface
+HR crÃ©e une activitÃ© â†’ dÃ©clenchement du moteur IA
+Couche NLP
+Analyse sÃ©mantique de la description de l'activitÃ©
+Couche Scoring
+Calcul des scores dynamiques par compÃ©tence
+Couche Optimisation
+Priorisation contextuelle + gestion des conflits
+Couche Feedback
+Mise Ã  jour des poids aprÃ¨s retour manager
+Couche Stockage
+Persistance vectors, scores, historiques en BDD
+
+1.2 Flux de traitement complet (8 Ã©tapes)
+
+Pipeline IA â€” Vue sÃ©quentielle
+Ã‰tape 1 â†’ INPUT : Description activitÃ© + nb places + contraintes
+Ã‰tape 2 â†’ NLP : Extraction compÃ©tences clÃ©s + classification
+Ã‰tape 3 â†’ VECTORISATION : Transformation en embeddings sÃ©mantiques
+Ã‰tape 4 â†’ SCORING : Calcul score dynamique par employÃ© / compÃ©tence
+Ã‰tape 5 â†’ PRIORISATION : Application rÃ¨gles contextuelles (low/medium/expert)
+Ã‰tape 6 â†’ OPTIMISATION : Multi-critÃ¨res (skills + progression + historique)
+Ã‰tape 7 â†’ OUTPUT : Liste ordonnÃ©e avec scores dÃ©taillÃ©s
+Ã‰tape 8 â†’ FEEDBACK : Mise Ã  jour poids + rÃ©entraÃ®nement automatique
+
+
+2. Ã‰TAPE 1 â€” INPUT ET PARSING
+
+Avant tout traitement IA, le systÃ¨me collecte et structure les donnÃ©es d'entrÃ©e depuis la base de donnÃ©es et l'interface HR.
+
+2.1 Structure de l'objet ActivityInput
+
+// TypeScript / Backend â€” Objet d'entrÃ©e du moteur IAinterface ActivityInput {  id:            number;  title:         string;           // Ex: 'Formation DevSecOps avancÃ©'  description:   string;           // Texte libre â€” analysÃ© par NLP  type:          ActivityType;     // training | mission | audit | certification | project  required_skills: RequiredSkill[];  seats:         number;           // Nombre de places disponibles  context:       PriorityContext;  // upskill_low | consolidate_medium | exploit_expert  date:          Date;  duration_days: number;  location:      string;  department_ids?: number[];       // Restriction dÃ©partements (optionnel)}interface RequiredSkill {  question_competence_id: number;  // Lien vers Question_Competence table  intitule:    string;             // Nom de la compÃ©tence  type:        'knowledge' | 'know_how' | 'soft_skill';  min_level:   1 | 2 | 3 | 4;     // 1=low, 2=medium, 3=high, 4=expert  weight:      number;             // 0.0 Ã  1.0 â€” importance relative  mandatory:   boolean;}
+
+2.2 Profil employÃ© structurÃ© (depuis BDD)
+
+// AgrÃ©gation depuis User + Fiche + Competence tablesinterface EmployeeProfile {  user_id:      number;  name:         string;  matricule:    string;  department_id: number;  manager_id:   number;  job_description: string;         // Texte libre â€” vectorisÃ© par NLP  date_embauche: Date;  competences:  CompetenceScore[];  activity_history: ActivityRecord[];  progression_rate: number;        // CalculÃ© dynamiquement}interface CompetenceScore {  question_competence_id: number;  intitule:     string;  type:         string;  auto_eval:    number;            // Score auto-Ã©valuation (0-4)  hierarchie_eval: number;         // Score manager (0-4)  dynamic_score: number;           // Score calculÃ© par le moteur  evolution:    number[];          // Historique scores par saison  last_saison:  string;  etat:         string;            // draft | submitted | validated}
+
+
+3. Ã‰TAPE 2 â€” MODULE NLP : EXTRACTION ET CLASSIFICATION
+
+Le moteur NLP analyse la description textuelle de l'activitÃ© pour en extraire automatiquement les compÃ©tences requises, les objectifs et le contexte. C'est la piÃ¨ce maÃ®tresse qui permet de matcher des descriptions libres avec des profils structurÃ©s.
+
+3.1 Pipeline NLP dÃ©taillÃ©
+
+Sous-Ã©tape
+Action
+Outil / ModÃ¨le
+1. Preprocessing
+Nettoyage texte, tokenisation, lemmatisation, suppression stop-words
+spaCy fr_core_news_lg
+2. NER
+Reconnaissance entitÃ©s : compÃ©tences, technologies, niveaux, durÃ©es
+spaCy + rÃ¨gles custom
+3. Classification
+Type activitÃ© : technical / management / transversal
+ModÃ¨le fine-tuned
+4. Extraction skills
+Liste compÃ©tences + niveau requis + poids estimÃ©
+Ontologie compÃ©tences
+5. Embedding
+Vecteur sÃ©mantique 768 dims de la description
+sentence-transformers
+6. Context detect
+DÃ©tection contexte : upskill / consolidate / exploit
+RÃ¨gles + ML
+
+3.2 ImplÃ©mentation â€” Extraction NLP
+
+# Python â€” NLP Extraction Serviceimport spacyfrom sentence_transformers import SentenceTransformerfrom typing import List, Dictnlp = spacy.load('fr_core_news_lg')embedder = SentenceTransformer('paraphrase-multilingual-mpnet-base-v2')class NLPExtractor:    def __init__(self, skill_ontology: Dict):        self.ontology = skill_ontology   # Dict: mot_clÃ© â†’ CompetenceRef        self.classifier = self._load_classifier()    def extract(self, description: str) -> NLPResult:        doc = nlp(self._preprocess(description))        extracted_skills = self._match_ontology(doc)        activity_type    = self._classify_activity(doc)        context          = self._detect_context(description)        embedding        = embedder.encode(description, normalize_embeddings=True)        return NLPResult(            skills=extracted_skills,            activity_type=activity_type,            context=context,            embedding=embedding,            raw_tokens=[token.lemma_ for token in doc if not token.is_stop]        )    def _preprocess(self, text: str) -> str:        text = text.lower().strip()        text = re.sub(r'[^\w\s\-Ã©Ã¨ÃªÃ«Ã Ã¢Ã¹Ã»Ã®Ã¯Ã´Ã§Å“]', ' ', text)        return text    def _match_ontology(self, doc) -> List[ExtractedSkill]:        results = []        for token in doc:            lemma = token.lemma_            if lemma in self.ontology:                skill_ref = self.ontology[lemma]                weight = self._estimate_weight(token, doc)                level  = self._detect_required_level(token, doc)                results.append(ExtractedSkill(                    ref=skill_ref, weight=weight, required_level=level                ))        return self._deduplicate(results)
+
+3.3 Ontologie des compÃ©tences
+
+L'ontologie est le dictionnaire de rÃ©fÃ©rence qui fait le pont entre les mots libres de la description et les compÃ©tences structurÃ©es en base de donnÃ©es (table Question_Competence).
+
+# Exemple d'ontologie â€” fichier skills_ontology.json{  'devops': { 'id': 12, 'type': 'know_how', 'category': 'Technical Skills' },  'kubernetes': { 'id': 12, 'type': 'know_how', 'aliases': ['k8s', 'orchestration'] },  'leadership': { 'id': 34, 'type': 'soft_skill', 'category': 'Managerial Skills' },  'audit': { 'id': 45, 'type': 'knowledge', 'category': 'Hard Skills' },  'sÃ©curitÃ©': { 'id': 56, 'type': 'knowledge', 'aliases': ['cybersÃ©curitÃ©', 'pentest'] },  'communication': { 'id': 67, 'type': 'soft_skill', 'category': 'Soft Skills' },  ...}# L'ontologie est enrichie automatiquement par le systÃ¨me d'auto-amÃ©lioration# Lorsque le NLP Ã©choue Ã  extraire une compÃ©tence que le manager a manuellement# ajoutÃ©e, ce terme est automatiquement intÃ©grÃ© Ã  l'ontologie.
+
+
+4. Ã‰TAPE 3 â€” VECTORISATION ET EMBEDDINGS
+
+La vectorisation convertit textes et profils en vecteurs numÃ©riques denses (embeddings) permettant le calcul de similaritÃ© sÃ©mantique. C'est ce mÃ©canisme qui permet au systÃ¨me de comprendre que 'dÃ©veloppeur backend' et 'ingÃ©nieur API REST' sont proches, sans correspondance exacte de mots.
+
+4.1 Vectorisation des activitÃ©s
+
+class ActivityVectorizer:    def vectorize(self, activity: ActivityInput, nlp_result: NLPResult) -> ActivityVector:        # Vecteur sÃ©mantique de la description (768 dims)        desc_vec = nlp_result.embedding        # Vecteur structurÃ© des compÃ©tences requises        # Dimension = nombre total de compÃ©tences dans l'ontologie        skill_vec = np.zeros(len(self.ontology))        for skill in nlp_result.skills:            idx = self.ontology.index(skill.ref.id)            skill_vec[idx] = skill.weight * skill.required_level        # Vecteur de contexte (one-hot: type + prioritÃ©)        context_vec = self._encode_context(            activity.type, nlp_result.context, activity.department_ids        )        return ActivityVector(            semantic=desc_vec,        # NLP embedding            skills=skill_vec,         # CompÃ©tences pondÃ©rÃ©es            context=context_vec       # Contexte activitÃ©        )
+
+4.2 Vectorisation des profils employÃ©s
+
+class EmployeeVectorizer:    def vectorize(self, employee: EmployeeProfile) -> EmployeeVector:        # Vecteur sÃ©mantique du job_description (768 dims)        job_vec = embedder.encode(            employee.job_description, normalize_embeddings=True        )        # Vecteur compÃ©tences (mÃªme espace que l'activitÃ©)        skill_vec = np.zeros(len(self.ontology))        for comp in employee.competences:            if comp.etat == 'validated':   # N'utiliser que compÃ©tences validÃ©es                idx = self.ontology.index(comp.question_competence_id)                # Score final = moyenne pondÃ©rÃ©e auto + hiÃ©rarchie                final_score = 0.4 * comp.auto_eval + 0.6 * comp.hierarchie_eval                skill_vec[idx] = final_score        # Vecteur de progression (tendance sur saisons)        prog_vec = self._compute_progression(employee.competences)        return EmployeeVector(            semantic=job_vec,            skills=skill_vec,            progression=prog_vec,            seniority=self._compute_seniority(employee.date_embauche)        )    def _compute_progression(self, competences) -> np.ndarray:        # Calcul de la tendance de progression par compÃ©tence        prog = np.zeros(len(self.ontology))        for comp in competences:            if len(comp.evolution) >= 2:                # RÃ©gression linÃ©aire sur historique des scores                trend = np.polyfit(range(len(comp.evolution)), comp.evolution, 1)[0]                idx = self.ontology.index(comp.question_competence_id)                prog[idx] = trend   # Positif = amÃ©lioration, NÃ©gatif = dÃ©gradation        return prog
+
+
+5. Ã‰TAPE 4 â€” CALCUL DU SCORE DYNAMIQUE
+
+Le scoring dynamique est le module qui attribue un score numÃ©rique prÃ©cis Ã  chaque employÃ© pour une activitÃ© donnÃ©e. Il combine similaritÃ© sÃ©mantique, correspondance des compÃ©tences, progression rÃ©cente et anciennetÃ©.
+
+5.1 Formule de scoring globale
+
+Formule de Score Global â€” S(e, a)
+S(e, a) = w_sem Ã— cosine_sim(job_vec_e, desc_vec_a)
+        + w_skill Ã— skill_match_score(skill_vec_e, skill_vec_a, weights_a)
+        + w_prog Ã— progression_bonus(prog_vec_e, skill_vec_a)
+        + w_hist Ã— history_score(history_e, activity_type_a)
+        + w_seniority Ã— seniority_factor(date_embauche_e)
+
+Poids par dÃ©faut : w_sem=0.25  w_skill=0.45  w_prog=0.15  w_hist=0.10  w_seniority=0.05
+â†’ Les poids sont DYNAMIQUES et ajustÃ©s automatiquement par le feedback loop
+
+5.2 DÃ©tail du calcul skill_match_score
+
+def skill_match_score(emp_skills: np.ndarray,                      req_skills: np.ndarray,                      weights: np.ndarray,                      context: PriorityContext) -> float:    total_score = 0.0    total_weight = 0.0    for i, (req_level, weight) in enumerate(zip(req_skills, weights)):        if req_level == 0:            continue   # CompÃ©tence non requise pour cette activitÃ©        emp_level = emp_skills[i]   # Niveau rÃ©el employÃ© (0-4)        total_weight += weight        if context == 'upskill_low':            # Favoriser les employÃ©s qui ont le niveau juste en dessous            # â†’ Ils bÃ©nÃ©ficieront le plus de la formation            gap = req_level - emp_level            if 0 < gap <= 1.5:                score = weight * (1.0 - gap/4)   # Bon candidat Ã  former            elif gap <= 0:                score = weight * 0.3              # DÃ©jÃ  expert â†’ peu de gain            else:                score = weight * max(0, 1 - gap/2)  # Trop loin â†’ pÃ©nalisÃ©        elif context == 'consolidate_medium':            # Favoriser niveau medium (2-3), ni trop bas ni trop expert            score = weight * gaussian(emp_level, mean=req_level, std=0.8)        elif context == 'exploit_expert':            # Favoriser les meilleurs â€” mission/projet nÃ©cessitant expertise            score = weight * (emp_level / 4.0) ** 1.5   # Courbe exponentielle        total_score += score    return total_score / total_weight if total_weight > 0 else 0.0
+
+5.3 Score par type de compÃ©tence
+
+Type
+Comportement dans le scoring
+Knowledge (Savoir)
+Ã‰valuÃ© principalement via auto_eval + hierarchie_eval â€” PondÃ©ration BDD Competence
+Know-how (Savoir-faire)
+PondÃ©rÃ© davantage pour missions techniques â€” type='know_how' dans Competence
+Soft Skills (Savoir-Ãªtre)
+Crucial pour missions management â€” type='soft_skill' dans Question_Competence
+Score final pondÃ©rÃ©
+Moyenne : 40% auto_eval + 60% hierarchie_eval (manager a plus de poids)
+Scores non validÃ©s
+IgnorÃ©s si etat='draft' â€” seulement 'validated' utilisÃ© dans le scoring
+
+
+6. Ã‰TAPE 5 & 6 â€” PRIORISATION ET OPTIMISATION
+
+6.1 RÃ¨gles de priorisation contextuelle
+
+Contexte
+CritÃ¨re de sÃ©lection
+Objectif mÃ©tier
+upskill_low
+EmployÃ©s niveau 1-2 dans les compÃ©tences requises
+Cibler qui bÃ©nÃ©ficiera le plus de la montÃ©e en compÃ©tence
+consolidate_medium
+EmployÃ©s niveau 2-3, en progression positive
+Consolider les acquis, Ã©viter les niveaux extrÃªmes
+exploit_expert
+EmployÃ©s niveau 3-4, haute expertise validÃ©e
+Missions critiques, audit, projets complexes
+
+6.2 Gestion des conflits et ex-aequo
+
+def resolve_ties(candidates: List[ScoredEmployee],                  activity: ActivityInput) -> List[ScoredEmployee]:    # Si scores trÃ¨s proches (Ã©cart < 0.03), appliquer tie-breaking    THRESHOLD = 0.03    def tie_break_key(emp: ScoredEmployee):        return (            -emp.progression_rate,          # 1. Favoriser progression rÃ©cente            emp.activity_history_count,     # 2. Moins d'activitÃ©s passÃ©es = prioritÃ©            -emp.seniority_years,           # 3. Plus anciennetÃ© = lÃ©ger avantage            random.random()                 # 4. AlÃ©atoire pour l'Ã©quitÃ©        )    # Grouper par tranche de score proche    groups = []    current_group = [candidates[0]]    for c in candidates[1:]:        if abs(c.score - current_group[-1].score) < THRESHOLD:            current_group.append(c)        else:            groups.append(sorted(current_group, key=tie_break_key))            current_group = [c]    groups.append(sorted(current_group, key=tie_break_key))    return [e for group in groups for e in group]
+
+6.3 Optimisation multi-critÃ¨res (sÃ©lection finale)
+
+def select_final_candidates(scored: List[ScoredEmployee],                             activity: ActivityInput) -> List[ScoredEmployee]:    seats = activity.seats    # Filtrer les candidats avec score trop faible (< seuil minimal)    MIN_SCORE = 0.35    qualified = [e for e in scored if e.score >= MIN_SCORE]    # S'assurer que les compÃ©tences mandatory sont couvertes    mandatory_skills = [s for s in activity.required_skills if s.mandatory]    if mandatory_skills:        qualified = [e for e in qualified                     if self._covers_mandatory(e, mandatory_skills)]    # Ã‰quilibrage dÃ©partements si seats > 5 (diversitÃ©)    if seats > 5 and len(qualified) > seats * 1.5:        qualified = self._balance_departments(qualified, seats)    # SÃ©lection finale â€” top N selon seats    return qualified[:seats]
+
+
+7. Ã‰TAPE 7 â€” FORMAT DE SORTIE
+
+Le moteur IA retourne un objet structurÃ© que le frontend affiche dans l'interface HR, permettant Ã  l'HR de confirmer, modifier ou rejeter chaque recommandation.
+
+7.1 Structure de sortie complÃ¨te
+
+interface RecommendationOutput {  activity_id:    number;  generated_at:   Date;  model_version:  string;          // Ex: 'v2.3.1'  context_used:   PriorityContext;  recommendations: EmployeeRec[];  // TriÃ©e par score DESC  nlp_extracted:  ExtractedSkills; // Ce que le NLP a compris  warnings?:      string[];        // Ex: 'Peu de candidats qualifiÃ©s'}interface EmployeeRec {  user_id:          number;  name:             string;  matricule:        string;  department:       string;  global_score:     number;        // 0.0 Ã  1.0  score_breakdown: {    semantic:        number;       // SimilaritÃ© job_desc â†” activitÃ©    skill_match:     number;       // Correspondance compÃ©tences    progression:     number;       // Bonus progression rÃ©cente    history:         number;       // Bonus/malus historique activitÃ©s    seniority:       number;       // Bonus anciennetÃ©  };  skill_details:    SkillDetail[]; // DÃ©tail par compÃ©tence  recommendation_reason: string;  // Phrase explicative gÃ©nÃ©rÃ©e  confidence:       'high'|'medium'|'low';}
+
+7.2 Exemple de rÃ©ponse
+
+// Exemple de sortie pour 'Formation DevSecOps avancÃ©'{  'activity_id': 42,  'context_used': 'exploit_expert',  'recommendations': [    {      'user_id': 15,      'name': 'Ahmed Ben Ali',      'global_score': 0.87,      'score_breakdown': {        'semantic': 0.91,        'skill_match': 0.89,        'progression': 0.82,        'history': 0.75,        'seniority': 0.80      },      'recommendation_reason': 'Expert DevOps validÃ© niveau 4, progression        continue depuis 3 saisons, profil idÃ©al pour cette certification.',      'confidence': 'high'    },    ...  ]}
+
+
+8. Ã‰TAPE 8 â€” AUTO-AMÃ‰LIORATION DU MODÃˆLE
+
+C'est le mÃ©canisme le plus important du systÃ¨me : comment l'IA apprend de ses erreurs et s'amÃ©liore continuellement sans intervention manuelle. Le systÃ¨me implÃ©mente trois boucles d'auto-amÃ©lioration distinctes.
+
+8.1 Boucle 1 â€” Feedback Manager en temps rÃ©el
+
+MÃ©canisme de feedback immÃ©diat
+DÃ©clencheur : Le manager modifie la liste des recommandÃ©s (ajoute / retire des employÃ©s)
+Action 1 : Enregistrement des ajouts/retraits avec timestamp dans FeedbackLog
+Action 2 : Calcul du delta de score â€” qui Ã©tait recommandÃ© mais aurait dÃ» l'Ãªtre + / -
+Action 3 : Ajustement des poids de scoring (w_sem, w_skill, w_prog, w_hist, w_seniority)
+Action 4 : Mise Ã  jour du modÃ¨le en production aprÃ¨s N feedback accumulÃ©s (N=50 par dÃ©faut)
+
+class FeedbackProcessor:    def process_manager_feedback(self,                                  recommendation_id: int,                                  added_employees: List[int],                                  removed_employees: List[int],                                  activity: ActivityInput):        # 1. Enregistrer le feedback        log = FeedbackLog(            recommendation_id=recommendation_id,            added=added_employees,            removed=removed_employees,            timestamp=datetime.now()        )        db.save(log)        # 2. Analyser pourquoi le modÃ¨le s'est trompÃ©        for emp_id in removed_employees:            # L'IA avait recommandÃ© cet employÃ© mais le manager l'a retirÃ©            # â†’ Analyser quel critÃ¨re a sur-pondÃ©rÃ© cet employÃ©            self._penalize_wrong_recommendation(emp_id, activity)        for emp_id in added_employees:            # Le manager a ajoutÃ© cet employÃ© que l'IA n'avait pas recommandÃ©            # â†’ Analyser pourquoi le score Ã©tait trop bas            self._boost_missed_recommendation(emp_id, activity)        # 3. Si seuil de feedback atteint â†’ rÃ©entraÃ®ner        if self._should_retrain():            self.trigger_retraining()
+
+8.2 Boucle 2 â€” Mise Ã  jour post-activitÃ©
+
+AprÃ¨s la fin de chaque activitÃ©, les scores des compÃ©tences des participants sont mis Ã  jour dans la table Competence. Cette mise Ã  jour enrichit le profil employÃ© pour les recommandations futures.
+
+class PostActivityUpdater:    def update_after_activity(self, activity_id: int,                               participant_results: List[ParticipantResult]):        for result in participant_results:            emp = db.get_employee(result.user_id)            activity = db.get_activity(activity_id)            for skill in activity.required_skills:                comp = emp.get_competence(skill.question_competence_id)                # IncrÃ©ment selon rÃ©sultat de l'activitÃ©                delta = self._compute_delta(                    participation_result=result.outcome,  # success|partial|fail                    current_level=comp.dynamic_score,                    activity_type=activity.type                )                # Mise Ã  jour BDD Competence                comp.dynamic_score += delta                comp.evolution.append(comp.dynamic_score)                comp.etat = 'validated'                db.update_competence(comp)            # Invalider le vecteur en cache â†’ recalcul au prochain matching            cache.invalidate(f'employee_vector_{result.user_id}')
+
+8.3 Boucle 3 â€” RÃ©entraÃ®nement automatique du modÃ¨le ML
+
+class AutoRetrainer:    RETRAIN_THRESHOLD = 50    # Feedbacks accumulÃ©s avant rÃ©entraÃ®nement    MIN_ACCURACY_DROP = 0.05  # Chute de prÃ©cision dÃ©clenchant rÃ©entraÃ®nement urgent    def trigger_retraining(self):        print('[AutoRetrain] DÃ©marrage rÃ©entraÃ®nement...')        # 1. Collecter les donnÃ©es d'entraÃ®nement depuis l'historique        training_data = self._build_training_dataset(            feedback_logs=db.get_recent_feedback(limit=5000),            activity_results=db.get_completed_activities(last_months=6)        )        # 2. RÃ©entraÃ®ner le modÃ¨le de classification d'activitÃ©s        new_classifier = self._retrain_classifier(training_data)        # 3. Optimiser les poids de scoring via gradient descent        new_weights = self._optimize_weights(            training_data=training_data,            current_weights=model_config.weights        )        # 4. Valider sur un set de test avant dÃ©ploiement        if self._validate_model(new_classifier, new_weights) > self._current_accuracy():            self._deploy(new_classifier, new_weights)            print('[AutoRetrain] Nouveau modÃ¨le dÃ©ployÃ© avec succÃ¨s')        else:            print('[AutoRetrain] ModÃ¨le rejetÃ© â€” dÃ©gradation de performance')    def _optimize_weights(self, training_data, current_weights) -> Weights:        # Descente de gradient pour maximiser le rappel des bonnes recommandations        optimizer = optim.Adam([current_weights], lr=0.001)        for epoch in range(100):            loss = self._recommendation_loss(training_data, current_weights)            optimizer.zero_grad()            loss.backward()            optimizer.step()        return current_weights
+
+
+9. CONSTRUCTION DES PROMPTS IA â€” GUIDE COMPLET
+
+Cette section dÃ©taille comment construire les prompts envoyÃ©s aux LLMs (GPT-4, Claude Sonnet, Mistral, etc.) dans le cadre du projet. Un prompt mal construit produit des rÃ©sultats inexploitables â€” un bon prompt est aussi important que le code.
+
+9.1 Les 7 rÃ¨gles d'or d'un prompt parfait
+
+RÃ¨gle
+Explication + Impact
+1. RÃ´le explicite
+Commencer par 'Tu es un systÃ¨me expert en RH...' â€” le LLM adopte la posture
+2. Contexte prÃ©cis
+DÃ©crire la situation exacte : type activitÃ©, dÃ©partement, contraintes
+3. Format de sortie
+Toujours spÃ©cifier : 'RÃ©ponds UNIQUEMENT en JSON structurÃ©, aucun texte autour'
+4. Exemples (few-shot)
+Donner 1-2 exemples de la sortie attendue dans le prompt
+5. Contraintes nÃ©gatives
+Dire explicitement ce qu'il NE faut PAS faire
+6. Langue et ton
+PrÃ©ciser : franÃ§ais, professionnel, sans abrÃ©viation
+7. Validation intÃ©grÃ©e
+Demander au LLM de vÃ©rifier sa propre rÃ©ponse avant de l'envoyer
+
+9.2 Prompt Complet â€” Extraction NLP de description d'activitÃ©
+
+PROMPT COMPLET â€” NLP Extraction
+System Prompt :
+Tu es un systÃ¨me expert en analyse de descriptions de postes et d'activitÃ©s professionnelles.
+Tu analyses des textes en franÃ§ais et en extrais des compÃ©tences structurÃ©es.
+Tu rÃ©ponds UNIQUEMENT en JSON valide, sans aucun texte introductif ni commentaire.
+
+User Prompt :
+Analyse cette description d'activitÃ© professionnelle et extrais les informations demandÃ©es.
+
+--- DESCRIPTION ACTIVITÃ‰ ---
+{activity_description}
+--- FIN DESCRIPTION ---
+
+Fournis ta rÃ©ponse en respectant EXACTEMENT ce schÃ©ma JSON :
+{
+  'activity_type': 'technical|management|transversal|certification|audit',
+  'priority_context': 'upskill_low|consolidate_medium|exploit_expert',
+  'extracted_skills': [
+    {
+      'name': 'nom_compÃ©tence',
+      'type': 'knowledge|know_how|soft_skill',
+      'required_level': 1|2|3|4,
+      'weight': 0.0_Ã _1.0,
+      'rationale': 'courte justification'
+    }
+  ],
+  'key_objectives': ['objectif1', 'objectif2'],
+  'constraints': ['contrainte1', 'contrainte2'],
+  'confidence_score': 0.0_Ã _1.0
+}
+IMPORTANT : required_level suit l'Ã©chelle : 1=dÃ©butant, 2=intermÃ©diaire, 3=avancÃ©, 4=expert.
+Si tu n'es pas certain d'une compÃ©tence (confiance < 0.6), ne l'inclus pas.
+VÃ©rifie que ton JSON est valide avant de rÃ©pondre.
+
+9.3 Prompt Complet â€” GÃ©nÃ©ration de la phrase de justification
+
+PROMPT COMPLET â€” GÃ©nÃ©ration Justification
+System Prompt :
+Tu es un assistant RH professionnel. Tu gÃ©nÃ¨res des justifications concises et factuelle
+pour expliquer pourquoi un employÃ© est recommandÃ© pour une activitÃ©.
+Tes justifications sont objectives, bienveillantes, en franÃ§ais professionnel, maximum 2 phrases.
+Tu rÃ©ponds UNIQUEMENT avec la phrase de justification, rien d'autre.
+
+User Prompt :
+GÃ©nÃ¨re une justification de recommandation RH avec ces donnÃ©es :
+
+ACTIVITÃ‰ : {activity_title} ({activity_type})
+CONTEXTE : {context_label}
+EMPLOYÃ‰ : {employee_name}, {department_name}, {years_experience} ans d'expÃ©rience
+
+SCORES DÃ‰TAILLÃ‰S :
+- Correspondance sÃ©mantique (profil vs activitÃ©) : {semantic_score}/100
+- Correspondance compÃ©tences : {skill_score}/100
+- Progression rÃ©cente : {progression_score}/100
+
+COMPÃ‰TENCES FORTES pour cette activitÃ© :
+{top_matching_skills}
+
+COMPÃ‰TENCES Ã€ DÃ‰VELOPPER :
+{skills_to_improve}
+
+GÃ©nÃ¨re une justification factuelle de 1 Ã  2 phrases maximum.
+Exemples de format attendu :
+- 'Expert certifiÃ© en sÃ©curitÃ© rÃ©seau avec 3 ans d'expÃ©rience DevOps, idÃ©al pour cette mission critique.'
+- 'Profil intermÃ©diaire en Python avec forte progression, cette formation accÃ©lÃ©rera sa montÃ©e en expertise.'
+
+9.4 Prompt Complet â€” Analyse du feedback manager
+
+PROMPT COMPLET â€” Analyse Feedback
+System Prompt :
+Tu es un systÃ¨me d'analyse de feedback RH. Tu analyses les modifications apportÃ©es par
+un manager Ã  une liste de recommandations IA pour en tirer des enseignements.
+Tu rÃ©ponds UNIQUEMENT en JSON structurÃ©.
+
+User Prompt :
+Un manager a modifiÃ© la liste de recommandations IA. Analyse ce feedback.
+
+ACTIVITÃ‰ : {activity_title} | Type : {activity_type} | Contexte : {context}
+
+EMPLOYÃ‰S RETIRÃ‰S PAR LE MANAGER (l'IA les avait recommandÃ©s) :
+{removed_employees_with_scores}
+
+EMPLOYÃ‰S AJOUTÃ‰S PAR LE MANAGER (l'IA ne les avait pas recommandÃ©s) :
+{added_employees_with_profiles}
+
+RÃ©ponds avec ce JSON :
+{
+  'possible_reasons_for_removals': ['raison1', 'raison2'],
+  'possible_reasons_for_additions': ['raison1', 'raison2'],
+  'suggested_weight_adjustments': {
+    'w_semantic': delta_float,
+    'w_skill_match': delta_float,
+    'w_progression': delta_float,
+    'w_history': delta_float
+  },
+  'new_patterns_detected': ['pattern1', 'pattern2'],
+  'confidence': 0.0_Ã _1.0
+}
+Fournis uniquement des ajustements de poids entre -0.05 et +0.05 pour la stabilitÃ©.
+
+9.5 Prompt Complet â€” AmÃ©lioration de l'ontologie
+
+PROMPT COMPLET â€” Enrichissement Ontologie
+System Prompt :
+Tu es un expert en gestion des compÃ©tences professionnelles. Tu identifies de nouvelles
+compÃ©tences Ã  ajouter Ã  une ontologie existante Ã  partir de descriptions textuelles.
+Tu rÃ©ponds UNIQUEMENT en JSON valide.
+
+User Prompt :
+L'ontologie actuelle ne couvre pas certains termes trouvÃ©s dans des descriptions d'activitÃ©s rÃ©centes.
+
+TERMES NON RECONNUS (avec frÃ©quence d'apparition) :
+{unrecognized_terms_with_frequency}
+
+CONTEXTE D'APPARITION (extraits de descriptions) :
+{context_snippets}
+
+ONTOLOGIE EXISTANTE (catÃ©gories disponibles) :
+{existing_categories}
+
+Pour chaque terme pertinent, propose une entrÃ©e d'ontologie :
+[{
+  'term': 'terme_Ã _ajouter',
+  'aliases': ['alias1', 'alias2'],
+  'category': 'Technical|Soft|Managerial|Hard Skills',
+  'type': 'knowledge|know_how|soft_skill',
+  'suggested_question_competence_id': id_existant_ou_null,
+  'should_create_new_entry': true|false,
+  'rationale': 'justification courte'
+}]
+N'inclure que les termes avec une certitude > 80%. Exclure les termes trop gÃ©nÃ©riques.
+
+
+10. ARCHITECTURE TECHNIQUE COMPLÃˆTE
+
+10.1 Stack technologique recommandÃ©e
+
+Composant
+Technologies
+Usage
+NLP Core
+spaCy + sentence-transformers + NLTK
+Extraction, vectorisation, NER
+ML Framework
+scikit-learn + PyTorch
+Scoring, rÃ©entraÃ®nement, optimisation
+LLM API
+OpenAI GPT-4 / Anthropic Claude / Mistral
+Prompts complexes, justifications
+Vector DB
+pgvector (PostgreSQL extension)
+Stockage embeddings, similaritÃ© cosine
+Backend
+FastAPI (Python) + Spring Boot (Java)
+API REST, logique mÃ©tier
+Frontend
+React + TypeScript + Recharts
+Dashboard, visualisation scores
+Cache
+Redis
+Cache vecteurs employÃ©s, rÃ©sultats NLP
+Queue
+Celery + RabbitMQ
+TÃ¢ches asynchrones, rÃ©entraÃ®nement
+
+10.2 SchÃ©ma de base de donnÃ©es Ã©tendu (tables IA)
+
+-- Table pour stocker les vecteurs employÃ©s (pgvector)CREATE TABLE employee_vectors (    id           BIGSERIAL PRIMARY KEY,    user_id      BIGINT REFERENCES users(id),    vector       vector(768),        -- Embedding sentence-transformer    skill_vector JSONB,              -- Vecteur compÃ©tences structurÃ©    computed_at  TIMESTAMP DEFAULT NOW(),    model_version VARCHAR(20));-- Table recommandations gÃ©nÃ©rÃ©esCREATE TABLE recommendations (    id              BIGSERIAL PRIMARY KEY,    activity_id     BIGINT REFERENCES activities(id),    generated_at    TIMESTAMP DEFAULT NOW(),    model_version   VARCHAR(20),    context_used    VARCHAR(50),    nlp_extracted   JSONB,           -- Ce que le NLP a extrait    results         JSONB            -- Liste ordonnÃ©e avec scores);-- Table feedback managersCREATE TABLE feedback_logs (    id                  BIGSERIAL PRIMARY KEY,    recommendation_id   BIGINT REFERENCES recommendations(id),    manager_id          BIGINT REFERENCES users(id),    added_employees     BIGINT[],    removed_employees   BIGINT[],    created_at          TIMESTAMP DEFAULT NOW());-- Table historique des poids du modÃ¨leCREATE TABLE model_weights_history (    id           BIGSERIAL PRIMARY KEY,    version      VARCHAR(20) UNIQUE,    weights      JSONB,              -- w_sem, w_skill, w_prog, w_hist...    accuracy     FLOAT,    trained_at   TIMESTAMP DEFAULT NOW(),    is_active    BOOLEAN DEFAULT FALSE);
+
+
+11. PROMPT COMPLET POUR CURSOR AI
+
+Ce prompt est directement utilisable dans Cursor pour implÃ©menter le module IA complet. Il est structurÃ© pour guider l'IA de dÃ©veloppement Ã©tape par Ã©tape avec tous les dÃ©tails nÃ©cessaires.
+
+11.1 Prompt Principal â€” ImplÃ©mentation du Module IA/NLP
+
+CURSOR PROMPT â€” Module IA Complet (Partie 1/3 â€” Setup & NLP)
+Tu es un expert en dÃ©veloppement backend Python et en NLP/ML pour systÃ¨mes RH.
+Tu vas implÃ©menter le module IA/NLP d'un systÃ¨me de recommandation d'employÃ©s.
+
+=== CONTEXTE PROJET ===
+SystÃ¨me : Recommandation intelligente d'employÃ©s pour des activitÃ©s (formation, mission, audit...)
+Stack : FastAPI + PostgreSQL (pgvector) + spaCy + sentence-transformers + Redis
+Langue cible : FranÃ§ais (descriptions et compÃ©tences en franÃ§ais)
+
+=== BASE DE DONNÃ‰ES (tables existantes Ã  utiliser) ===
+- users : id, name, matricule, email, date_embauche, departement_id, manager_id
+- competences : id, fiches_id, question_competence_id, type, intitule, auto_eval,
+                hierarchie_eval, etat (draft|submitted|validated)
+- fiches : id, user_id, saisons, etat
+- question_competence : id, intitule, details, status
+- departments : id, name, code, manager_id
+
+=== TÃ‚CHE 1 : CRÃ‰ER LE SERVICE NLP ===
+CrÃ©e le fichier app/services/nlp_service.py avec :
+1. Classe NLPExtractor avec mÃ©thode extract(description: str) -> NLPResult
+2. Preprocessing : lowercase, suppression ponctuation, lemmatisation spaCy fr_core_news_lg
+3. Matching ontologie : charger depuis skills_ontology.json (voir schÃ©ma ci-dessous)
+4. Classification activitÃ© : technical|management|transversal via regex + keywords
+5. DÃ©tection contexte : upskill_low|consolidate_medium|exploit_expert
+6. Embeddings : sentence-transformers paraphrase-multilingual-mpnet-base-v2
+
+SchÃ©ma skills_ontology.json :
+{ 'terme': { 'id': int, 'type': 'knowledge|know_how|soft_skill', 'aliases': [...] } }
+
+NLPResult doit contenir : skills, activity_type, context, embedding (np.ndarray), tokens
+
+=== CONTRAINTES ===
+- Utiliser uniquement les compÃ©tences avec etat='validated' dans la BDD
+- GÃ©rer les erreurs gracieusement (NLP Ã©choue â†’ fallback sur skills explicites)
+- Logger chaque extraction avec timestamp et version modÃ¨le
+- Tests unitaires dans tests/test_nlp_service.py avec pytest
+
+CURSOR PROMPT â€” Module IA Complet (Partie 2/3 â€” Scoring & Optimisation)
+=== TÃ‚CHE 2 : CRÃ‰ER LE MOTEUR DE SCORING ===
+CrÃ©e app/services/scoring_engine.py avec :
+
+CLASSE EmployeeVectorizer :
+- vectorize(employee_id) -> EmployeeVector depuis BDD
+- Cache Redis avec TTL 24h : clÃ© 'emp_vec_{user_id}'
+- Invalider le cache aprÃ¨s mise Ã  jour Competence
+
+CLASSE ScoringEngine :
+MÃ©thode score_all(activity: ActivityInput, nlp_result: NLPResult) -> List[ScoredEmployee]
+
+Formule de score OBLIGATOIRE :
+S = 0.25*cosine(job_vec, desc_vec) + 0.45*skill_match(emp_skills, req_skills)
+  + 0.15*progression_bonus + 0.10*history_score + 0.05*seniority_factor
+
+skill_match doit implÃ©menter 3 comportements selon context :
+  - upskill_low : favoriser gap=1 (niveau req - niveau emp)
+  - consolidate_medium : distribution gaussienne autour du niveau requis
+  - exploit_expert : score = (emp_level/4)^1.5
+
+Gestion ex-aequo : progression_rate > activity_count_inverse > seniority > random
+
+=== TÃ‚CHE 3 : CRÃ‰ER L'API REST ===
+CrÃ©e app/routes/recommendations.py avec :
+
+POST /api/recommendations/generate
+Body: { activity_id, seats, context, department_ids? }
+Returns: RecommendationOutput (voir schÃ©ma section 7.1)
+
+POST /api/recommendations/{id}/feedback
+Body: { added_employees: int[], removed_employees: int[] }
+Returns: { status: 'feedback_recorded', adjustment_applied: bool }
+
+GET /api/recommendations/{id}
+Returns: RecommendationOutput avec historique modifications
+
+Authentification : JWT Bearer token, vÃ©rifier rÃ´le HR ou MANAGER
+Rate limiting : 10 req/min par utilisateur pour /generate
+
+CURSOR PROMPT â€” Module IA Complet (Partie 3/3 â€” Auto-amÃ©lioration & Prompts LLM)
+=== TÃ‚CHE 4 : FEEDBACK LOOP & AUTO-AMÃ‰LIORATION ===
+CrÃ©e app/services/feedback_processor.py avec :
+
+CLASSE FeedbackProcessor :
+1. process_manager_feedback(rec_id, added, removed) â†’ enregistre en BDD + ajuste poids
+2. _penalize_wrong_recommendation(emp_id, activity) â†’ analyse pourquoi erreur
+3. _boost_missed_recommendation(emp_id, activity) â†’ analyse pourquoi manquÃ©
+4. should_retrain() â†’ True si 50+ feedbacks non traitÃ©s
+
+CLASSE AutoRetrainer (tÃ¢che Celery asynchrone) :
+1. build_training_dataset(limit=5000) depuis feedback_logs + completed_activities
+2. optimize_weights() via scipy.optimize.minimize (minimiser loss sur dataset)
+3. validate_model() sur 20% du dataset rÃ©servÃ©
+4. deploy() uniquement si accuracy_new > accuracy_current
+5. Sauvegarder poids dans model_weights_history avec version semver
+
+CLASSE PostActivityUpdater :
+1. update_after_activity(activity_id, participant_results)
+2. delta compÃ©tence : +0.3 si success, +0.1 si partial, -0.1 si fail
+3. Invalider cache Redis des employÃ©s mis Ã  jour
+
+=== TÃ‚CHE 5 : INTÃ‰GRATION LLM POUR PROMPTS ===
+CrÃ©e app/services/llm_service.py avec :
+
+CLASSE LLMService (support OpenAI ET Anthropic) :
+1. extract_skills_nlp(description) â†’ appel LLM avec prompt section 9.2
+   Fallback : si LLM indisponible â†’ utiliser NLP local spaCy
+2. generate_justification(emp, activity, scores) â†’ appel LLM section 9.3
+   Max 2 phrases, en franÃ§ais, professionnel
+3. analyze_feedback(feedback_log) â†’ appel LLM section 9.4 pour ajustements poids
+4. enrich_ontology(unrecognized_terms) â†’ appel LLM section 9.5
+
+Toujours parser la rÃ©ponse JSON avec try/except + retry x3 si JSON invalide
+Logger tous les appels LLM : prompt, rÃ©ponse, latence, token_count, cost_estimate
+Circuit breaker : dÃ©sactiver LLM si 5 Ã©checs consÃ©cutifs â†’ basculer sur NLP local
+
+=== FICHIERS Ã€ CRÃ‰ER ===
+app/services/nlp_service.py | app/services/scoring_engine.py
+app/services/feedback_processor.py | app/services/llm_service.py
+app/services/post_activity_updater.py | app/routes/recommendations.py
+app/models/ai_models.py (Pydantic schemas) | tests/test_*.py (pytest)
+data/skills_ontology.json | config/model_weights.json
+
+
+12. MÃ‰TRIQUES ET MONITORING
+
+12.1 KPIs du module IA
+
+MÃ©trique
+Description
+Cible
+PrÃ©cision top-N
+% recommandations retenues par manager
+> 75% Ã  N=5
+Rappel
+% bons candidats prÃ©sents dans la liste
+> 80%
+NDCG
+Normalized Discounted Cumulative Gain â€” qualitÃ© du ranking
+> 0.70
+Latence P95
+Temps de rÃ©ponse 95e percentile pour /generate
+< 3 secondes
+Taux feedback
+% activitÃ©s avec feedback manager reÃ§u
+> 60%
+AmÃ©lioration modÃ¨le
+PrÃ©cision avant vs aprÃ¨s rÃ©entraÃ®nement
+> +2% par cycle
+
+12.2 Logging et traÃ§abilitÃ©
+
+# Chaque recommandation est intÃ©gralement tracÃ©elog_entry = {    'recommendation_id': uuid,    'activity_id': activity.id,    'model_version': '2.3.1',    'execution_time_ms': 1247,    'nlp_extraction': { 'skills_found': 5, 'confidence': 0.87 },    'scoring': {        'employees_scored': 142,        'qualified_after_filter': 23,        'selected': 5    },    'weights_used': { 'w_sem': 0.25, 'w_skill': 0.45, 'w_prog': 0.15, ... },    'llm_calls': [        { 'purpose': 'extraction', 'tokens': 512, 'latency_ms': 340 },        { 'purpose': 'justification', 'tokens': 128, 'latency_ms': 180 }    ]}# StockÃ© dans recommendations.nlp_extracted (JSONB) pour audit complet
+
+
+13. RÃ‰SUMÃ‰ OPÃ‰RATIONNEL
+
+Aspect
+DÃ©tail technique
+EntrÃ©e du systÃ¨me
+Description textuelle activitÃ© + profils BDD (User, Competence, Fiche)
+Traitement NLP
+spaCy + sentence-transformers â†’ vecteurs sÃ©mantiques 768 dims
+Scoring
+Formule pondÃ©rÃ©e : sÃ©mantique + compÃ©tences + progression + historique
+Priorisation
+3 contextes : upskill_low / consolidate_medium / exploit_expert
+Sortie
+Liste ordonnÃ©e avec scores dÃ©taillÃ©s + justification en langage naturel
+Auto-amÃ©lioration
+3 boucles : feedback manager + post-activitÃ© + rÃ©entraÃ®nement ML
+Prompts LLM
+5 prompts spÃ©cialisÃ©s (extraction, justification, feedback, ontologie)
+Monitoring
+KPIs prÃ©cision > 75%, latence < 3s, logs complets pour audit
+RÃ©silience
+Fallback NLP local si LLM indisponible â€” circuit breaker sur 5 Ã©checs
+TraÃ§abilitÃ©
+Chaque recommandation intÃ©gralement loggÃ©e en JSONB pour audit RH
+
+
+Document prÃ©parÃ© sur la base des spÃ©cifications complÃ¨tes du projet (Project-05 et HR-User). Ce document constitue la rÃ©fÃ©rence technique unique pour l'implÃ©mentation du module IA/NLP.

@@ -45,30 +45,30 @@ export default function AdminUsers() {
     )},
     { key: 'actions', header: 'Actions', render: (u: User) => (
       <div className="flex items-center gap-1">
-        <button onClick={(e) => { e.stopPropagation(); openEdit(u) }} className="rounded-lg p-1.5 text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"><Edit2 className="h-4 w-4" /></button>
-        <button onClick={(e) => { e.stopPropagation(); deleteUser(u.id) }} className="rounded-lg p-1.5 text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"><Trash2 className="h-4 w-4" /></button>
+        <button onClick={(e) => { e.stopPropagation(); openEdit(u) }} className="button-micro rounded-lg p-1.5 text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"><Edit2 className="h-4 w-4" /></button>
+        <button onClick={(e) => { e.stopPropagation(); deleteUser(u.id) }} className="button-micro rounded-lg p-1.5 text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"><Trash2 className="h-4 w-4" /></button>
       </div>
     )},
   ]
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex items-center justify-between">
+      <div className="reveal reveal-left flex items-center justify-between animate-slide-up">
         <div>
           <h1 className="text-2xl font-bold text-foreground">Gestion des utilisateurs</h1>
           <p className="text-sm text-muted-foreground">{users.length} utilisateurs au total</p>
         </div>
-        <button onClick={openCreate} className="flex items-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground transition-opacity hover:opacity-90">
+        <button onClick={openCreate} className="button-micro gradient-surface flex items-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium text-primary-foreground">
           <Plus className="h-4 w-4" /> Nouveau
         </button>
       </div>
 
       {/* Filters */}
-      <div className="flex flex-wrap items-center gap-3">
+      <div className="reveal reveal-right flex flex-wrap items-center gap-3">
         <div className="relative flex-1 max-w-xs">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <input type="text" placeholder="Rechercher..." value={search} onChange={(e) => setSearch(e.target.value)}
-            className="h-9 w-full rounded-lg border border-input bg-background pl-9 pr-4 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring" />
+            className="input-micro h-9 w-full rounded-lg border border-input bg-background pl-9 pr-4 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring" />
         </div>
         <select value={roleFilter} onChange={(e) => setRoleFilter(e.target.value)}
           className="h-9 rounded-lg border border-input bg-background px-3 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring">
@@ -80,7 +80,9 @@ export default function AdminUsers() {
         </select>
       </div>
 
-      <DataTable columns={columns} data={filtered} emptyMessage="Aucun utilisateur trouve" />
+      <div className="reveal reveal-scale">
+        <DataTable columns={columns} data={filtered} emptyMessage="Aucun utilisateur trouve" />
+      </div>
 
       {/* Modal */}
       {showModal && <UserModal user={editingUser} departments={departments} onClose={() => setShowModal(false)} onSave={(u) => { editingUser ? updateUser(u) : addUser(u); setShowModal(false) }} />}
@@ -112,11 +114,11 @@ function UserModal({ user, departments, onClose, onSave }: { user: User | null; 
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-foreground/50 p-4">
-      <div className="w-full max-w-lg rounded-xl border border-border bg-card shadow-xl">
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-foreground/50 p-4 animate-fade-in">
+      <div className="w-full max-w-lg rounded-xl border border-border bg-card shadow-xl animate-slide-up">
         <div className="flex items-center justify-between border-b border-border px-6 py-4">
           <h2 className="text-lg font-semibold text-card-foreground">{user ? 'Modifier' : 'Nouvel'} utilisateur</h2>
-          <button onClick={onClose} className="rounded-lg p-1 text-muted-foreground hover:bg-accent"><X className="h-5 w-5" /></button>
+          <button onClick={onClose} className="button-micro rounded-lg p-1 text-muted-foreground hover:bg-accent"><X className="h-5 w-5" /></button>
         </div>
         <form onSubmit={handleSubmit} className="flex flex-col gap-4 p-6">
           <div className="grid grid-cols-2 gap-4">

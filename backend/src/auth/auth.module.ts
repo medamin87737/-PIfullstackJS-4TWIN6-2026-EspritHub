@@ -5,17 +5,18 @@ import { PassportModule } from '@nestjs/passport';
 import { UsersModule } from '../users/users.module';
 import {AuthService} from "./auth/auth.service";
 import {JwtStrategy} from "./auth/jwt.strategy/jwt.strategy"; // Chemin correct
+import { GoogleStrategy } from './auth/google.strategy/google.strategy';
 
 @Module({
   imports: [
     forwardRef(() => UsersModule), // Dépendance circulaire
-    PassportModule,
+    PassportModule.register({ session: false }),
     JwtModule.register({
       secret: process.env.JWT_SECRET || 'defaultSecret', // Clé JWT
-      signOptions: { expiresIn: '1h' }, // Expiration
+      signOptions: { expiresIn: (process.env.JWT_EXPIRES_IN || '1h') as any }, // Access token
     }),
   ],
-  providers: [AuthService, JwtStrategy],
+  providers: [AuthService, JwtStrategy, GoogleStrategy],
   exports: [AuthService, JwtModule],
 })
 export class AuthModule {}

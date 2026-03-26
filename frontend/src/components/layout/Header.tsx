@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import { useData } from '../../context/DataContext'
 import { Bell, Search, Sun, Moon } from 'lucide-react'
@@ -7,7 +8,8 @@ import { useI18n } from '../../hooks/useI18n'
 
 export default function Header() {
   const { user } = useAuth()
-  const { getUserNotifications, markNotificationRead } = useData()
+  const { getUserNotifications, markNotificationRead, refreshNotifications } = useData()
+  const navigate = useNavigate()
   const [darkMode, setDarkMode] = useState(false)
   const [showNotifications, setShowNotifications] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
@@ -23,8 +25,25 @@ export default function Header() {
     document.documentElement.classList.toggle('dark')
   }
 
+  const goToNotificationTarget = (n: { activity_id?: string }) => {
+    if (!user) return
+    if (user.role === 'EMPLOYEE') {
+      navigate(n.activity_id ? `/employee/activities?activityId=${n.activity_id}` : '/employee/notifications')
+      return
+    }
+    if (user.role === 'MANAGER') {
+      navigate('/manager/activities')
+      return
+    }
+    if (user.role === 'HR') {
+      navigate('/hr/activities')
+      return
+    }
+    navigate('/admin/dashboard')
+  }
+
   return (
-    <header className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b border-border bg-card px-6">
+    <header className="reveal sticky top-0 z-30 flex h-16 items-center gap-4 border-b border-border/70 bg-card/85 px-6 backdrop-blur-xl">
       <div className="relative flex-1 max-w-md">
         <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
         <input
@@ -32,14 +51,14 @@ export default function Header() {
           placeholder={t('header.searchPlaceholder')}
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          className="h-9 w-full rounded-lg border border-input bg-background pl-9 pr-4 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+          className="input-micro h-9 w-full rounded-lg border border-input bg-background/80 pl-9 pr-4 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
         />
       </div>
 
       <div className="flex items-center gap-2">
         <button
           onClick={toggleDarkMode}
-          className="flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
+          className="button-micro flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground hover:bg-accent hover:text-accent-foreground"
           aria-label="Toggle dark mode"
         >
           {darkMode ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
@@ -47,8 +66,14 @@ export default function Header() {
 
         <div className="relative">
           <button
-            onClick={() => setShowNotifications(!showNotifications)}
-            className="relative flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
+            onClick={() => {
+              const nextState = !showNotifications
+              setShowNotifications(nextState)
+              if (nextState) {
+                void refreshNotifications()
+              }
+            }}
+            className="button-micro relative flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground hover:bg-accent hover:text-accent-foreground"
             aria-label="Notifications"
           >
             <Bell className="h-5 w-5" />
@@ -62,7 +87,7 @@ export default function Header() {
           {showNotifications && (
             <>
               <div className="fixed inset-0 z-40" onClick={() => setShowNotifications(false)} />
-              <div className="absolute right-0 top-full z-50 mt-2 w-80 rounded-xl border border-border bg-card shadow-lg">
+              <div className="absolute right-0 top-full z-50 mt-2 w-80 rounded-xl border border-border bg-card shadow-lg animate-fade-in">
                 <div className="border-b border-border px-4 py-3">
                   <h3 className="text-sm font-semibold text-card-foreground">
                     {t('header.notifications')}
@@ -78,10 +103,14 @@ export default function Header() {
                       <button
                         key={n.id}
                         className={cn(
-                          'flex w-full flex-col gap-1 border-b border-border px-4 py-3 text-left transition-colors hover:bg-accent',
+                          'flex w-full flex-col gap-1 border-b border-border px-4 py-3 text-left transition-all hover:bg-accent hover:translate-x-1',
                           !n.read && 'bg-accent/50'
                         )}
-                        onClick={() => markNotificationRead(n.id)}
+                        onClick={() => {
+                          markNotificationRead(n.id)
+                          setShowNotifications(false)
+                          goToNotificationTarget(n)
+                        }}
                       >
                         <span className="text-sm font-medium text-card-foreground">{n.title}</span>
                         <span className="text-xs text-muted-foreground">{n.message}</span>

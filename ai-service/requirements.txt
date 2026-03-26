@@ -1,0 +1,14 @@
+fastapi
+uvicorn
+sentence-transformers
+torch
+scikit-learn
+numpy
+anthropic
+python-dotenv
+pydantic
+spacy
+scipy
+pytest
+redis
+

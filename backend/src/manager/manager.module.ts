@@ -11,9 +11,11 @@ import { Competence, CompetenceSchema } from '../users/schemas/competence.schema
 
 // ✅ Schema du dossier activities/schemas/ (déjà existant)
 import { Activity, ActivitySchema } from '../activities/schemas/activity.schema';
+import { ActivityRequest, ActivityRequestSchema } from './schemas/activity-request.schema';
 
 // ✅ Module Auth pour JwtAuthGuard et RolesGuard
 import { AuthModule } from '../auth/auth.module';
+import { NotificationsModule } from '../notifications/notifications.module';
 
 @Module({
   imports: [
@@ -21,10 +23,12 @@ import { AuthModule } from '../auth/auth.module';
       { name: User.name, schema: UserSchema },
       { name: Department.name, schema: DepartmentSchema },
       { name: Activity.name, schema: ActivitySchema },
+      { name: ActivityRequest.name, schema: ActivityRequestSchema },
       { name: Fiche.name, schema: FicheSchema },
       { name: Competence.name, schema: CompetenceSchema },
     ]),
     AuthModule, // Pour utiliser JwtAuthGuard et RolesGuard
+    NotificationsModule,
   ],
   controllers: [ManagerController],
   providers: [ManagerService],

@@ -28,6 +28,7 @@ const fr: Messages = {
   'sidebar.admin.skills': 'Competences',
   'sidebar.admin.questions': 'Questions',
   'sidebar.admin.analytics': 'Analytiques',
+  'sidebar.admin.promptRewriter': 'Reformulation',
 
   // Sidebar HR
   'sidebar.hr.dashboard': 'Dashboard',
@@ -35,6 +36,7 @@ const fr: Messages = {
   'sidebar.hr.createActivity': 'Creer Activite',
   'sidebar.hr.history': 'Historique',
   'sidebar.hr.analytics': 'Analytiques',
+  'sidebar.hr.promptRewriter': 'Reformulation',
 
   // Sidebar MANAGER
   'sidebar.manager.dashboard': 'Dashboard',
@@ -134,6 +136,7 @@ const en: Messages = {
   'sidebar.admin.skills': 'Skills',
   'sidebar.admin.questions': 'Questions',
   'sidebar.admin.analytics': 'Analytics',
+  'sidebar.admin.promptRewriter': 'Prompt rewrite',
 
   // Sidebar HR
   'sidebar.hr.dashboard': 'Dashboard',
@@ -141,6 +144,7 @@ const en: Messages = {
   'sidebar.hr.createActivity': 'Create Activity',
   'sidebar.hr.history': 'History',
   'sidebar.hr.analytics': 'Analytics',
+  'sidebar.hr.promptRewriter': 'Prompt rewrite',
 
   // Sidebar MANAGER
   'sidebar.manager.dashboard': 'Dashboard',

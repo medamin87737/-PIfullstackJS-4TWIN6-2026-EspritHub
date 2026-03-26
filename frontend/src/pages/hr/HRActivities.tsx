@@ -178,7 +178,7 @@ export default function HRActivities() {
           <button
             type="button"
             onClick={() => openEdit(a)}
-            className="flex h-7 w-7 items-center justify-center rounded-md border border-border bg-background text-muted-foreground hover:bg-accent"
+            className="button-micro flex h-7 w-7 items-center justify-center rounded-md border border-border bg-background text-muted-foreground hover:bg-accent"
             title="Modifier"
           >
             <Pencil className="h-3.5 w-3.5" />
@@ -186,7 +186,7 @@ export default function HRActivities() {
           <button
             type="button"
             onClick={() => openDelete(a.id)}
-            className="flex h-7 w-7 items-center justify-center rounded-md border border-destructive/40 bg-background text-destructive hover:bg-destructive/10"
+            className="button-micro flex h-7 w-7 items-center justify-center rounded-md border border-destructive/40 bg-background text-destructive hover:bg-destructive/10"
             title="Supprimer"
           >
             <Trash2 className="h-3.5 w-3.5" />
@@ -198,17 +198,17 @@ export default function HRActivities() {
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex items-center justify-between">
+      <div className="reveal reveal-left flex items-center justify-between animate-slide-up">
         <div>
           <h1 className="text-2xl font-bold text-foreground">Activités</h1>
           <p className="text-sm text-muted-foreground">{activities.length} activités au total</p>
         </div>
-        <Link to="/hr/create-activity" className="flex items-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground hover:opacity-90">
+        <Link to="/hr/create-activity" className="button-micro gradient-surface flex items-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium text-primary-foreground">
           <Plus className="h-4 w-4" /> Créer
         </Link>
       </div>
 
-      <div className="flex flex-wrap items-center gap-3">
+      <div className="reveal reveal-right flex flex-wrap items-center gap-3">
         <div className="relative flex-1 max-w-xs">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <input type="text" placeholder="Rechercher..." value={search} onChange={(e) => setSearch(e.target.value)}
@@ -226,7 +226,7 @@ export default function HRActivities() {
 
       {/* Panel confirmation suppression */}
       {deleteId && (
-        <div className="rounded-xl border border-destructive/40 bg-destructive/5 px-5 py-4 flex items-center justify-between gap-4">
+        <div className="reveal reveal-scale rounded-xl border border-destructive/40 bg-destructive/5 px-5 py-4 flex items-center justify-between gap-4 animate-fade-in">
           <p className="text-sm font-medium text-destructive">
             Confirmer la suppression de cette activité ? Cette action est irréversible.
           </p>
@@ -235,7 +235,7 @@ export default function HRActivities() {
               type="button"
               onClick={() => setDeleteId(null)}
               disabled={deleteLoading}
-              className="flex items-center gap-1.5 rounded-lg border border-border bg-background px-3 py-1.5 text-sm hover:bg-muted disabled:opacity-50"
+              className="button-micro flex items-center gap-1.5 rounded-lg border border-border bg-background px-3 py-1.5 text-sm hover:bg-muted disabled:opacity-50"
             >
               <X className="h-3.5 w-3.5" /> Annuler
             </button>
@@ -243,7 +243,7 @@ export default function HRActivities() {
               type="button"
               onClick={handleDeleteConfirm}
               disabled={deleteLoading}
-              className="flex items-center gap-1.5 rounded-lg bg-destructive px-3 py-1.5 text-sm text-white hover:opacity-90 disabled:opacity-50"
+              className="button-micro flex items-center gap-1.5 rounded-lg bg-destructive px-3 py-1.5 text-sm text-white hover:opacity-90 disabled:opacity-50"
             >
               <Trash2 className="h-3.5 w-3.5" />
               {deleteLoading ? 'Suppression...' : 'Supprimer'}
@@ -254,7 +254,7 @@ export default function HRActivities() {
 
       {/* Panel édition inline */}
       {editing && (
-        <div className="rounded-xl border border-border bg-card p-5">
+        <div className="reveal reveal-scale rounded-xl border border-border bg-card p-5 card-animated">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-sm font-semibold text-foreground">Modifier l'activité</h2>
             <button
@@ -400,7 +400,9 @@ export default function HRActivities() {
         </div>
       )}
 
-      <DataTable columns={columns} data={filtered} emptyMessage="Aucune activité trouvée" />
+      <div className="reveal reveal-right">
+        <DataTable columns={columns} data={filtered} emptyMessage="Aucune activité trouvée" />
+      </div>
     </div>
   )
 }

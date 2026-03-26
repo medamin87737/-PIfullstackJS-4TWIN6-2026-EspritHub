@@ -14,11 +14,16 @@ import { Competence, CompetenceDocument } from '../users/schemas/competence.sche
 
 // ✅ Schema existant dans activities/schemas/
 import { Activity, ActivityDocument } from '../activities/schemas/activity.schema';
+import { ActivityRequest, ActivityRequestDocument } from './schemas/activity-request.schema';
 
 // ✅ DTOs
 import { ConfirmParticipantsDto } from './dto/confirm-participants.dto';
 import { AddEmployeeDto } from './dto/add-employee.dto';
 import { EvaluateCompetenceDto } from './dto/evaluate-competence.dto';
+import { CreateActivityRequestDto } from './dto/create-activity-request.dto';
+import { ReviewActivityRequestDto } from './dto/review-activity-request.dto';
+import { NotificationsService } from '../notifications/notifications.service';
+import { NotificationType } from '../notifications/schemas/notification.schema';
 
 @Injectable()
 export class ManagerService {
@@ -26,9 +31,142 @@ export class ManagerService {
     @InjectModel(User.name) private userModel: Model<UserDocument>,
     @InjectModel(Department.name) private departmentModel: Model<DepartmentDocument>,
     @InjectModel(Activity.name) private activityModel: Model<ActivityDocument>,
+    @InjectModel(ActivityRequest.name) private activityRequestModel: Model<ActivityRequestDocument>,
     @InjectModel(Fiche.name) private ficheModel: Model<FicheDocument>,
     @InjectModel(Competence.name) private competenceModel: Model<CompetenceDocument>,
+    private readonly notificationsService: NotificationsService,
   ) {}
+
+  async createActivityRequest(managerId: string, dto: CreateActivityRequestDto) {
+    if (!Types.ObjectId.isValid(managerId)) {
+      throw new BadRequestException('ID manager invalide');
+    }
+    const manager = await this.userModel.findById(managerId).select('_id name role department_id').exec();
+    if (!manager || String(manager.role).toUpperCase() !== 'MANAGER') {
+      throw new BadRequestException('Seul un manager peut créer une demande');
+    }
+    if (!manager.department_id) {
+      throw new BadRequestException('Manager non rattaché à un département');
+    }
+
+    const request = await this.activityRequestModel.create({
+      manager_id: manager._id,
+      department_id: manager.department_id,
+      title: dto.title,
+      description: dto.description,
+      objectifs: dto.objectifs,
+      type: dto.type,
+      requiredSkills: dto.requiredSkills,
+      maxParticipants: dto.maxParticipants,
+      startDate: dto.startDate,
+      endDate: dto.endDate,
+      location: dto.location,
+      duration: dto.duration,
+      status: 'PENDING',
+    });
+
+    const hrUsers = await this.userModel
+      .find({ role: { $in: ['HR', 'hr'] }, status: { $in: ['ACTIVE', 'active'] } })
+      .select('_id')
+      .exec();
+
+    for (const hr of hrUsers) {
+      await this.notificationsService.create({
+        userId: hr._id.toString(),
+        type: NotificationType.MANAGER_ACTIVITY_REQUEST_SUBMITTED,
+        title: 'Nouvelle demande activité manager',
+        message: `${manager.name} a soumis une demande: "${dto.title}"`,
+        data: { requestId: request._id.toString() },
+      });
+    }
+
+    return { message: 'Demande envoyée à RH', request };
+  }
+
+  async getMyActivityRequests(managerId: string) {
+    return this.activityRequestModel
+      .find({ manager_id: new Types.ObjectId(managerId) })
+      .sort({ created_at: -1 })
+      .exec();
+  }
+
+  async getActivityRequestsForHR() {
+    return this.activityRequestModel
+      .find({})
+      .populate('manager_id', 'name email matricule')
+      .populate('department_id', 'name code')
+      .sort({ created_at: -1 })
+      .exec();
+  }
+
+  async reviewActivityRequest(hrId: string, requestId: string, dto: ReviewActivityRequestDto) {
+    if (!Types.ObjectId.isValid(requestId)) {
+      throw new BadRequestException('ID demande invalide');
+    }
+    const request = await this.activityRequestModel.findById(requestId).exec();
+    if (!request) throw new NotFoundException('Demande introuvable');
+    if (request.status !== 'PENDING') {
+      throw new BadRequestException('Cette demande a déjà été traitée');
+    }
+
+    request.status = dto.status;
+    request.hr_note = dto.hr_note;
+    request.reviewed_by = new Types.ObjectId(hrId);
+
+    let createdActivity: ActivityDocument | null = null;
+    if (dto.status === 'APPROVED') {
+      createdActivity = await this.activityModel.create({
+        title: request.title,
+        titre: request.title,
+        description: request.description,
+        objectifs: request.objectifs,
+        type: request.type,
+        departmentId: request.department_id.toString(),
+        requiredSkills: request.requiredSkills,
+        maxParticipants: request.maxParticipants,
+        nb_seats: request.maxParticipants,
+        startDate: request.startDate,
+        endDate: request.endDate,
+        date: request.startDate,
+        location: request.location,
+        duration: request.duration,
+        status: 'draft',
+        created_by: hrId,
+      } as any);
+      request.created_activity_id = createdActivity._id as Types.ObjectId;
+    }
+
+    await request.save();
+
+    await this.notificationsService.create({
+      userId: request.manager_id.toString(),
+      type:
+        dto.status === 'APPROVED'
+          ? NotificationType.MANAGER_ACTIVITY_REQUEST_APPROVED
+          : NotificationType.MANAGER_ACTIVITY_REQUEST_REJECTED,
+      title:
+        dto.status === 'APPROVED'
+          ? 'Demande activité approuvée'
+          : 'Demande activité rejetée',
+      message:
+        dto.status === 'APPROVED'
+          ? `Votre demande "${request.title}" a été approuvée par RH.`
+          : `Votre demande "${request.title}" a été rejetée.${dto.hr_note ? ` Motif: ${dto.hr_note}` : ''}`,
+      data: {
+        requestId: request._id.toString(),
+        activityId: createdActivity?._id?.toString(),
+      },
+    });
+
+    return {
+      message:
+        dto.status === 'APPROVED'
+          ? 'Demande approuvée et activité créée'
+          : 'Demande rejetée',
+      request,
+      activity: createdActivity,
+    };
+  }
 
   // ══════════════════════════════════════════
   // 1. VOIR LES ACTIVITÉS DU MANAGER
@@ -37,10 +175,16 @@ export class ManagerService {
     if (!managerId || !Types.ObjectId.isValid(managerId)) {
   throw new BadRequestException('ID manager invalide');
 }
-    // Trouver le département dont ce manager est responsable
-    const department = await this.departmentModel.findOne({
-      manager_id: managerId,
-    });
+    // Prefer explicit department manager mapping; fallback to manager.department_id
+    // because some datasets link manager to department only via user record.
+    let department = await this.departmentModel.findOne({ manager_id: managerId });
+    if (!department) {
+      const manager = await this.userModel.findById(managerId).select('department_id').exec();
+      const managerDepartmentId = manager?.department_id?.toString?.();
+      if (managerDepartmentId && Types.ObjectId.isValid(managerDepartmentId)) {
+        department = await this.departmentModel.findById(managerDepartmentId).exec();
+      }
+    }
 
     if (!department) {
       // Si pas de département assigné, retourner liste vide
@@ -49,7 +193,14 @@ export class ManagerService {
 
     // Récupérer les activités de ce département
     const activities = await this.activityModel
-      .find({ departmentId: department._id.toString() })
+      .find({
+        $or: [
+          { departmentId: department._id.toString() },
+          { departmentId: new Types.ObjectId(department._id) as any },
+          { departement_id: department._id.toString() } as any,
+          { departement_id: new Types.ObjectId(department._id) as any } as any,
+        ],
+      })
       .sort({ startDate: -1 });
 
     return {

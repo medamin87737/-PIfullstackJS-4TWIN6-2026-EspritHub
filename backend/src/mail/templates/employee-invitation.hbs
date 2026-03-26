@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Invitation activité</title>
+  </head>
+  <body style="margin:0;padding:0;background:#f5f7fb;font-family:Arial,sans-serif;color:#1f2937;">
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="padding:24px 0;">
+      <tr>
+        <td align="center">
+          <table role="presentation" width="640" cellspacing="0" cellpadding="0" style="background:#ffffff;border-radius:12px;overflow:hidden;">
+            <tr>
+              <td style="background:#111827;color:#fff;padding:20px 24px;font-size:20px;font-weight:700;">
+                Company Logo
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:24px;">
+                <p style="margin:0 0 16px 0;font-size:16px;">Bonjour {{employeeName}},</p>
+                <p style="margin:0 0 18px 0;font-size:14px;line-height:1.6;">
+                  Vous avez été sélectionné(e) pour participer à l'activité suivante.
+                </p>
+                <table role="presentation" width="100%" cellspacing="0" cellpadding="8" style="border:1px solid #e5e7eb;border-collapse:collapse;font-size:14px;">
+                  <tr><td style="font-weight:700;width:180px;border-bottom:1px solid #e5e7eb;">Titre</td><td style="border-bottom:1px solid #e5e7eb;">{{activityTitle}}</td></tr>
+                  <tr><td style="font-weight:700;width:180px;border-bottom:1px solid #e5e7eb;">Date</td><td style="border-bottom:1px solid #e5e7eb;">{{activityDate}}</td></tr>
+                  <tr><td style="font-weight:700;width:180px;border-bottom:1px solid #e5e7eb;">Lieu</td><td style="border-bottom:1px solid #e5e7eb;">{{activityLocation}}</td></tr>
+                  <tr><td style="font-weight:700;width:180px;">Description</td><td>{{activityDescription}}</td></tr>
+                </table>
+                <table role="presentation" cellspacing="0" cellpadding="0" style="margin-top:24px;">
+                  <tr>
+                    <td style="padding-right:12px;">
+                      <a href="{{acceptUrl}}" style="display:inline-block;background:#10b981;color:#ffffff;padding:12px 20px;border-radius:8px;text-decoration:none;font-weight:700;">Accepter</a>
+                    </td>
+                    <td>
+                      <a href="{{declineUrl}}" style="display:inline-block;background:#ef4444;color:#ffffff;padding:12px 20px;border-radius:8px;text-decoration:none;font-weight:700;">Décliner</a>
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+            <tr>
+              <td style="background:#f3f4f6;padding:16px 24px;color:#6b7280;font-size:12px;">
+                Contact RH: hr@company.com | +216 00 000 000
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>
+

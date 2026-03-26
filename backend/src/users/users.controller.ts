@@ -15,6 +15,9 @@ import {
   BadRequestException,
   UploadedFile,
   UseInterceptors,
+  Req,
+  Res,
+  ServiceUnavailableException,
 } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
@@ -25,6 +28,8 @@ import { JwtAuthGuard } from '../auth/auth/jwt-auth/jwt-auth.guard';
 import { Roles } from '../auth/auth/roles.decorator';
 import { RolesGuard } from '../auth/auth/roles/roles.guard';
 import { FileInterceptor } from '@nestjs/platform-express';
+import { AuthGuard } from '@nestjs/passport';
+import type { Response } from 'express';
 
 @Controller('users')
 export class UsersController {
@@ -51,8 +56,61 @@ export class UsersController {
       throw new UnauthorizedException('Email ou mot de passe incorrect');
     }
 
-    const { access_token } = await this.authService.login(user);
-    return { message: 'Connexion réussie', user: this.usersService.sanitizeUser(user), token: access_token };
+    const { access_token, refresh_token } = await this.authService.login(user);
+    return {
+      message: 'Connexion réussie',
+      user: this.usersService.sanitizeUser(user),
+      token: access_token,
+      refresh_token,
+    };
+  }
+
+  /** Google OAuth login */
+  @Get('google/login')
+  @UseGuards(AuthGuard('google'))
+  async googleLogin() {
+    if (!process.env.GOOGLE_CLIENT_ID || !process.env.GOOGLE_CLIENT_SECRET) {
+      throw new ServiceUnavailableException(
+        'Google OAuth non configuré: définir GOOGLE_CLIENT_ID et GOOGLE_CLIENT_SECRET',
+      );
+    }
+    return { message: 'Redirecting to Google OAuth...' }
+  }
+
+  /** Google OAuth callback */
+  @Get('google/callback')
+  @UseGuards(AuthGuard('google'))
+  async googleCallback(@Req() req: any, @Res() res: Response) {
+    if (!process.env.GOOGLE_CLIENT_ID || !process.env.GOOGLE_CLIENT_SECRET) {
+      const frontend = process.env.FRONTEND_URL ?? 'http://localhost:5173'
+      return res.redirect(`${frontend}/login?error=google_oauth_not_configured`)
+    }
+    const googleUser = req.user as { email: string; name: string; providerId: string } | undefined
+    if (!googleUser?.email) {
+      return res.redirect(`${process.env.FRONTEND_URL ?? 'http://localhost:5173'}/login?error=google_auth_failed`)
+    }
+
+    const user = await this.usersService.findOrCreateGoogleUser(googleUser)
+    const { access_token, refresh_token } = await this.authService.login(user)
+    const sanitized = this.usersService.sanitizeUser(user)
+
+    const frontend = process.env.FRONTEND_URL ?? 'http://localhost:5173'
+    const redirectUrl =
+      `${frontend}/auth/google/callback?token=${encodeURIComponent(access_token)}` +
+      `&refresh_token=${encodeURIComponent(refresh_token)}` +
+      `&user=${encodeURIComponent(JSON.stringify(sanitized))}`
+    return res.redirect(redirectUrl)
+  }
+
+  /** Renouveler le token d'accès via refresh token */
+  @Post('refresh')
+  @HttpCode(HttpStatus.OK)
+  async refresh(@Body('refresh_token') refreshToken: string) {
+    if (!refreshToken) {
+      throw new UnauthorizedException('Refresh token manquant');
+    }
+    const { access_token } = await this.authService.refreshAccessToken(refreshToken);
+    return { token: access_token };
   }
 
   /** Get all users - HR or ADMIN */
@@ -71,6 +129,46 @@ export class UsersController {
   async findOne(@Param('id') id: string) {
     const user = await this.usersService.findById(id);
     return { success: true, message: 'Utilisateur récupéré', data: user };
+  }
+
+  /** Fiches d'un utilisateur - Mongo réel */
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('HR', 'MANAGER', 'ADMIN', 'EMPLOYEE')
+  @Get(':id/fiches')
+  async getUserFiches(@Param('id') id: string, @Req() req: any) {
+    const requesterId = req.user?.sub ?? req.user?.userId;
+    const requesterRole = req.user?.role ?? '';
+    return this.usersService.getUserFiches(id, requesterId, requesterRole);
+  }
+
+  /** Compétences d'une fiche - Mongo réel */
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('HR', 'MANAGER', 'ADMIN', 'EMPLOYEE')
+  @Get('fiches/:ficheId/competences')
+  async getFicheCompetences(@Param('ficheId') ficheId: string, @Req() req: any) {
+    const requesterId = req.user?.sub ?? req.user?.userId;
+    const requesterRole = req.user?.role ?? '';
+    return this.usersService.getFicheCompetences(ficheId, requesterId, requesterRole);
+  }
+
+  /** Liste globale des compétences (HR/ADMIN) */
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('HR', 'ADMIN')
+  @Get('competences/all')
+  async getAllCompetences(@Req() req: any) {
+    const requesterRole = req.user?.role ?? '';
+    const data = await this.usersService.getAllCompetences(requesterRole);
+    return { success: true, data, count: data.length };
+  }
+
+  /** Liste globale des questions compétences (HR/ADMIN) */
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('HR', 'ADMIN')
+  @Get('question-competences/all')
+  async getAllQuestionCompetences(@Req() req: any) {
+    const requesterRole = req.user?.role ?? '';
+    const data = await this.usersService.getAllQuestionCompetences(requesterRole);
+    return { success: true, data, count: data.length };
   }
 
   /** Update user by ID - HR or ADMIN */
@@ -162,11 +260,17 @@ export class UsersController {
         date_embauche: row['date_embauche'],
       };
 
-      // Mot de passe : soit colonne password, soit mot de passe par défaut fort
+      // Mot de passe : soit colonne password, soit mot de passe par défaut configurable
+      const envDefaultPassword = String(process.env.DEFAULT_IMPORT_PASSWORD ?? '').trim()
+      const isStrongEnvPassword =
+        envDefaultPassword.length >= 8 &&
+        /[A-Z]/.test(envDefaultPassword) &&
+        /[a-z]/.test(envDefaultPassword) &&
+        /\d/.test(envDefaultPassword)
       dto.password =
         row['password'] && row['password'].length >= 8
           ? row['password']
-          : 'Password123!';
+          : (isStrongEnvPassword ? envDefaultPassword : 'Password123!');
 
       if (row['status']) {
         dto.status = row['status'].toUpperCase() as any;

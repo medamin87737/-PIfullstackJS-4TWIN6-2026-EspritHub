@@ -220,3 +220,20 @@ Les erreurs courantes :
 - **Update (`PATCH /users/:id`)** : met à jour les champs autorisés (name, telephone, email, date_embauche, department_id, manager_id, status, etc.).
 - **Delete (`DELETE /users/:id`)** : supprime l’utilisateur de la base.
 - **Update Online Status (`PATCH /users/:id/online-status`)** : met à jour le champ `en_ligne` (true/false).
+
+10. Reformulation de prompt (OpenRouter)
+
+But: reformuler le prompt utilisateur dans un format strict (instruction) avant envoi vers votre modèle NLP.
+
+Configuration (mettre dans un fichier `.env` local, non commité) :
+
+- OPENROUTER_API_KEY=...
+- OPENROUTER_MODEL=deepseek/deepseek-chat (optionnel)
+- OPENROUTER_BASE_URL=https://openrouter.ai/api/v1 (optionnel)
+- OPENROUTER_TIMEOUT_MS=20000 (optionnel)
+
+Route :
+
+| Méthode | Route            | Accès | Body JSON (exemple) | Description |
+| ------- | ---------------- | ----- | ------------------- | ----------- |
+| POST    | `/chat/rewrite`  | JWT   | `{ "prompt": "texte utilisateur", "constraints": "regles du langage strict", "outputFormat": "text", "targetLanguage": "fr" }` | Retourne `{ rewritten, model, outputFormat }` |

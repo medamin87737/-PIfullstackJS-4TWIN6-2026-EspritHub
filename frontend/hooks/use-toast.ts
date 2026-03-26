@@ -5,8 +5,9 @@ import * as React from 'react'
 
 import type { ToastActionElement, ToastProps } from '@/components/ui/toast'
 
-const TOAST_LIMIT = 1
-const TOAST_REMOVE_DELAY = 1000000
+const TOAST_LIMIT = 3
+const TOAST_REMOVE_DELAY = 900
+const TOAST_AUTO_CLOSE_MS = 1800
 
 type ToasterToast = ToastProps & {
   id: string
@@ -139,6 +140,34 @@ function dispatch(action: Action) {
 
 type Toast = Omit<ToasterToast, 'id'>
 
+function playToastSound(variant?: ToastProps['variant']) {
+  if (typeof window === 'undefined') return
+  const AudioCtx =
+    window.AudioContext ||
+    (window as typeof window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext
+  if (!AudioCtx) return
+
+  try {
+    const ctx = new AudioCtx()
+    const osc = ctx.createOscillator()
+    const gain = ctx.createGain()
+    osc.type = 'sine'
+    osc.frequency.value = variant === 'destructive' ? 320 : 780
+    gain.gain.setValueAtTime(0.0001, ctx.currentTime)
+    gain.gain.exponentialRampToValueAtTime(0.08, ctx.currentTime + 0.02)
+    gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.22)
+    osc.connect(gain)
+    gain.connect(ctx.destination)
+    osc.start()
+    osc.stop(ctx.currentTime + 0.24)
+    setTimeout(() => {
+      void ctx.close()
+    }, 280)
+  } catch {
+    // ignore sound failures silently
+  }
+}
+
 function toast({ ...props }: Toast) {
   const id = genId()
 
@@ -153,6 +182,8 @@ function toast({ ...props }: Toast) {
     type: 'ADD_TOAST',
     toast: {
       ...props,
+      className: `${props.className ?? ''} toast-dynamic ${props.variant === 'destructive' ? 'toast-dynamic-danger' : ''}`.trim(),
+      duration: props.duration ?? TOAST_AUTO_CLOSE_MS,
       id,
       open: true,
       onOpenChange: (open) => {
@@ -160,6 +191,7 @@ function toast({ ...props }: Toast) {
       },
     },
   })
+  playToastSound(props.variant)
 
   return {
     id: id,

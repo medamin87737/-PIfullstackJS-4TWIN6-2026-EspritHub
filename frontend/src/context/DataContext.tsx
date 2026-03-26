@@ -1,9 +1,16 @@
 import { createContext, useContext, useState, useCallback, useEffect, type ReactNode } from 'react'
 import type { User, Department, Activity, Recommendation, Notification, QuestionCompetence, UserStatus, NotificationType } from '../types'
 import { useAuth } from './AuthContext'
-import { recommendations as mockRecommendations, notifications as mockNotifications } from '../data/mock-data'
 
 const API_BASE_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:3000'
+
+function getAuthStorage(): Storage {
+  return localStorage.getItem('auth_remember_me') === 'true' ? localStorage : sessionStorage
+}
+
+function getAuthItem(key: string): string | null {
+  return localStorage.getItem(key) ?? sessionStorage.getItem(key)
+}
 
 interface DataContextType {
   users: User[]
@@ -33,9 +40,19 @@ interface DataContextType {
     errorCount: number
   }>
   sendNotification: (userId: string, activityId: string | undefined, title: string, message: string, type: NotificationType) => void
+  fetchWithAuth: (url: string, init?: RequestInit) => Promise<Response>
+  refreshNotifications: () => Promise<void>
 }
 
 const DataContext = createContext<DataContextType | undefined>(undefined)
+
+function normalizeRole(role: unknown): 'ADMIN' | 'HR' | 'MANAGER' | 'EMPLOYEE' {
+  const normalized = String(role ?? '').toUpperCase()
+  if (normalized === 'ADMIN' || normalized === 'HR' || normalized === 'MANAGER' || normalized === 'EMPLOYEE') {
+    return normalized
+  }
+  return 'EMPLOYEE'
+}
 
 function mapBackendStatusToFrontend(status: string | undefined): UserStatus {
   switch (status) {
@@ -82,7 +99,7 @@ function mapBackendUserToUi(backendUser: any): User {
     manager_id: backendUser.manager_id ? String(backendUser.manager_id) : null,
     status: mapBackendStatusToFrontend(backendUser.status),
     en_ligne: backendUser.en_ligne ?? false,
-    role: backendUser.role,
+    role: normalizeRole(backendUser.role),
     avatar: backendUser.avatar,
   }
 }
@@ -111,14 +128,153 @@ function mapBackendActivityToUi(a: any): Activity {
   }
 }
 
+function mapBackendDepartmentToUi(d: any): Department {
+  return {
+    id: d?._id?.toString() ?? d?.id ?? crypto.randomUUID(),
+    name: d?.name ?? '',
+    code: d?.code ?? '',
+    description: d?.description ?? '',
+    manager_id: d?.manager_id ?? '',
+    created_at: d?.createdAt ?? new Date().toISOString(),
+    updated_at: d?.updatedAt ?? new Date().toISOString(),
+  }
+}
+
+function mapBackendQuestionCompetenceToUi(q: any): QuestionCompetence {
+  return {
+    id: q?._id?.toString?.() ?? q?.id ?? crypto.randomUUID(),
+    intitule: q?.intitule ?? '',
+    details: q?.details ?? '',
+    status: q?.status === 'active' ? 'active' : 'inactive',
+    created_at: q?.created_at ?? q?.createdAt ?? new Date().toISOString(),
+    updated_at: q?.updated_at ?? q?.updatedAt ?? new Date().toISOString(),
+  }
+}
+
+function mapBackendNotificationTypeToFrontend(type: string | undefined): NotificationType {
+  switch (type) {
+    case 'EMPLOYEE_CONFIRMATION_REQUIRED':
+      return 'activity_assigned'
+    case 'RECOMMENDATION_SENT_TO_MANAGER':
+      return 'recommendation'
+    case 'EMPLOYEE_CONFIRMED':
+      return 'participation_confirmed'
+    case 'MANAGER_APPROVED':
+    case 'MANAGER_REJECTED':
+    case 'EMPLOYEE_DECLINED':
+    default:
+      return 'general'
+  }
+}
+
+function mapBackendNotificationToUi(raw: any, fallbackUserId?: string): Notification {
+  const activityFromData = raw?.data?.activityId ?? raw?.data?.activity_id
+  return {
+    id: String(raw?._id ?? raw?.id ?? crypto.randomUUID()),
+    user_id: String(raw?.userId ?? raw?.user_id ?? fallbackUserId ?? ''),
+    title: raw?.title ?? '',
+    message: raw?.message ?? '',
+    type: mapBackendNotificationTypeToFrontend(raw?.type),
+    read: Boolean(raw?.read),
+    activity_id:
+      raw?.activityId
+        ? String(raw.activityId)
+        : activityFromData
+          ? String(activityFromData)
+          : undefined,
+    created_at:
+      typeof raw?.created_at === 'string'
+        ? raw.created_at
+        : raw?.created_at
+          ? new Date(raw.created_at).toISOString()
+          : new Date().toISOString(),
+  }
+}
+
 export function DataProvider({ children }: { children: ReactNode }) {
   const [users, setUsers] = useState<User[]>([])
   const [departments, setDepartments] = useState<Department[]>([])
   const [activities, setActivities] = useState<Activity[]>([])
-  const [recommendations, setRecommendations] = useState<Recommendation[]>(mockRecommendations)
-  const [notifications, setNotifications] = useState<Notification[]>(mockNotifications)
-  const [questionCompetences] = useState<QuestionCompetence[]>([])
+  const [recommendations, setRecommendations] = useState<Recommendation[]>([])
+  const [notifications, setNotifications] = useState<Notification[]>([])
+  const [questionCompetences, setQuestionCompetences] = useState<QuestionCompetence[]>([])
   const { user } = useAuth()
+
+  const refreshAccessToken = useCallback(async (): Promise<string | null> => {
+    const refreshToken = getAuthItem('auth_refresh_token')
+    if (!refreshToken) return null
+
+    const res = await fetch(`${API_BASE_URL}/users/refresh`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ refresh_token: refreshToken }),
+    })
+
+    if (!res.ok) {
+      localStorage.removeItem('auth_token')
+      localStorage.removeItem('auth_refresh_token')
+      localStorage.removeItem('auth_user')
+      sessionStorage.removeItem('auth_token')
+      sessionStorage.removeItem('auth_refresh_token')
+      sessionStorage.removeItem('auth_user')
+      return null
+    }
+
+    const payload = await res.json()
+    const newAccessToken = payload.token as string | undefined
+    if (!newAccessToken) return null
+    getAuthStorage().setItem('auth_token', newAccessToken)
+    return newAccessToken
+  }, [])
+
+  const fetchWithAuth = useCallback(
+    async (url: string, init: RequestInit = {}) => {
+      let token = getAuthItem('auth_token')
+      if (!token) {
+        token = await refreshAccessToken()
+      }
+      if (!token) {
+        throw new Error('Utilisateur non authentifie')
+      }
+
+      const headers = new Headers(init.headers || {})
+      headers.set('Authorization', `Bearer ${token}`)
+      const firstTry = await fetch(url, { ...init, headers })
+
+      // Some guards return 403 instead of 401 for expired/invalid token.
+      if (firstTry.status !== 401 && firstTry.status !== 403) return firstTry
+
+      const renewedToken = await refreshAccessToken()
+      if (!renewedToken) return firstTry
+
+      const retryHeaders = new Headers(init.headers || {})
+      retryHeaders.set('Authorization', `Bearer ${renewedToken}`)
+      return fetch(url, { ...init, headers: retryHeaders })
+    },
+    [refreshAccessToken],
+  )
+
+  const refreshNotifications = useCallback(async () => {
+    if (!user || !(getAuthItem('auth_token') || getAuthItem('auth_refresh_token'))) {
+      setNotifications([])
+      return
+    }
+
+    try {
+      const res = await fetchWithAuth(`${API_BASE_URL}/notifications/me`)
+      if (!res.ok) {
+        throw new Error(`Erreur fetch notifications: ${res.status}`)
+      }
+      const payload = await res.json()
+      const data = Array.isArray(payload) ? payload : []
+      setNotifications(data.map(n => mapBackendNotificationToUi(n, user.id)))
+    } catch (err) {
+      console.error('Erreur fetch notifications:', err)
+      setNotifications([])
+    }
+  }, [fetchWithAuth, user])
 
   useEffect(() => {
     // Activities (currently public endpoint)
@@ -127,14 +283,23 @@ export function DataProvider({ children }: { children: ReactNode }) {
       .then(data => setActivities(data.map(mapBackendActivityToUi)))
       .catch(err => console.error('Erreur fetch activités:', err))
 
-    // Users (restricted to HR / ADMIN by backend)
-    const token = sessionStorage.getItem('auth_token')
-    if (token) {
-      fetch(`${API_BASE_URL}/users`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      })
+    // Users/departments are restricted to HR / ADMIN by backend.
+    const role = normalizeRole(user?.role)
+    if ((role === 'HR' || role === 'ADMIN') && (getAuthItem('auth_token') || getAuthItem('auth_refresh_token'))) {
+      fetchWithAuth(`${API_BASE_URL}/departments`)
+        .then(res => {
+          if (!res.ok) {
+            throw new Error(`Erreur fetch départements: ${res.status}`)
+          }
+          return res.json()
+        })
+        .then(payload => {
+          const data = Array.isArray(payload.data) ? payload.data : payload
+          setDepartments(data.map(mapBackendDepartmentToUi))
+        })
+        .catch(err => console.error('Erreur fetch départements:', err))
+
+      fetchWithAuth(`${API_BASE_URL}/users`)
         .then(res => {
           if (!res.ok) {
             throw new Error(`Erreur fetch utilisateurs: ${res.status}`)
@@ -146,17 +311,34 @@ export function DataProvider({ children }: { children: ReactNode }) {
           setUsers(data.map(mapBackendUserToUi))
         })
         .catch(err => console.error('Erreur fetch utilisateurs:', err))
+
+      fetchWithAuth(`${API_BASE_URL}/users/question-competences/all`)
+        .then(res => {
+          if (!res.ok) {
+            throw new Error(`Erreur fetch questions compétences: ${res.status}`)
+          }
+          return res.json()
+        })
+        .then(payload => {
+          const data = Array.isArray(payload.data) ? payload.data : payload
+          setQuestionCompetences(data.map(mapBackendQuestionCompetenceToUi))
+        })
+        .catch(err => {
+          console.error('Erreur fetch questions compétences:', err)
+          setQuestionCompetences([])
+        })
     }
-  }, [])
+  }, [fetchWithAuth, user?.role])
+
+  useEffect(() => {
+    void refreshNotifications()
+  }, [refreshNotifications])
 
   const addActivity = useCallback((a: Activity) => setActivities(prev => [a, ...prev]), [])
   const updateActivity = useCallback((a: Activity) => setActivities(prev => prev.map(x => x.id === a.id ? a : x)), [])
   const deleteActivity = useCallback((id: string) => setActivities(prev => prev.filter(x => x.id !== id)), [])
 
   const addUser = useCallback((u: User) => {
-    const token = sessionStorage.getItem('auth_token')
-    if (!token) return
-
     ;(async () => {
       try {
         const payload = {
@@ -171,11 +353,10 @@ export function DataProvider({ children }: { children: ReactNode }) {
           status: mapFrontendStatusToBackend(u.status),
         }
 
-        const res = await fetch(`${API_BASE_URL}/users/register`, {
+        const res = await fetchWithAuth(`${API_BASE_URL}/users/register`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`,
           },
           body: JSON.stringify(payload),
         })
@@ -193,22 +374,14 @@ export function DataProvider({ children }: { children: ReactNode }) {
         console.error('Erreur addUser:', err)
       }
     })()
-  }, [])
+  }, [fetchWithAuth])
 
   const importUsersFromCsv = useCallback(async (file: File) => {
-    const token = sessionStorage.getItem('auth_token')
-    if (!token) {
-      throw new Error('Utilisateur non authentifié')
-    }
-
     const formData = new FormData()
     formData.append('file', file)
 
-    const res = await fetch(`${API_BASE_URL}/users/import-csv`, {
+    const res = await fetchWithAuth(`${API_BASE_URL}/users/import-csv`, {
       method: 'POST',
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
       body: formData,
     })
 
@@ -228,12 +401,9 @@ export function DataProvider({ children }: { children: ReactNode }) {
       createdCount: payload.createdCount ?? mapped.length,
       errorCount: payload.errorCount ?? (Array.isArray(payload.errors) ? payload.errors.length : 0),
     }
-  }, [])
+  }, [fetchWithAuth])
 
   const updateUser = useCallback((u: User) => {
-    const token = sessionStorage.getItem('auth_token')
-    if (!token) return
-
     ;(async () => {
       try {
         const payload: any = {
@@ -247,11 +417,10 @@ export function DataProvider({ children }: { children: ReactNode }) {
           en_ligne: u.en_ligne,
         }
 
-        const res = await fetch(`${API_BASE_URL}/users/${u.id}`, {
+        const res = await fetchWithAuth(`${API_BASE_URL}/users/${u.id}`, {
           method: 'PATCH',
           headers: {
             'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`,
           },
           body: JSON.stringify(payload),
         })
@@ -269,19 +438,13 @@ export function DataProvider({ children }: { children: ReactNode }) {
         console.error('Erreur updateUser:', err)
       }
     })()
-  }, [])
+  }, [fetchWithAuth])
 
   const deleteUser = useCallback((id: string) => {
-    const token = sessionStorage.getItem('auth_token')
-    if (!token) return
-
     ;(async () => {
       try {
-        const res = await fetch(`${API_BASE_URL}/users/${id}`, {
+        const res = await fetchWithAuth(`${API_BASE_URL}/users/${id}`, {
           method: 'DELETE',
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
         })
 
         if (!res.ok) {
@@ -294,7 +457,85 @@ export function DataProvider({ children }: { children: ReactNode }) {
         console.error('Erreur deleteUser:', err)
       }
     })()
-  }, [])
+  }, [fetchWithAuth])
+
+  const addDepartment = useCallback((dept: Department) => {
+    ;(async () => {
+      try {
+        const payload = {
+          name: dept.name,
+          code: dept.code,
+          description: dept.description,
+          manager_id: dept.manager_id || undefined,
+        }
+
+        const res = await fetchWithAuth(`${API_BASE_URL}/departments`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(payload),
+        })
+        if (!res.ok) {
+          console.error('Erreur création département:', await res.text())
+          return
+        }
+        const data = await res.json()
+        const backendDepartment = data.department ?? data
+        setDepartments(prev => [mapBackendDepartmentToUi(backendDepartment), ...prev])
+      } catch (err) {
+        console.error('Erreur addDepartment:', err)
+      }
+    })()
+  }, [fetchWithAuth])
+
+  const updateDepartment = useCallback((dept: Department) => {
+    ;(async () => {
+      try {
+        const payload = {
+          name: dept.name,
+          code: dept.code,
+          description: dept.description,
+          manager_id: dept.manager_id || undefined,
+        }
+
+        const res = await fetchWithAuth(`${API_BASE_URL}/departments/${dept.id}`, {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(payload),
+        })
+        if (!res.ok) {
+          console.error('Erreur mise à jour département:', await res.text())
+          return
+        }
+        const data = await res.json()
+        const backendDepartment = data.department ?? data
+        const mapped = mapBackendDepartmentToUi(backendDepartment)
+        setDepartments(prev => prev.map(d => (d.id === mapped.id ? mapped : d)))
+      } catch (err) {
+        console.error('Erreur updateDepartment:', err)
+      }
+    })()
+  }, [fetchWithAuth])
+
+  const deleteDepartment = useCallback((id: string) => {
+    ;(async () => {
+      try {
+        const res = await fetchWithAuth(`${API_BASE_URL}/departments/${id}`, {
+          method: 'DELETE',
+        })
+        if (!res.ok) {
+          console.error('Erreur suppression département:', await res.text())
+          return
+        }
+        setDepartments(prev => prev.filter(d => d.id !== id))
+      } catch (err) {
+        console.error('Erreur deleteDepartment:', err)
+      }
+    })()
+  }, [fetchWithAuth])
 
   const updateRecommendation = useCallback((rec: Recommendation) => {
     setRecommendations(prev => prev.map(r => (r.id === rec.id ? rec : r)))
@@ -302,7 +543,14 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
   const markNotificationRead = useCallback((id: string) => {
     setNotifications(prev => prev.map(n => (n.id === id ? { ...n, read: true } : n)))
-  }, [])
+    ;(async () => {
+      try {
+        await fetchWithAuth(`${API_BASE_URL}/notifications/${id}/read`, { method: 'PATCH' })
+      } catch (err) {
+        console.error('Erreur markNotificationRead:', err)
+      }
+    })()
+  }, [fetchWithAuth])
 
   const getUnreadCount = useCallback((userId: string) => {
     return notifications.filter(n => n.user_id === userId && !n.read).length
@@ -333,20 +581,28 @@ export function DataProvider({ children }: { children: ReactNode }) {
     setNotifications(prev => [notif, ...prev])
   }, [])
 
+  const getDepartmentName = useCallback((id: string) => {
+    if (!id) return 'N/A'
+    const found = departments.find(d => d.id === id)
+    return found?.name ?? 'N/A'
+  }, [departments])
+
   return (
     <DataContext.Provider value={{
       users, departments, activities, recommendations, notifications, questionCompetences,
       addUser, updateUser, deleteUser,
-      addDepartment: () => {}, updateDepartment: () => {}, deleteDepartment: () => {},
+      addDepartment, updateDepartment, deleteDepartment,
       addActivity, updateActivity, deleteActivity,
       updateRecommendation,
       markNotificationRead,
       getUnreadCount,
       getUserNotifications,
       getActivityRecommendations,
-      getDepartmentName: () => 'N/A',
+      getDepartmentName,
       importUsersFromCsv,
       sendNotification,
+      fetchWithAuth,
+      refreshNotifications,
     }}>
       {children}
     </DataContext.Provider>

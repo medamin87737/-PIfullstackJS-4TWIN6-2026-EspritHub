@@ -19,12 +19,14 @@ export default function AdminQuestions() {
 
   return (
     <div className="flex flex-col gap-6">
-      <div>
+      <div className="reveal reveal-left animate-slide-up">
         <h1 className="text-2xl font-bold text-foreground">Questions de competences</h1>
         <p className="text-sm text-muted-foreground">{questionCompetences.length} categories de competences</p>
       </div>
 
-      <DataTable columns={columns} data={questionCompetences} emptyMessage="Aucune question" />
+      <div className="reveal reveal-right">
+        <DataTable columns={columns} data={questionCompetences} emptyMessage="Aucune question" />
+      </div>
     </div>
   )
 }

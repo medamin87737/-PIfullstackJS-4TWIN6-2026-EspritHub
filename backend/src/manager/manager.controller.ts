@@ -18,6 +18,8 @@ import { ManagerService } from './manager.service';
 import { ConfirmParticipantsDto } from './dto/confirm-participants.dto';
 import { AddEmployeeDto } from './dto/add-employee.dto';
 import { EvaluateCompetenceDto } from './dto/evaluate-competence.dto';
+import { CreateActivityRequestDto } from './dto/create-activity-request.dto';
+import { ReviewActivityRequestDto } from './dto/review-activity-request.dto';
 
 // ✅ Même imports que users.controller.ts
 import { JwtAuthGuard } from '../auth/auth/jwt-auth/jwt-auth.guard';
@@ -39,6 +41,35 @@ async getDashboard(@Request() req) {
   const managerId = req.user.sub ?? req.user.userId;
   return this.managerService.getDashboard(managerId);
 }
+
+  @Post('activity-requests')
+  @Roles('MANAGER')
+  @UsePipes(new ValidationPipe({ whitelist: true }))
+  async createActivityRequest(@Body() dto: CreateActivityRequestDto, @Request() req) {
+    const managerId = req.user.sub ?? req.user.userId;
+    return this.managerService.createActivityRequest(managerId, dto);
+  }
+
+  @Get('activity-requests/my')
+  @Roles('MANAGER')
+  async myRequests(@Request() req) {
+    const managerId = req.user.sub ?? req.user.userId;
+    return this.managerService.getMyActivityRequests(managerId);
+  }
+
+  @Get('activity-requests')
+  @Roles('HR')
+  async getRequestsForHR() {
+    return this.managerService.getActivityRequestsForHR();
+  }
+
+  @Patch('activity-requests/:id/review')
+  @Roles('HR')
+  @UsePipes(new ValidationPipe({ whitelist: true }))
+  async reviewRequest(@Param('id') id: string, @Body() dto: ReviewActivityRequestDto, @Request() req) {
+    const hrId = req.user.sub ?? req.user.userId;
+    return this.managerService.reviewActivityRequest(hrId, id, dto);
+  }
   // ─────────────────────────────────────
   // ACTIVITÉS
   // ─────────────────────────────────────
@@ -49,7 +80,8 @@ async getDashboard(@Request() req) {
    */
   @Get('activities')
   async getMyActivities(@Request() req) {
-    return this.managerService.getMyActivities(req.user.userId);
+    const managerId = req.user.sub ?? req.user.userId;
+    return this.managerService.getMyActivities(managerId);
   }
 
   /**
@@ -78,7 +110,8 @@ async getDashboard(@Request() req) {
     @Body() dto: ConfirmParticipantsDto,
     @Request() req,
   ) {
-    return this.managerService.confirmParticipants(id, dto, req.user.userId);
+    const managerId = req.user.sub ?? req.user.userId;
+    return this.managerService.confirmParticipants(id, dto, managerId);
   }
 
   /**
@@ -105,7 +138,8 @@ async getDashboard(@Request() req) {
    */
   @Get('employees')
   async getMyEmployees(@Request() req) {
-    return this.managerService.getMyEmployees(req.user.userId);
+    const managerId = req.user.sub ?? req.user.userId;
+    return this.managerService.getMyEmployees(managerId);
   }
 
   /**
@@ -117,7 +151,8 @@ async getDashboard(@Request() req) {
     @Query('q') query: string,
     @Request() req,
   ) {
-    return this.managerService.searchEmployees(query, req.user.userId);
+    const managerId = req.user.sub ?? req.user.userId;
+    return this.managerService.searchEmployees(query, managerId);
   }
 
   // ─────────────────────────────────────
@@ -130,7 +165,8 @@ async getDashboard(@Request() req) {
    */
   @Get('employees/:id/fiches')
   async getEmployeeFiches(@Param('id') employeeId: string, @Request() req) {
-    return this.managerService.getEmployeeFiches(employeeId, req.user.userId);
+    const managerId = req.user.sub ?? req.user.userId;
+    return this.managerService.getEmployeeFiches(employeeId, managerId);
   }
 
   /**
@@ -153,6 +189,7 @@ async getDashboard(@Request() req) {
     @Body() dto: EvaluateCompetenceDto,
     @Request() req,
   ) {
-    return this.managerService.evaluateCompetence(dto, req.user.userId);
+    const managerId = req.user.sub ?? req.user.userId;
+    return this.managerService.evaluateCompetence(dto, managerId);
   }
 }

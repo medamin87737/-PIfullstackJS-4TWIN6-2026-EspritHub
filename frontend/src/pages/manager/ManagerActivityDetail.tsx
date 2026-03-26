@@ -1,65 +1,180 @@
-import { useParams, useNavigate } from 'react-router-dom'
+import { useEffect, useMemo, useState } from 'react'
+import { useNavigate, useParams } from 'react-router-dom'
 import { useData } from '../../context/DataContext'
 import StatusBadge from '../../components/shared/StatusBadge'
-import { ArrowLeft, Check, X, Send, Target, TrendingUp } from 'lucide-react'
-import type { Recommendation } from '../../types'
+import { ArrowLeft, Check, Medal, Target, TrendingUp, User, X } from 'lucide-react'
+import { useToast } from '../../../hooks/use-toast'
+
+type ApiRecommendation = {
+  _id: string
+  userId: { _id: string; name: string; email: string; matricule: string } | string
+  score_total: number
+  score_nlp: number
+  score_competences: number
+  rank: number
+  status: 'PENDING' | 'HR_APPROVED' | 'SENT_TO_MANAGER' | 'HR_REJECTED' | 'MANAGER_APPROVED' | 'MANAGER_REJECTED' | 'NOTIFIED' | 'ACCEPTED' | 'DECLINED'
+  absence_reason?: string | null
+  parsed_activity?: { description?: string; required_skills?: { intitule: string; niveau_requis: number; poids: number }[] }
+}
+
+const API_BASE_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:3000'
 
 export default function ManagerActivityDetail() {
   const { id } = useParams()
   const navigate = useNavigate()
-  const { activities, getActivityRecommendations, updateRecommendation, sendNotification } = useData()
+  const { activities, fetchWithAuth } = useData()
+  const { toast } = useToast()
+  const [recs, setRecs] = useState<ApiRecommendation[]>([])
+  const [loadingRecs, setLoadingRecs] = useState(true)
+  const [processingAll, setProcessingAll] = useState(false)
+  const [profileModal, setProfileModal] = useState<{ open: boolean; data?: any }>({ open: false })
+  const [searchQuery, setSearchQuery] = useState('')
+  const [statusFilter, setStatusFilter] = useState<'ALL' | ApiRecommendation['status']>('ALL')
 
-  const activity = activities.find(a => a.id === id)
-  const recs = getActivityRecommendations(id ?? '')
+  const activity = activities.find((a) => a.id === id)
+  const actionableRecs = useMemo(
+    () => recs.filter((r) => ['PENDING', 'HR_APPROVED', 'SENT_TO_MANAGER'].includes(String(r.status))),
+    [recs],
+  )
+  const filteredRecs = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase()
+    return recs.filter((r) => {
+      const userInfo =
+        typeof r.userId === 'string'
+          ? { name: r.userId, email: '', matricule: '' }
+          : r.userId
+      const matchesStatus = statusFilter === 'ALL' ? true : r.status === statusFilter
+      if (!matchesStatus) return false
+      if (!q) return true
+      return (
+        String(userInfo.name ?? '').toLowerCase().includes(q) ||
+        String(userInfo.email ?? '').toLowerCase().includes(q) ||
+        String(userInfo.matricule ?? '').toLowerCase().includes(q)
+      )
+    })
+  }, [recs, searchQuery, statusFilter])
+
+  const extractErrorMessage = async (res: Response, fallback: string) => {
+    try {
+      const data = await res.json()
+      if (typeof data?.message === 'string') return data.message
+      if (Array.isArray(data?.message) && data.message.length > 0) return String(data.message[0])
+      return fallback
+    } catch {
+      return fallback
+    }
+  }
+
+  const loadRecommendations = async () => {
+    if (!id) return
+    setLoadingRecs(true)
+    try {
+      const res = await fetchWithAuth(`${API_BASE_URL}/api/recommendations/activity/${id}`)
+      if (!res.ok) throw new Error(`HTTP ${res.status}`)
+      const rows = (await res.json()) as ApiRecommendation[]
+      setRecs((Array.isArray(rows) ? rows : []).sort((a, b) => Number(a.rank ?? 0) - Number(b.rank ?? 0)))
+    } catch (err) {
+      console.error('Erreur chargement recommandations activité:', err)
+      setRecs([])
+    } finally {
+      setLoadingRecs(false)
+    }
+  }
+
+  useEffect(() => {
+    void loadRecommendations()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [id])
 
   if (!activity) return <div className="p-8 text-center text-muted-foreground">Activite non trouvee</div>
 
-  const confirmRec = (rec: Recommendation) => {
-    updateRecommendation({ ...rec, status: 'confirmed' })
-    sendNotification(
-      rec.employee_id,
-      activity.id,
-      'Participation confirmée',
-      `Votre participation à l'activité "${activity.title}" a été confirmée par le manager.`,
-      'participation_confirmed'
-    )
+  const loadProfile = async (employeeId: string) => {
+    const res = await fetchWithAuth(`${API_BASE_URL}/manager/employees/${employeeId}/fiches`)
+    if (!res.ok) {
+      const message = await extractErrorMessage(res, 'Profil indisponible')
+      toast({ title: 'Erreur', description: message, variant: 'destructive' })
+      return
+    }
+    const data = await res.json()
+    setProfileModal({ open: true, data })
   }
-  const rejectRec = (rec: Recommendation) => updateRecommendation({ ...rec, status: 'rejected' })
+
+  const decide = async (recommendationId: string, action: 'approve' | 'reject') => {
+    if (!id) return
+    const res = await fetchWithAuth(`${API_BASE_URL}/api/recommendations/manager-validate`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ activityId: id, decisions: [{ recommendationId, action }] }),
+    })
+    if (!res.ok) {
+      const message = await extractErrorMessage(res, 'La decision n’a pas pu etre enregistree.')
+      toast({ title: 'Action refusée', description: message, variant: 'destructive' })
+      return
+    }
+    await loadRecommendations()
+    toast({ title: action === 'approve' ? 'Validation confirmée' : 'Validation refusée' })
+  }
+
+  const bulkDecide = async (action: 'approve' | 'reject') => {
+    if (!id || actionableRecs.length === 0 || processingAll) return
+    setProcessingAll(true)
+    try {
+      const res = await fetchWithAuth(`${API_BASE_URL}/api/recommendations/manager-validate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          activityId: id,
+          decisions: actionableRecs.map((r) => ({ recommendationId: r._id, action })),
+        }),
+      })
+      if (!res.ok) {
+        const message = await extractErrorMessage(res, 'Action groupée impossible')
+        toast({ title: 'Erreur', description: message, variant: 'destructive' })
+        return
+      }
+      await loadRecommendations()
+      toast({ title: action === 'approve' ? 'Accepter tous terminé' : 'Rejeter tous terminé' })
+    } finally {
+      setProcessingAll(false)
+    }
+  }
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex items-center gap-3">
+      <div className="reveal reveal-left flex items-center gap-3">
         <button onClick={() => navigate(-1)} className="flex h-9 w-9 items-center justify-center rounded-lg border border-border text-muted-foreground hover:bg-accent">
           <ArrowLeft className="h-4 w-4" />
         </button>
-        <div>
+        <div className="flex-1">
           <h1 className="text-2xl font-bold text-foreground">{activity.title}</h1>
           <p className="text-sm text-muted-foreground">{activity.description}</p>
         </div>
-      </div>
-
-      {/* Activity details */}
-      <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
-        <div className="rounded-xl border border-border bg-card p-4">
-          <span className="text-xs font-medium text-muted-foreground">Type</span>
-          <div className="mt-1"><StatusBadge status={activity.type} /></div>
-        </div>
-        <div className="rounded-xl border border-border bg-card p-4">
-          <span className="text-xs font-medium text-muted-foreground">Places</span>
-          <p className="mt-1 text-lg font-bold text-card-foreground">{activity.seats}</p>
-        </div>
-        <div className="rounded-xl border border-border bg-card p-4">
-          <span className="text-xs font-medium text-muted-foreground">Date</span>
-          <p className="mt-1 text-sm font-medium text-card-foreground">{activity.date}</p>
-        </div>
-        <div className="rounded-xl border border-border bg-card p-4">
-          <span className="text-xs font-medium text-muted-foreground">Lieu</span>
-          <p className="mt-1 text-sm font-medium text-card-foreground">{activity.location}</p>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => void bulkDecide('approve')}
+            disabled={processingAll || actionableRecs.length === 0}
+            className="flex items-center gap-1.5 rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700 disabled:opacity-50"
+          >
+            <Check className="h-4 w-4" /> Accepter tous
+          </button>
+          <button
+            onClick={() => void bulkDecide('reject')}
+            disabled={processingAll || actionableRecs.length === 0}
+            className="flex items-center gap-1.5 rounded-lg border border-border px-4 py-2 text-sm font-medium hover:bg-accent disabled:opacity-50"
+          >
+            <X className="h-4 w-4" /> Rejeter tous
+          </button>
         </div>
       </div>
 
-      {/* Required skills */}
-      <div className="rounded-xl border border-border bg-card p-5">
+      <div className="reveal-grid grid grid-cols-2 gap-4 md:grid-cols-4">
+        <div className="rounded-xl border border-border bg-card p-4"><span className="text-xs font-medium text-muted-foreground">Type</span><div className="mt-1"><StatusBadge status={activity.type} /></div></div>
+        <div className="rounded-xl border border-border bg-card p-4"><span className="text-xs font-medium text-muted-foreground">Places</span><p className="mt-1 text-lg font-bold text-card-foreground">{activity.seats}</p></div>
+        <div className="rounded-xl border border-border bg-card p-4"><span className="text-xs font-medium text-muted-foreground">Date</span><p className="mt-1 text-sm font-medium text-card-foreground">{activity.date}</p></div>
+        <div className="rounded-xl border border-border bg-card p-4"><span className="text-xs font-medium text-muted-foreground">Lieu</span><p className="mt-1 text-sm font-medium text-card-foreground">{activity.location}</p></div>
+      </div>
+
+      <div className="reveal reveal-right rounded-xl border border-border bg-card p-5">
         <h3 className="mb-3 text-sm font-semibold text-card-foreground">Competences requises</h3>
         <div className="flex flex-wrap gap-2">
           {activity.required_skills.map((s, i) => (
@@ -72,52 +187,152 @@ export default function ManagerActivityDetail() {
         </div>
       </div>
 
-      {/* Recommendations */}
-      <div className="rounded-xl border border-border bg-card">
+      <div className="reveal reveal-scale rounded-xl border border-border bg-card">
         <div className="border-b border-border px-5 py-4">
-          <h3 className="text-sm font-semibold text-card-foreground">Employes recommandes ({recs.length})</h3>
+          <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+            <h3 className="text-sm font-semibold text-card-foreground">Employes recommandes ({filteredRecs.length}/{recs.length})</h3>
+            <div className="grid grid-cols-1 gap-2 md:grid-cols-[1fr_180px]">
+              <input
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Recherche dynamique: nom, email, matricule"
+                className="rounded-lg border border-input bg-background px-3 py-2 text-sm"
+              />
+              <select
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value as 'ALL' | ApiRecommendation['status'])}
+                className="rounded-lg border border-input bg-background px-3 py-2 text-sm"
+              >
+                <option value="ALL">Tous statuts</option>
+                <option value="PENDING">PENDING</option>
+                <option value="HR_APPROVED">HR_APPROVED</option>
+                <option value="SENT_TO_MANAGER">SENT_TO_MANAGER</option>
+                <option value="HR_REJECTED">HR_REJECTED</option>
+                <option value="MANAGER_APPROVED">MANAGER_APPROVED</option>
+                <option value="MANAGER_REJECTED">MANAGER_REJECTED</option>
+                <option value="NOTIFIED">NOTIFIED</option>
+                <option value="ACCEPTED">ACCEPTED</option>
+                <option value="DECLINED">DECLINED</option>
+              </select>
+            </div>
+          </div>
         </div>
-        {recs.length === 0 ? (
+        {loadingRecs ? (
+          <p className="px-5 py-8 text-center text-sm text-muted-foreground">Chargement des recommandations...</p>
+        ) : filteredRecs.length === 0 ? (
           <p className="px-5 py-8 text-center text-sm text-muted-foreground">Aucune recommandation disponible</p>
         ) : (
-          <div className="divide-y divide-border">
-            {recs.map(rec => (
-              <div key={rec.id} className="flex items-center justify-between px-5 py-4">
-                <div className="flex items-center gap-3">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-sm font-semibold text-primary">
-                    {rec.employee_name.split(' ').map(n => n[0]).join('').slice(0, 2)}
-                  </div>
-                  <div className="flex flex-col">
-                    <span className="text-sm font-medium text-card-foreground">{rec.employee_name}</span>
-                    <span className="text-xs text-muted-foreground">{rec.employee_department}</span>
-                  </div>
-                </div>
-                <div className="flex items-center gap-4">
-                  <div className="flex items-center gap-2">
-                    <Target className="h-3.5 w-3.5 text-muted-foreground" />
-                    <span className="text-sm font-medium">{rec.match_percentage}%</span>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <TrendingUp className="h-3.5 w-3.5 text-emerald-500" />
-                    <span className="text-sm font-medium text-emerald-600">{rec.global_score}</span>
-                  </div>
-                  <StatusBadge status={rec.status} />
-                  {(rec.status === 'recommended' || rec.status === 'confirmed') && (
-                    <div className="flex items-center gap-1">
-                      <button onClick={() => confirmRec(rec)} className="flex h-8 items-center gap-1 rounded-lg bg-emerald-100 px-3 text-xs font-medium text-emerald-700 hover:bg-emerald-200">
-                        <Check className="h-3.5 w-3.5" /> Confirmer
-                      </button>
-                      <button onClick={() => rejectRec(rec)} className="flex h-8 items-center gap-1 rounded-lg bg-red-100 px-3 text-xs font-medium text-red-700 hover:bg-red-200">
-                        <X className="h-3.5 w-3.5" /> Rejeter
-                      </button>
-                    </div>
-                  )}
-                </div>
-              </div>
-            ))}
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="border-b border-border bg-muted/50">
+                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase text-muted-foreground">Rang</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase text-muted-foreground">Employe</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase text-muted-foreground">Score Total</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase text-muted-foreground">NLP</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase text-muted-foreground">Competences</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase text-muted-foreground">Statut</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase text-muted-foreground">Action</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border">
+                {filteredRecs.map((rec) => {
+                  const userInfo =
+                    typeof rec.userId === 'string'
+                      ? { _id: '', name: rec.userId, email: '-', matricule: '-' }
+                      : rec.userId
+                  const canDecide = ['PENDING', 'HR_APPROVED', 'SENT_TO_MANAGER'].includes(String(rec.status))
+                  return (
+                    <tr key={rec._id} className="hover:bg-muted/30">
+                      <td className="px-4 py-3"><div className="flex items-center gap-2"><Medal className="h-4 w-4 text-primary" /><span className="text-sm font-semibold">{rec.rank}</span></div></td>
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-2">
+                          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-xs font-semibold text-primary">
+                            {userInfo.name.split(' ').map((n) => n[0]).join('').slice(0, 2)}
+                          </div>
+                          <div className="flex flex-col">
+                            <span className="text-sm font-medium text-card-foreground">{userInfo.name}</span>
+                            <span className="text-xs text-muted-foreground">{userInfo.email} · {userInfo.matricule}</span>
+                          </div>
+                        </div>
+                        {rec.parsed_activity?.description && <p className="mt-1 text-xs text-muted-foreground">{rec.parsed_activity.description}</p>}
+                        {rec.parsed_activity?.required_skills && rec.parsed_activity.required_skills.length > 0 && (
+                          <div className="mt-1 flex flex-wrap gap-1.5">
+                            {rec.parsed_activity.required_skills.map((s, idx) => (
+                              <span key={`${rec._id}-${idx}`} className="rounded-full bg-muted px-2 py-1 text-[11px] text-foreground">
+                                {s.intitule} niv {s.niveau_requis} ({Math.round((s.poids ?? 0) * 100)}%)
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                      </td>
+                      <td className="px-4 py-3 text-sm font-semibold">{(Number(rec.score_total) * 100).toFixed(1)}%</td>
+                      <td className="px-4 py-3"><div className="flex items-center gap-2"><Target className="h-3.5 w-3.5 text-muted-foreground" /><span className="text-sm font-medium">{(Number(rec.score_nlp) * 100).toFixed(1)}%</span></div></td>
+                      <td className="px-4 py-3"><div className="flex items-center gap-1"><TrendingUp className="h-3.5 w-3.5 text-emerald-500" /><span className="text-sm font-medium text-emerald-600">{(Number(rec.score_competences) * 100).toFixed(1)}%</span></div></td>
+                      <td className="px-4 py-3">
+                        <StatusBadge status={String(rec.status).toLowerCase()} />
+                        {rec.absence_reason && <p className="mt-1 text-[11px] text-destructive">Motif: {rec.absence_reason}</p>}
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <button
+                            onClick={() => void loadProfile(String(userInfo._id))}
+                            disabled={!userInfo._id}
+                            className="flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-xs font-medium hover:bg-accent disabled:opacity-50"
+                          >
+                            <User className="h-3.5 w-3.5" /> Voir profil
+                          </button>
+                          {canDecide && (
+                            <>
+                              <button onClick={() => void decide(rec._id, 'approve')} className="flex items-center gap-1 rounded-lg bg-emerald-100 px-3 py-1.5 text-xs font-medium text-emerald-700 hover:bg-emerald-200"><Check className="h-3.5 w-3.5" /> Accepter</button>
+                              <button onClick={() => void decide(rec._id, 'reject')} className="flex items-center gap-1 rounded-lg bg-red-100 px-3 py-1.5 text-xs font-medium text-red-700 hover:bg-red-200"><X className="h-3.5 w-3.5" /> Rejeter</button>
+                            </>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
           </div>
         )}
       </div>
+
+      {profileModal.open && (
+        <div className="fixed inset-0 z-[1000] flex items-center justify-center bg-black/50 p-4">
+          <div className="reveal reveal-scale w-full max-w-2xl rounded-xl border border-border bg-card p-5 shadow-2xl">
+            <div className="mb-3 flex items-center justify-between">
+              <h3 className="text-base font-semibold text-card-foreground">Profil employe</h3>
+              <button onClick={() => setProfileModal({ open: false })} className="rounded-lg border border-border px-2 py-1 text-xs hover:bg-accent">Fermer</button>
+            </div>
+            {!profileModal.data ? (
+              <p className="text-sm text-muted-foreground">Chargement...</p>
+            ) : (
+              <div className="space-y-3">
+                <div className="rounded-lg border border-border bg-background p-3">
+                  <p className="text-sm font-medium">{profileModal.data?.employee?.name ?? 'N/A'} ({profileModal.data?.employee?.matricule ?? '-'})</p>
+                  <p className="text-xs text-muted-foreground">Fiches trouvées: {Array.isArray(profileModal.data?.fiches) ? profileModal.data.fiches.length : 0}</p>
+                </div>
+                <div className="max-h-72 overflow-auto rounded-lg border border-border">
+                  <table className="w-full">
+                    <thead><tr className="border-b border-border bg-muted/50"><th className="px-3 py-2 text-left text-xs font-semibold uppercase text-muted-foreground">Saison</th><th className="px-3 py-2 text-left text-xs font-semibold uppercase text-muted-foreground">Etat</th><th className="px-3 py-2 text-left text-xs font-semibold uppercase text-muted-foreground">Date</th></tr></thead>
+                    <tbody className="divide-y divide-border">
+                      {(Array.isArray(profileModal.data?.fiches) ? profileModal.data.fiches : []).map((f: any, idx: number) => (
+                        <tr key={`fiche-${idx}`}>
+                          <td className="px-3 py-2 text-sm">{String(f?.saisons ?? '-')}</td>
+                          <td className="px-3 py-2 text-sm">{String(f?.etat ?? '-')}</td>
+                          <td className="px-3 py-2 text-sm">{f?.createdAt ? new Date(f.createdAt).toLocaleDateString() : '-'}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   )
 }

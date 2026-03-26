@@ -21,9 +21,9 @@ export default function DataTable<T extends { id: string }>({
   emptyMessage = 'Aucune donnee'
 }: DataTableProps<T>) {
   return (
-    <div className="overflow-hidden rounded-xl border border-border bg-card">
+    <div className="overflow-hidden rounded-xl border border-border bg-card card-animated">
       <div className="overflow-x-auto">
-        <table className="w-full">
+        <table className="table-progressive w-full">
           <thead>
             <tr className="border-b border-border bg-muted/50">
               {columns.map((col) => (
@@ -55,7 +55,7 @@ export default function DataTable<T extends { id: string }>({
                   key={item.id}
                   onClick={() => onRowClick?.(item)}
                   className={cn(
-                    'transition-colors hover:bg-muted/30',
+                    'transition-all hover:bg-muted/30 hover:translate-x-0.5',
                     onRowClick && 'cursor-pointer'
                   )}
                 >

@@ -5,6 +5,11 @@ import { UsersModule } from './users/users.module';
 import { AuthModule } from './auth/auth.module';
 import { ActivitiesModule } from './activities/activities.module';
 import { ManagerModule } from './manager/manager.module';
+import { ChatModule } from './chat/chat.module';
+import { RecommendationModule } from './recommendations/recommendation.module';
+import { NotificationsModule } from './notifications/notifications.module';
+import { MailModule } from './mail/mail.module';
+import { AuditModule } from './audit/audit.module';
 
 @Module({
   imports: [
@@ -30,7 +35,13 @@ import { ManagerModule } from './manager/manager.module';
     ActivitiesModule,
     AuthModule,
     ManagerModule,
-    
+    ChatModule,
+    RecommendationModule,
+    NotificationsModule,
+    MailModule,
+    AuditModule,
   ],
+  controllers: [],
+  providers: [],
 })
 export class AppModule {}

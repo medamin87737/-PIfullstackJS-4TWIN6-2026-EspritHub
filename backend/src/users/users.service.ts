@@ -9,12 +9,20 @@ import { InjectModel } from '@nestjs/mongoose';
 import { isValidObjectId, Model, Types } from 'mongoose';
 import * as bcrypt from 'bcrypt';
 import { User, UserDocument, UserRole, UserStatus } from './schemas/user.schema';
+import { Fiche, FicheDocument } from './schemas/fiche.schema';
+import { Competence, CompetenceDocument } from './schemas/competence.schema';
+import { QuestionCompetence, QuestionCompetenceDocument } from './schemas/question-competence.schema';
 import { CreateUserDto } from './dto/create-user.dto';
 import { LoginUserDto } from './dto/login-user.dto';
 
 @Injectable()
 export class UsersService {
-  constructor(@InjectModel(User.name) private userModel: Model<UserDocument>) {}
+  constructor(
+    @InjectModel(User.name) private userModel: Model<UserDocument>,
+    @InjectModel(Fiche.name) private ficheModel: Model<FicheDocument>,
+    @InjectModel(Competence.name) private competenceModel: Model<CompetenceDocument>,
+    @InjectModel(QuestionCompetence.name) private questionCompetenceModel: Model<QuestionCompetenceDocument>,
+  ) {}
 
   /**
    * Créer un nouvel utilisateur (inscription)
@@ -179,6 +187,30 @@ export class UsersService {
     return this.userModel.findOne({ email: email.toLowerCase() });
   }
 
+  async findOrCreateGoogleUser(profile: { email: string; name: string; providerId: string }) {
+    const normalizedEmail = profile.email.trim().toLowerCase()
+    let user = await this.userModel.findOne({ email: normalizedEmail })
+    if (user) return user
+
+    const pseudoMatricule = `GOOG-${profile.providerId.slice(-8).toUpperCase()}`
+    const existingMatricule = await this.userModel.findOne({ matricule: pseudoMatricule })
+    const matricule = existingMatricule ? `GOOG-${Date.now().toString().slice(-8)}` : pseudoMatricule
+    const randomPassword = await bcrypt.hash(`google-${profile.providerId}-${Date.now()}`, 10)
+
+    user = await this.userModel.create({
+      name: profile.name || 'Google User',
+      matricule,
+      telephone: '00000000',
+      email: normalizedEmail,
+      password: randomPassword,
+      date_embauche: new Date(),
+      status: UserStatus.ACTIVE,
+      role: UserRole.EMPLOYEE,
+      en_ligne: false,
+    })
+    return user
+  }
+
   /**
    * Supprimer les informations sensibles de l'utilisateur
    */
@@ -287,6 +319,133 @@ export class UsersService {
       message: `Statut en ligne mis à jour: ${isOnline ? 'en ligne' : 'hors ligne'}`,
       user: this.sanitizeUser(updated),
     };
+  }
+
+  private ensureCanAccessUserData(requesterId: string, requesterRole: string, targetUserId: string) {
+    const role = String(requesterRole ?? '').toUpperCase();
+    if (role === 'ADMIN' || role === 'HR' || role === 'MANAGER') return;
+    if (role === 'EMPLOYEE' && requesterId === targetUserId) return;
+    throw new UnauthorizedException("Accès refusé aux données d'évaluation");
+  }
+
+  async getUserFiches(targetUserId: string, requesterId: string, requesterRole: string) {
+    if (!isValidObjectId(targetUserId)) {
+      throw new BadRequestException('ID utilisateur invalide');
+    }
+    this.ensureCanAccessUserData(requesterId, requesterRole, targetUserId);
+
+    const employee = await this.userModel
+      .findById(targetUserId)
+      .select('_id name matricule email department_id role')
+      .exec();
+    if (!employee) throw new NotFoundException('Utilisateur introuvable');
+
+    const fiches = await this.ficheModel
+      .find({ user_id: new Types.ObjectId(targetUserId) })
+      .sort({ createdAt: -1 })
+      .exec();
+
+    return {
+      employee: {
+        id: employee._id.toString(),
+        name: employee.name,
+        matricule: employee.matricule,
+        email: employee.email,
+        role: employee.role,
+      },
+      fiches,
+      total: fiches.length,
+    };
+  }
+
+  async getFicheCompetences(ficheId: string, requesterId: string, requesterRole: string) {
+    if (!isValidObjectId(ficheId)) {
+      throw new BadRequestException('ID fiche invalide');
+    }
+    const fiche = await this.ficheModel.findById(ficheId).exec();
+    if (!fiche) throw new NotFoundException('Fiche introuvable');
+
+    this.ensureCanAccessUserData(requesterId, requesterRole, String(fiche.user_id));
+
+    const competences = await this.competenceModel
+      .find({ fiches_id: new Types.ObjectId(ficheId) })
+      .populate('question_competence_id', 'intitule details')
+      .sort({ type: 1, createdAt: -1 })
+      .exec();
+
+    return {
+      fiche,
+      competences,
+      total: competences.length,
+    };
+  }
+
+  async getAllCompetences(requesterRole: string) {
+    const role = String(requesterRole ?? '').toUpperCase();
+    if (role !== 'ADMIN' && role !== 'HR') {
+      throw new UnauthorizedException('Accès réservé HR/ADMIN');
+    }
+
+    const rows = await this.competenceModel
+      .find({})
+      .populate('question_competence_id', 'intitule details')
+      .populate({
+        path: 'fiches_id',
+        select: 'user_id saisons etat',
+        populate: { path: 'user_id', select: 'name matricule email role department_id' },
+      })
+      .sort({ updatedAt: -1 })
+      .exec();
+
+    return rows.map((c: any) => ({
+      id: c._id?.toString?.() ?? '',
+      intitule: c.intitule ?? '',
+      type: c.type ?? 'knowledge',
+      auto_eval: Number(c.auto_eval ?? 0),
+      hierarchie_eval: Number(c.hierarchie_eval ?? 0),
+      etat: c.etat ?? 'draft',
+      question: {
+        id: c.question_competence_id?._id?.toString?.() ?? '',
+        intitule: c.question_competence_id?.intitule ?? '',
+        details: c.question_competence_id?.details ?? '',
+      },
+      fiche: {
+        id: c.fiches_id?._id?.toString?.() ?? '',
+        saisons: c.fiches_id?.saisons ?? '',
+        etat: c.fiches_id?.etat ?? '',
+      },
+      user: {
+        id: c.fiches_id?.user_id?._id?.toString?.() ?? '',
+        name: c.fiches_id?.user_id?.name ?? 'N/A',
+        matricule: c.fiches_id?.user_id?.matricule ?? '',
+        email: c.fiches_id?.user_id?.email ?? '',
+        role: c.fiches_id?.user_id?.role ?? '',
+        department_id: c.fiches_id?.user_id?.department_id?.toString?.() ?? '',
+      },
+      created_at: c.createdAt ?? null,
+      updated_at: c.updatedAt ?? null,
+    }));
+  }
+
+  async getAllQuestionCompetences(requesterRole: string) {
+    const role = String(requesterRole ?? '').toUpperCase();
+    if (role !== 'ADMIN' && role !== 'HR') {
+      throw new UnauthorizedException('Accès réservé HR/ADMIN');
+    }
+
+    const rows = await this.questionCompetenceModel
+      .find({})
+      .sort({ updatedAt: -1, createdAt: -1 })
+      .exec();
+
+    return rows.map((q: any) => ({
+      id: q._id?.toString?.() ?? '',
+      intitule: q.intitule ?? '',
+      details: q.details ?? '',
+      status: q.status ?? 'inactive',
+      created_at: q.createdAt ?? null,
+      updated_at: q.updatedAt ?? null,
+    }));
   }
 
 }

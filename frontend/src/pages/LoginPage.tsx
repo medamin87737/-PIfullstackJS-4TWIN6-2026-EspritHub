@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
-import { Eye, EyeOff, LogIn, AlertCircle } from 'lucide-react'
+import { Eye, EyeOff, LogIn, AlertCircle, Mail, Lock, UserRound, KeyRound } from 'lucide-react'
 import type { UserRole } from '../types'
 import { useAccessibility } from '../context/AccessibilityContext'
 import { useI18n } from '../hooks/useI18n'
@@ -12,10 +12,10 @@ const roleRoutes: Record<UserRole, string> = {
   MANAGER: '/manager/dashboard',
   EMPLOYEE: '/employee/dashboard',
 }
-
 export default function LoginPage() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [rememberMe, setRememberMe] = useState(true)
   const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
@@ -25,6 +25,14 @@ export default function LoginPage() {
 
   const t = useI18n()
 
+  useEffect(() => {
+    if (loading) return
+    const rememberedUser = user ?? JSON.parse(localStorage.getItem('auth_user') || 'null')
+    if (rememberedUser?.role) {
+      navigate(roleRoutes[rememberedUser.role as UserRole] || '/login', { replace: true })
+    }
+  }, [loading, navigate, user])
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
@@ -33,22 +41,23 @@ export default function LoginPage() {
     if (!password) { setError(t('errorMissingPassword')); return }
 
     setLoading(true)
-    const success = await login(email, password)
+    const result = await login(email, password, rememberMe)
 
-    if (success) {
-      // petit écran de chargement pour donner une impression de transition
+    if (result.success) {
       setTimeout(() => {
         setLoading(false)
-        const finalUser = user ?? JSON.parse(sessionStorage.getItem('auth_user') || '{}')
+        const finalUser =
+          user ??
+          JSON.parse(localStorage.getItem('auth_user') || sessionStorage.getItem('auth_user') || '{}')
         if (finalUser && finalUser.role) {
           navigate(roleRoutes[finalUser.role as UserRole] || '/login')
         } else {
           setError(t('errorRole'))
         }
-      }, 1000)
+      }, 2000)
     } else {
       setLoading(false)
-      setError(t('errorLogin'))
+      setError(result.message || t('errorLogin'))
     }
   }
 
@@ -93,22 +102,14 @@ export default function LoginPage() {
 
   return (
     <div className="flex min-h-screen">
-      {/* Left - Branding / Hero (assurance) */}
       <div className="relative hidden flex-1 items-center justify-center bg-[#0B3B8A] px-12 py-16 text-white lg:flex overflow-hidden">
-        {/* Cercles de fond animés pour un effet \"assurance\" rassurant */}
         <div className="pointer-events-none absolute inset-0">
-          {/* Cercle bleu : part de l'extrémité haut gauche et se rapproche du centre */}
           <div className="absolute -left-40 -top-40 h-80 w-80 rounded-full bg-white/10 blur-[1px] hero-circle-left" />
-
-          {/* Cercle orange : part de l'extrémité bas droite et se rapproche du centre */}
           <div className="absolute -right-40 -bottom-40 h-80 w-80 rounded-full bg-[#FF7A1A] opacity-25 blur-[1px] hero-circle-right" />
-
-          {/* léger halo doux au centre pour lier les deux */}
           <div className="absolute left-1/2 top-1/3 h-[360px] w-[360px] -translate-x-1/2 rounded-full bg-white/8 hero-circle-soft" />
         </div>
 
         <div className="relative z-10 max-w-xl">
-          {/* Logo + app name */}
           <div className="mb-10 flex items-center gap-4">
             <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-[#FF7A1A] text-3xl font-bold text-white shadow-xl">
               <svg
@@ -139,32 +140,38 @@ export default function LoginPage() {
         </div>
       </div>
 
-      {/* Right - Login Form */}
-      <div className="flex flex-1 items-center justify-center bg-background px-4 py-8 lg:px-8">
-        <div className="w-full max-w-md rounded-2xl bg-card p-8 shadow-xl border border-border">
-          {/* Logo compact dans la carte */}
-          <div className="mb-6 flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-primary text-lg font-bold text-primary-foreground shadow-sm">
-              {/* Remplacez ce SVG par une image si vous avez un vrai logo, par ex.:
-                  <img src=\"/logo.svg\" alt=\"SkillUpTn\" className=\"h-8 w-8\" /> */}
-              <svg
-                viewBox="0 0 24 24"
-                className="h-6 w-6 text-primary-foreground"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2.2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                aria-hidden="true"
-              >
-                <polyline points="13 3 7 14 11 14 9 21 17 9 13 9 15 3" />
-              </svg>
+      <div className="relative flex flex-1 bg-background px-0 py-0 lg:px-0 lg:py-0">
+        {loading && (
+          <div className="absolute inset-0 z-20 flex items-center justify-center bg-background/70 backdrop-blur-sm animate-fade-in">
+            <div className="loader-panel flex flex-col items-center gap-4">
+              <div className="loader-pulse-dots" aria-hidden="true">
+                <span />
+                <span />
+                <span />
+              </div>
+              <div className="loader-bars" aria-hidden="true">
+                <span className="bar bar-1" />
+                <span className="bar bar-2" />
+                <span className="bar bar-3" />
+                <span className="bar bar-4" />
+              </div>
+              <p className="text-xs font-medium tracking-[0.25em] text-shimmer">AUTHENTIFICATION</p>
             </div>
-            <div className="flex flex-col">
-              <span className="text-base font-semibold text-foreground">{t('app.name')}</span>
-              <span className="text-xs text-muted-foreground">
-                {t('app.tagline')}
-              </span>
+          </div>
+        )}
+        {/* Visual intelligent separator between left and right */}
+        <div className="auth-separator" aria-hidden="true" />
+        {/* Full right-side auth panel */}
+        <div className="flex w-full min-h-screen flex-col overflow-y-auto bg-card p-6 shadow-xl border-0 animate-slide-up">
+          <div className="mb-6 flex flex-col items-center gap-2">
+            <div className="relative flex h-14 w-14 items-center justify-center rounded-2xl shadow-sm">
+              <span className="absolute inset-0 rounded-2xl border border-primary/50 animate-pulse" />
+              <span className="absolute -inset-1 rounded-2xl border border-primary/25" />
+              <UserRound className="relative z-10 h-7 w-7 text-primary" />
+            </div>
+            <div className="flex flex-col items-center">
+              <span className="text-base font-semibold text-primary">Connexion</span>
+              <span className="text-[11px] text-muted-foreground">Veuillez vous identifier</span>
             </div>
           </div>
 
@@ -177,19 +184,31 @@ export default function LoginPage() {
 
           <form onSubmit={handleSubmit} className="flex flex-col gap-4" data-accessibility-login="true">
             <div className="flex flex-col gap-1.5">
-              <label htmlFor="email" className="text-sm font-medium text-foreground">{t('email')}</label>
+              <label htmlFor="email" className="flex items-center gap-2">
+                <span className="relative flex h-8 w-8 items-center justify-center rounded-lg">
+                  <span className="absolute inset-0 rounded-lg border border-primary/40" />
+                  <Mail className="relative z-10 h-4 w-4 text-primary" />
+                </span>
+                <span className="text-sm font-semibold text-muted-foreground">{t('email')}</span>
+              </label>
               <input
                 id="email"
                 type="email"
                 placeholder={t('emailPlaceholder')}
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="h-11 rounded-lg border border-input bg-background px-4 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                className="h-11 w-full rounded-lg border border-input bg-background px-4 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
               />
             </div>
 
             <div className="flex flex-col gap-1.5">
-              <label htmlFor="password" className="text-sm font-medium text-foreground">{t('password')}</label>
+              <label htmlFor="password" className="flex items-center gap-2">
+                <span className="relative flex h-8 w-8 items-center justify-center rounded-lg">
+                  <span className="absolute inset-0 rounded-lg border border-primary/40" />
+                  <Lock className="relative z-10 h-4 w-4 text-primary" />
+                </span>
+                <span className="text-sm font-semibold text-muted-foreground">{t('password')}</span>
+              </label>
               <div className="relative">
                 <input
                   id="password"
@@ -209,14 +228,40 @@ export default function LoginPage() {
                 </button>
               </div>
             </div>
+            <div className="flex justify-end">
+              <a
+                href="#"
+                className="inline-flex items-center gap-2 text-xs font-medium text-muted-foreground transition-all hover:text-primary hover:underline"
+              >
+                <span className="relative flex h-6 w-6 items-center justify-center rounded-md bg-muted">
+                  <span className="absolute inset-0 rounded-md border border-primary/40 animate-pulse" />
+                  <KeyRound className="relative z-10 h-3.5 w-3.5 text-primary" />
+                </span>
+                <span>Mot de passe oublie ?</span>
+              </a>
+            </div>
+
+            <label className="flex items-center gap-2 text-sm text-muted-foreground">
+              <input
+                type="checkbox"
+                checked={rememberMe}
+                onChange={(e) => setRememberMe(e.target.checked)}
+                className="h-4 w-4 rounded border-border"
+              />
+              Se souvenir de moi
+            </label>
 
             <button
               type="submit"
               disabled={loading}
-              className="mt-2 flex h-11 items-center justify-center gap-2 rounded-lg bg-primary font-medium text-primary-foreground transition-opacity hover:opacity-90 disabled:opacity-50"
+              className="mt-2 flex h-11 w-full items-center justify-center gap-2 rounded-lg bg-primary font-medium text-primary-foreground transition-opacity hover:opacity-90 disabled:opacity-50"
             >
               {loading ? (
-                <div className="h-5 w-5 animate-spin rounded-full border-2 border-primary-foreground border-t-transparent" />
+                <div className="loader-pulse-dots loader-pulse-dots-inline" aria-hidden="true">
+                  <span />
+                  <span />
+                  <span />
+                </div>
               ) : (
                 <>
                   <LogIn className="h-4 w-4" />
@@ -225,7 +270,6 @@ export default function LoginPage() {
               )}
             </button>
           </form>
-
         </div>
       </div>
     </div>

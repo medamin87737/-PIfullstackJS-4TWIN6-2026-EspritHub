@@ -1,25 +1,64 @@
+import { useEffect, useState } from 'react'
 import { useAuth } from '../../context/AuthContext'
 import { useData } from '../../context/DataContext'
 import StatusBadge from '../../components/shared/StatusBadge'
 import { Mail, Phone, Calendar, Building2, User } from 'lucide-react'
-import { competences, fiches } from '../../data/mock-data'
+
+const API_BASE_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:3000'
+
+type ApiCompetence = {
+  _id?: string
+  id?: string
+  intitule?: string
+  type?: string
+  auto_eval?: number
+  hierarchie_eval?: number
+  etat?: string
+}
 
 export default function EmployeeProfile() {
   const { user } = useAuth()
-  const { getDepartmentName } = useData()
+  const { getDepartmentName, fetchWithAuth } = useData()
+  const [userCompetences, setUserCompetences] = useState<ApiCompetence[]>([])
 
   if (!user) return null
 
-  const userFiches = fiches.filter(f => f.user_id === user.id)
-  const userCompetences = competences.filter(c => userFiches.some(f => f.id === c.fiches_id))
+  useEffect(() => {
+    const load = async () => {
+      try {
+        if (!user?.id) return
+        const fichesRes = await fetchWithAuth(`${API_BASE_URL}/users/${user.id}/fiches`)
+        if (!fichesRes.ok) {
+          setUserCompetences([])
+          return
+        }
+        const fichesPayload = await fichesRes.json()
+        const fiches = Array.isArray(fichesPayload?.fiches) ? fichesPayload.fiches : []
+        const allCompetences: ApiCompetence[] = []
+        for (const f of fiches) {
+          const fid = String(f?._id ?? f?.id ?? '')
+          if (!fid) continue
+          const compRes = await fetchWithAuth(`${API_BASE_URL}/users/fiches/${fid}/competences`)
+          if (!compRes.ok) continue
+          const compPayload = await compRes.json()
+          const competences = Array.isArray(compPayload?.competences) ? compPayload.competences : []
+          allCompetences.push(...competences)
+        }
+        setUserCompetences(allCompetences)
+      } catch {
+        setUserCompetences([])
+      }
+    }
+    void load()
+  }, [fetchWithAuth, user?.id])
 
   return (
     <div className="flex flex-col gap-6">
-      <h1 className="text-2xl font-bold text-foreground">Mon Profil</h1>
+      <h1 className="reveal reveal-left animate-slide-up text-2xl font-bold text-foreground">Mon Profil</h1>
 
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+      <div className="reveal-grid grid grid-cols-1 gap-6 lg:grid-cols-3">
         {/* Profile card */}
-        <div className="rounded-xl border border-border bg-card p-6">
+        <div className="reveal reveal-right rounded-xl border border-border bg-card p-6 card-animated">
           <div className="flex flex-col items-center gap-4">
             <div className="flex h-20 w-20 items-center justify-center rounded-full bg-primary text-2xl font-bold text-primary-foreground">
               {user.name.split(' ').map(n => n[0]).join('').slice(0, 2)}
@@ -51,19 +90,19 @@ export default function EmployeeProfile() {
         </div>
 
         {/* Skills */}
-        <div className="col-span-2 rounded-xl border border-border bg-card p-6">
+        <div className="reveal reveal-scale col-span-2 rounded-xl border border-border bg-card p-6 card-animated">
           <h3 className="mb-4 text-sm font-semibold text-card-foreground">Mes competences evaluees</h3>
           {userCompetences.length === 0 ? (
-            <p className="py-8 text-center text-sm text-muted-foreground">Aucune competence evaluee</p>
+            <p className="py-8 text-center text-sm text-muted-foreground">Aucune competence disponible depuis MongoDB</p>
           ) : (
             <div className="flex flex-col gap-4">
-              {userCompetences.map(c => (
-                <div key={c.id} className="rounded-lg border border-border bg-background p-4">
+              {userCompetences.map((c, idx) => (
+                <div key={`${String(c._id ?? c.id ?? idx)}`} className="rounded-lg border border-border bg-background p-4 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-sm">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                      <span className="text-sm font-medium text-card-foreground">{c.intitule}</span>
-                      <StatusBadge status={c.type} />
-                      <StatusBadge status={c.etat} />
+                      <span className="text-sm font-medium text-card-foreground">{String(c.intitule ?? 'N/A')}</span>
+                      <StatusBadge status={String(c.type ?? 'knowledge')} />
+                      <StatusBadge status={String(c.etat ?? 'draft')} />
                     </div>
                   </div>
                   <div className="mt-3 grid grid-cols-2 gap-4">
@@ -71,18 +110,18 @@ export default function EmployeeProfile() {
                       <span className="text-xs text-muted-foreground">Auto-evaluation</span>
                       <div className="mt-1 flex items-center gap-2">
                         <div className="h-2 flex-1 rounded-full bg-muted">
-                          <div className="h-2 rounded-full bg-primary" style={{ width: `${(c.auto_eval / 10) * 100}%` }} />
+                          <div className="h-2 rounded-full bg-primary" style={{ width: `${(Number(c.auto_eval ?? 0) / 10) * 100}%` }} />
                         </div>
-                        <span className="text-sm font-bold text-card-foreground">{c.auto_eval}/10</span>
+                        <span className="text-sm font-bold text-card-foreground">{Number(c.auto_eval ?? 0)}/10</span>
                       </div>
                     </div>
                     <div>
                       <span className="text-xs text-muted-foreground">Evaluation hierarchie</span>
                       <div className="mt-1 flex items-center gap-2">
                         <div className="h-2 flex-1 rounded-full bg-muted">
-                          <div className="h-2 rounded-full bg-secondary" style={{ width: `${(c.hierarchie_eval / 10) * 100}%` }} />
+                          <div className="h-2 rounded-full bg-secondary" style={{ width: `${(Number(c.hierarchie_eval ?? 0) / 10) * 100}%` }} />
                         </div>
-                        <span className="text-sm font-bold text-card-foreground">{c.hierarchie_eval}/10</span>
+                        <span className="text-sm font-bold text-card-foreground">{Number(c.hierarchie_eval ?? 0)}/10</span>
                       </div>
                     </div>
                   </div>
