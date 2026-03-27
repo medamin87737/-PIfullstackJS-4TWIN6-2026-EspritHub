@@ -9,6 +9,7 @@ import { Fiche, FicheDocument } from '../users/schemas/fiche.schema'
 import { Competence, CompetenceDocument } from '../users/schemas/competence.schema'
 import { Activity, ActivityDocument } from '../activities/schemas/activity.schema'
 import { Department, DepartmentDocument } from '../users/schemas/department.schema'
+import { QuestionCompetence, QuestionCompetenceDocument } from '../users/schemas/question-competence.schema'
 import { Recommendation, RecommendationDocument } from './schemas/recommendation.schema'
 import { ActivityHistory, ActivityHistoryDocument } from './schemas/activity-history.schema'
 import { NotificationsService } from '../notifications/notifications.service'
@@ -36,6 +37,7 @@ export class RecommendationService {
     @InjectModel(User.name) private readonly userModel: Model<UserDocument>,
     @InjectModel(Fiche.name) private readonly ficheModel: Model<FicheDocument>,
     @InjectModel(Competence.name) private readonly competenceModel: Model<CompetenceDocument>,
+    @InjectModel(QuestionCompetence.name) private readonly questionCompetenceModel: Model<QuestionCompetenceDocument>,
     @InjectModel(Activity.name) private readonly activityModel: Model<ActivityDocument>,
     @InjectModel(Department.name) private readonly departmentModel: Model<DepartmentDocument>,
     @InjectModel(Recommendation.name) private readonly recommendationModel: Model<RecommendationDocument>,
@@ -47,6 +49,100 @@ export class RecommendationService {
 
   private aiServiceUrl(): string {
     return process.env.AI_SERVICE_URL ?? 'http://localhost:8000'
+  }
+
+  private normalizeSkillKey(value: unknown): string {
+    return String(value ?? '')
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase()
+      .trim()
+      .replace(/\s+/g, ' ')
+  }
+
+  private sanitizeRequestedSkillName(raw: string): string {
+    let name = String(raw ?? '').trim()
+    // Remove common lead-in phrases from free prompts.
+    // Run multiple passes to clean combined prefixes like:
+    // "trouver 10 profil Analyse de donnees".
+    for (let i = 0; i < 3; i += 1) {
+      const before = name
+      name = name.replace(/^(trouver|trouve|chercher|cherche|identifier|identifie|generer|genere)\s+/i, '')
+      name = name.replace(/^\d+\s+profils?\s+/i, '')
+      name = name.replace(/^(profil|profils)\s+/i, '')
+      name = name.trim()
+      if (name === before) break
+    }
+    name = name.replace(/^(competences?\s+obligatoires?\s+et\s+niveaux?\s+cibles?\s*:\s*)/i, '')
+    name = name.replace(/[.,;:!?]+$/g, '')
+    return name.replace(/\s+/g, ' ').trim()
+  }
+
+  private extractRequestedSkillsFromPrompt(prompt: string): string[] {
+    const text = String(prompt ?? '')
+    const byLevel = Array.from(
+      text.matchAll(/(?:^|[\n;,])\s*(?:-\s*)?([^\n;,]{2,120}?)\s*(?:niveau|level|niv|lvl|n\.?)\s*([1-5])/gi),
+    )
+      .map((m) => this.sanitizeRequestedSkillName(String(m?.[1] ?? '').trim()))
+      .filter((name) => name.length > 0)
+
+    const byBullet = Array.from(text.matchAll(/^\s*-\s*([^\n]{2,120})$/gim))
+      .map((m) => this.sanitizeRequestedSkillName(String(m?.[1] ?? '').trim()))
+      .filter((name) => name.length > 0)
+
+    const unique = new Map<string, string>()
+    for (const name of [...byLevel, ...byBullet]) {
+      const key = this.normalizeSkillKey(name)
+      if (!key) continue
+      if (!unique.has(key)) unique.set(key, name.replace(/\s+/g, ' '))
+    }
+    return Array.from(unique.values())
+  }
+
+  private extractTopNFromPrompt(prompt: string): number | null {
+    const text = String(prompt ?? '')
+    const m1 = text.match(/\btop[_\s-]*n\s*[:=]?\s*(\d{1,4})\b/i)?.[1]
+    const m2 = text.match(/\b(trouver|trouve|chercher|cherche|identifier|identifie)\s+(\d{1,4})\s+profils?\b/i)?.[2]
+    const raw = Number(m1 ?? m2 ?? 0)
+    if (!Number.isFinite(raw) || raw <= 0) return null
+    return Math.max(1, Math.min(500, raw))
+  }
+
+  private tokenJaccard(a: string, b: string): number {
+    const ta = new Set(a.split(' ').filter(Boolean))
+    const tb = new Set(b.split(' ').filter(Boolean))
+    if (ta.size === 0 || tb.size === 0) return 0
+    let inter = 0
+    for (const t of ta) if (tb.has(t)) inter += 1
+    const union = new Set([...ta, ...tb]).size
+    return union > 0 ? inter / union : 0
+  }
+
+  private requiredLevelToNumber(raw: any): number {
+    const direct = Number(raw?.niveau_requis ?? raw?.niveau ?? 0)
+    if (Number.isFinite(direct) && direct >= 1 && direct <= 5) return Math.round(direct)
+    const desired = String(raw?.desired_level ?? '').toLowerCase()
+    if (desired === 'low') return 2
+    if (desired === 'high') return 4
+    if (desired === 'expert') return 5
+    return 3
+  }
+
+  private skillDeltaFromRequiredLevel(level: number): number {
+    // Level-aware delta: higher required level => stronger impact.
+    // L1=0.20, L2=0.30, L3=0.40, L4=0.50, L5=0.60
+    const clamped = Math.max(1, Math.min(5, Number(level) || 3))
+    return Number((0.1 + clamped * 0.1).toFixed(2))
+  }
+
+  private hasSkillInDataset(requestedSkill: string, availableSkills: string[]): boolean {
+    const req = this.normalizeSkillKey(requestedSkill)
+    if (!req) return false
+    if (availableSkills.includes(req)) return true
+    return availableSkills.some((skill) => {
+      if (skill.includes(req) || req.includes(skill)) return true
+      return this.tokenJaccard(req, skill) >= 0.72
+    })
   }
 
   private async sendAiFeedback(payload: {
@@ -77,9 +173,13 @@ export class RecommendationService {
     justification?: string,
   ) {
     const activityTitle = await this.getActivityTitle(activity)
-    const requiredSkills = Array.isArray((rec as any).parsed_activity?.required_skills)
+    const requiredSkillsFromRec = Array.isArray((rec as any).parsed_activity?.required_skills)
       ? (rec as any).parsed_activity.required_skills
       : []
+    const requiredSkillsFromActivity = Array.isArray((activity as any)?.requiredSkills)
+      ? (activity as any).requiredSkills.map((s: any) => ({ intitule: s?.skill_name }))
+      : []
+    const requiredSkills = requiredSkillsFromRec.length > 0 ? requiredSkillsFromRec : requiredSkillsFromActivity
 
     const latestFiche = await this.ficheModel
       .findOne({ user_id: new Types.ObjectId(employeeId) })
@@ -87,7 +187,7 @@ export class RecommendationService {
       .exec()
 
     const skillUpdates: any[] = []
-    if (response === 'ACCEPTED' && latestFiche && requiredSkills.length > 0) {
+    if ((response === 'ACCEPTED' || response === 'DECLINED') && latestFiche && requiredSkills.length > 0) {
       const competences = await this.competenceModel
         .find({ fiches_id: latestFiche._id })
         .exec()
@@ -100,9 +200,13 @@ export class RecommendationService {
 
         const beforeAuto = Number(comp.auto_eval ?? 0)
         const beforeManager = Number(comp.hierarchie_eval ?? 0)
-        // Small controlled progression bump after accepted participation.
-        const afterAuto = Math.min(10, Number((beforeAuto + 0.5).toFixed(2)))
-        const afterManager = Math.min(10, Number((beforeManager + 0.5).toFixed(2)))
+        // Link progression directly to required skills + level:
+        // acceptance increases, decline decreases (bounded to [0, 10]).
+        const level = this.requiredLevelToNumber(req)
+        const magnitude = this.skillDeltaFromRequiredLevel(level)
+        const delta = response === 'ACCEPTED' ? magnitude : -magnitude
+        const afterAuto = Math.max(0, Math.min(10, Number((beforeAuto + delta).toFixed(2))))
+        const afterManager = Math.max(0, Math.min(10, Number((beforeManager + delta).toFixed(2))))
 
         comp.auto_eval = afterAuto
         comp.hierarchie_eval = afterManager
@@ -113,7 +217,9 @@ export class RecommendationService {
           intitule: comp.intitule,
           before: { auto_eval: beforeAuto, hierarchie_eval: beforeManager },
           after: { auto_eval: afterAuto, hierarchie_eval: afterManager },
-          source: 'activity_acceptance',
+          level_required: level,
+          delta_applied: delta,
+          source: response === 'ACCEPTED' ? 'activity_acceptance' : 'activity_decline',
         })
       }
     }
@@ -131,6 +237,22 @@ export class RecommendationService {
       },
       { upsert: true, new: true, setDefaultsOnInsert: true },
     )
+
+    if (skillUpdates.length > 0) {
+      const direction = response === 'ACCEPTED' ? 'augmenté' : 'diminué'
+      const topLines = skillUpdates
+        .slice(0, 4)
+        .map((s) => `${s.intitule} (niveau ${s.level_required}, ${s.delta_applied > 0 ? '+' : ''}${s.delta_applied})`)
+        .join(', ')
+      const more = skillUpdates.length > 4 ? ', ...' : ''
+      await this.notificationService.create({
+        userId: employeeId,
+        type: response === 'ACCEPTED' ? NotificationType.EMPLOYEE_ACCEPTED : NotificationType.EMPLOYEE_DECLINED,
+        title: 'Mise à jour de vos compétences',
+        message: `Suite à votre réponse à l'activité "${activityTitle}", vos scores de compétences ont été ${direction}: ${topLines}${more}.`,
+        data: { activityId, response, skill_updates: skillUpdates },
+      })
+    }
   }
 
   private resolveUserId(reqUserId: string): Types.ObjectId {
@@ -277,10 +399,61 @@ export class RecommendationService {
     if (!activity) throw new HttpException('Activity not found', HttpStatus.NOT_FOUND)
 
     const activityDepartment = await this.getDepartmentByActivity(activity)
-    const employees = await this.getEligibleEmployees(activityDepartment?._id?.toString())
+    const requestedTopN = this.extractTopNFromPrompt(hrPrompt)
+    let employees = await this.getEligibleEmployees(activityDepartment?._id?.toString())
+    // Exclude employees who already declined this specific activity,
+    // so RH regeneration effectively replaces refused profiles.
+    const declinedRows = await this.recommendationModel
+      .find({ activityId: new Types.ObjectId(activityId), status: 'EMPLOYEE_DECLINED' })
+      .select('userId')
+      .exec()
+    const declinedEmployeeIds = new Set(
+      declinedRows.map((r: any) => String(r?.userId ?? '')).filter((id: string) => id.length > 0),
+    )
+    if (declinedEmployeeIds.size > 0) {
+      employees = employees.filter((e) => !declinedEmployeeIds.has(String(e.id)))
+    }
+    // If the department scope is too small for requested Top_n, broaden to all active employees.
+    if (requestedTopN && employees.length < requestedTopN) {
+      const globalEmployees = await this.getEligibleEmployees()
+      if (globalEmployees.length > employees.length) {
+        employees = globalEmployees.filter((e) => !declinedEmployeeIds.has(String(e.id)))
+      }
+    }
     if (employees.length === 0) {
       throw new HttpException('No active employees found for recommendation generation', HttpStatus.BAD_REQUEST)
     }
+
+    // Strict guardrail: when the HR prompt explicitly names skills with level
+    // (e.g., "React niveau 4"), every requested skill must exist in current data.
+    const employeeSkills = employees
+      .flatMap((e) => Array.isArray(e.competences) ? e.competences : [])
+      .map((c: any) => this.normalizeSkillKey(c?.intitule))
+      .filter(Boolean)
+    const [catalogCompetences, catalogQuestions] = await Promise.all([
+      this.competenceModel.find({}).select('intitule').lean().exec(),
+      this.questionCompetenceModel.find({ status: { $in: ['active', 'ACTIVE'] } }).select('intitule').lean().exec(),
+    ])
+    const availableSkills = Array.from(
+      new Set([
+        ...employeeSkills,
+        ...catalogCompetences.map((c: any) => this.normalizeSkillKey(c?.intitule)).filter(Boolean),
+        ...catalogQuestions.map((q: any) => this.normalizeSkillKey(q?.intitule)).filter(Boolean),
+      ]),
+    )
+    const promptRequestedSkills = this.extractRequestedSkillsFromPrompt(hrPrompt)
+    const missingPromptSkills = promptRequestedSkills.filter(
+      (name) => !this.hasSkillInDataset(name, availableSkills),
+    )
+    if (missingPromptSkills.length > 0) {
+      const preview = missingPromptSkills.slice(0, 8).join(', ')
+      const suffix = missingPromptSkills.length > 8 ? ', ...' : ''
+      throw new HttpException(
+        `Compétence(s) non trouvée(s): ${preview}${suffix}. Vérifiez vos données dans la base.`,
+        HttpStatus.BAD_REQUEST,
+      )
+    }
+
     let aiData: any
     try {
       const response = await firstValueFrom(
@@ -294,7 +467,84 @@ export class RecommendationService {
       throw new HttpException('AI recommendation service unavailable', HttpStatus.SERVICE_UNAVAILABLE)
     }
 
-    const recommendations = Array.isArray(aiData?.recommendations) ? aiData.recommendations : []
+    const recommendationsRaw = Array.isArray(aiData?.recommendations) ? aiData.recommendations : []
+    const parsedTopN = Number(aiData?.parsed_activity?.top_n ?? 0)
+    const targetTopN = requestedTopN ?? (Number.isFinite(parsedTopN) && parsedTopN > 0 ? Math.max(1, Math.min(500, parsedTopN)) : null)
+    let recommendations = targetTopN
+      ? [...recommendationsRaw]
+          .sort((a: any, b: any) => {
+            const rankA = Number(a?.rank ?? Number.MAX_SAFE_INTEGER)
+            const rankB = Number(b?.rank ?? Number.MAX_SAFE_INTEGER)
+            if (rankA !== rankB) return rankA - rankB
+            return Number(b?.score_total ?? 0) - Number(a?.score_total ?? 0)
+          })
+          .slice(0, targetTopN)
+      : recommendationsRaw
+
+    // Safety net: some AI responses return fewer rows than requested Top_n.
+    // Complete from remaining eligible employees to respect requested cardinality.
+    if (targetTopN) {
+      const targetCount = Math.min(targetTopN, employees.length)
+      if (recommendations.length < targetCount) {
+        const existing = new Set(
+          recommendations
+            .map((r: any) => String(r?.employee_id ?? ''))
+            .filter((id: string) => id.length > 0),
+        )
+        const missingEmployees = employees.filter((e) => !existing.has(String(e.id)))
+        const nextRankStart = recommendations.length + 1
+        const filler = missingEmployees.slice(0, targetCount - recommendations.length).map((e, idx) => ({
+          employee_id: String(e.id),
+          score_total: 0,
+          score_nlp: 0,
+          score_competences: 0,
+          score_progression: 0,
+          score_history: 0,
+          score_seniority: 0,
+          rank: nextRankStart + idx,
+          matched_skills: [],
+          recommendation_reason:
+            'Ajout automatique pour completer Top_n; profil disponible mais non classe par le modele IA dans la reponse initiale.',
+        }))
+        recommendations = [...recommendations, ...filler]
+      }
+    }
+    const requestedSkills = Array.isArray(aiData?.parsed_activity?.required_skills)
+      ? aiData.parsed_activity.required_skills
+      : []
+    const requestedNames = requestedSkills
+      .map((s: any) => String(s?.intitule ?? '').trim())
+      .filter(Boolean)
+    const isGenericSkillLabel = (name: string) => {
+      const key = this.normalizeSkillKey(name)
+      return (
+        key === 'competence generale' ||
+        key === 'general skill' ||
+        key === 'competence' ||
+        key === 'technical skills' ||
+        key === 'soft skills' ||
+        key === 'hard skills'
+      )
+    }
+    const parsedSpecificNames = requestedNames.filter((n) => !isGenericSkillLabel(n))
+    // If AI parser returns generic placeholders (e.g., "compétence générale"),
+    // trust HR prompt extraction instead of blocking on a false missing skill.
+    const validationNames =
+      parsedSpecificNames.length > 0
+        ? Array.from(new Set([...parsedSpecificNames, ...promptRequestedSkills]))
+        : promptRequestedSkills
+    const missingRequestedSkills = validationNames.filter(
+      (name) => !this.hasSkillInDataset(name, availableSkills),
+    )
+    if (missingRequestedSkills.length > 0) {
+      const preview = missingRequestedSkills.slice(0, 8).join(', ')
+      const suffix = missingRequestedSkills.length > 8 ? ', ...' : ''
+      throw new HttpException(
+        `Compétence(s) non trouvée(s): ${preview}${suffix}. Vérifiez vos données de compétences puis réessayez.`,
+        HttpStatus.BAD_REQUEST,
+      )
+    }
+
     await this.recommendationModel.deleteMany({ activityId: new Types.ObjectId(activityId) }).exec()
 
     if (recommendations.length > 0) {
@@ -816,6 +1066,104 @@ export class RecommendationService {
     return { deleted: true, recommendationId }
   }
 
+  async hrAdjustScore(recommendationId: string, hrUserId: string, amount?: number, note?: string) {
+    const hr = await this.userModel.findById(this.resolveUserId(hrUserId)).select('_id role').exec()
+    if (!hr || !['HR', 'hr'].includes(String(hr.role))) {
+      throw new HttpException('Only HR can adjust recommendation scores', HttpStatus.FORBIDDEN)
+    }
+
+    const rec = await this.recommendationModel.findById(recommendationId).exec()
+    if (!rec) throw new HttpException('Recommendation not found', HttpStatus.NOT_FOUND)
+    if (String(rec.status) !== 'EMPLOYEE_DECLINED') {
+      throw new HttpException('Score adjustment is allowed only for employee-declined recommendations', HttpStatus.BAD_REQUEST)
+    }
+
+    const delta = Math.max(0.01, Math.min(0.5, Number(amount ?? 0.05)))
+    const before = Number(rec.score_total ?? 0)
+    const after = Math.max(0, Number((before - delta).toFixed(4)))
+    rec.score_total = after
+    rec.updated_at = new Date()
+    if (note && String(note).trim()) {
+      rec.hr_note = `${String(rec.hr_note ?? '').trim()}${rec.hr_note ? ' | ' : ''}Ajustement score: -${delta} (${String(note).trim()})`
+    } else {
+      rec.hr_note = `${String(rec.hr_note ?? '').trim()}${rec.hr_note ? ' | ' : ''}Ajustement score: -${delta}`
+    }
+    await rec.save()
+
+    const siblings = await this.recommendationModel
+      .find({ activityId: rec.activityId })
+      .sort({ score_total: -1, rank: 1, created_at: -1 })
+      .exec()
+    if (siblings.length > 0) {
+      await this.recommendationModel.bulkWrite(
+        siblings.map((row, idx) => ({
+          updateOne: {
+            filter: { _id: row._id },
+            update: { $set: { rank: idx + 1 } },
+          },
+        })),
+      )
+    }
+
+    await this.auditService.logAction({
+      domain: 'recommendations',
+      action: 'hr_adjust_score',
+      actorId: hrUserId,
+      actorRole: 'HR',
+      entityType: 'Recommendation',
+      entityId: recommendationId,
+      before: { score_total: before },
+      after: { score_total: after, amount: delta, note: note ?? '' },
+    })
+
+    await this.notificationService.create({
+      userId: rec.userId.toString(),
+      type: NotificationType.EMPLOYEE_DECLINED,
+      title: 'Mise à jour RH sur votre refus',
+      message: `Suite à votre motif de refus, RH a diminué votre score de recommandation de ${(delta * 100).toFixed(0)}%.`,
+      data: { activityId: rec.activityId.toString(), recommendationId, action: 'decrease_score', amount: delta, note: note ?? '' },
+    })
+
+    return { recommendationId, score_before: before, score_after: after, amount: delta }
+  }
+
+  async hrKeepScore(recommendationId: string, hrUserId: string, note?: string) {
+    const hr = await this.userModel.findById(this.resolveUserId(hrUserId)).select('_id role').exec()
+    if (!hr || !['HR', 'hr'].includes(String(hr.role))) {
+      throw new HttpException('Only HR can keep recommendation scores', HttpStatus.FORBIDDEN)
+    }
+
+    const rec = await this.recommendationModel.findById(recommendationId).exec()
+    if (!rec) throw new HttpException('Recommendation not found', HttpStatus.NOT_FOUND)
+    if (String(rec.status) !== 'EMPLOYEE_DECLINED') {
+      throw new HttpException('Keep-score action is allowed only for employee-declined recommendations', HttpStatus.BAD_REQUEST)
+    }
+
+    rec.updated_at = new Date()
+    rec.hr_note = `${String(rec.hr_note ?? '').trim()}${rec.hr_note ? ' | ' : ''}Score conservé${note ? ` (${String(note).trim()})` : ''}`
+    await rec.save()
+
+    await this.auditService.logAction({
+      domain: 'recommendations',
+      action: 'hr_keep_score',
+      actorId: hrUserId,
+      actorRole: 'HR',
+      entityType: 'Recommendation',
+      entityId: recommendationId,
+      after: { score_total: Number(rec.score_total ?? 0), note: note ?? '' },
+    })
+
+    await this.notificationService.create({
+      userId: rec.userId.toString(),
+      type: NotificationType.EMPLOYEE_DECLINED,
+      title: 'Mise à jour RH sur votre refus',
+      message: 'RH a conservé votre score de recommandation après examen de votre motif.',
+      data: { activityId: rec.activityId.toString(), recommendationId, action: 'keep_score', note: note ?? '' },
+    })
+
+    return { recommendationId, score_kept: Number(rec.score_total ?? 0) }
+  }
+
   async employeeRespond(
     recommendationId: string,
     employeeId: string,
@@ -903,6 +1251,22 @@ export class RecommendationService {
       .populate('activityId', 'titre title date location description')
       .sort({ created_at: -1 })
       .exec()
+  }
+
+  async getMySkillUpdates(employeeId: string) {
+    const rows = await this.activityHistoryModel
+      .find({ userId: new Types.ObjectId(employeeId) })
+      .sort({ completed_at: -1 })
+      .exec()
+
+    return rows.map((r: any) => ({
+      activity_id: r?.activityId?.toString?.() ?? '',
+      activity_title: String(r?.activity_title ?? 'Activité'),
+      status: String(r?.status ?? ''),
+      feedback: String(r?.feedback ?? ''),
+      completed_at: r?.completed_at ?? null,
+      skill_updates: Array.isArray(r?.skill_updates) ? r.skill_updates : [],
+    }))
   }
 
   async searchRecommendations(filters: SearchRecommendationsDto, actorUserId: string) {

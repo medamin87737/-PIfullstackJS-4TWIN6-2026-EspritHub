@@ -11,6 +11,8 @@ import { EmployeeResponseDto } from './dto/employee-response.dto'
 import { ManualAddRecommendationDto } from './dto/manual-add-recommendation.dto'
 import { SimulateRecommendationDto } from './dto/simulate-recommendation.dto'
 import { SearchRecommendationsDto } from './dto/search-recommendations.dto'
+import { HrAdjustScoreDto } from './dto/hr-adjust-score.dto'
+import { HrKeepScoreDto } from './dto/hr-keep-score.dto'
 
 @ApiTags('Recommendations')
 @Controller('api/recommendations')
@@ -76,6 +78,12 @@ export class RecommendationController {
     return this.recommendationService.getMyRecommendations(this.reqUserId(req))
   }
 
+  @Get('my-skill-updates')
+  @Roles('EMPLOYEE')
+  async mySkillUpdates(@Req() req: any) {
+    return this.recommendationService.getMySkillUpdates(this.reqUserId(req))
+  }
+
   @Post('manual-add')
   @Roles('HR', 'MANAGER')
   async manualAdd(@Body() dto: ManualAddRecommendationDto, @Req() req: any) {
@@ -98,6 +106,18 @@ export class RecommendationController {
   @Roles('HR', 'ADMIN')
   async retrainAi(@Req() req: any) {
     return this.recommendationService.retrainAi(this.reqUserId(req))
+  }
+
+  @Post('hr-adjust-score')
+  @Roles('HR')
+  async hrAdjustScore(@Body() dto: HrAdjustScoreDto, @Req() req: any) {
+    return this.recommendationService.hrAdjustScore(dto.recommendationId, this.reqUserId(req), dto.amount, dto.note)
+  }
+
+  @Post('hr-keep-score')
+  @Roles('HR')
+  async hrKeepScore(@Body() dto: HrKeepScoreDto, @Req() req: any) {
+    return this.recommendationService.hrKeepScore(dto.recommendationId, this.reqUserId(req), dto.note)
   }
 }
 

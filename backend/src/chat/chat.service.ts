@@ -139,8 +139,10 @@ export class ChatService {
   }
 
   async rewritePrompt(dto: RewritePromptDto) {
+    // Default to non-strict mode so rewrite still works via local fallback
+    // when OpenRouter is not configured or temporarily unavailable.
     const strictOpenRouter =
-      (this.configService.get<string>('OPENROUTER_STRICT') ?? 'true').toLowerCase() ===
+      (this.configService.get<string>('OPENROUTER_STRICT') ?? 'false').toLowerCase() ===
       'true';
     const apiKey =
       this.configService.get<string>('OPENROUTER_API_KEY') ??
@@ -343,10 +345,13 @@ export class ChatService {
       niveau: this.mapDesiredLevelToNiveau(s.desired_level),
     }));
     const finalSkills = parsedSkills.length > 0 ? parsedSkills : fallbackSkills;
-    const skillClause =
+    const normalizedSkills =
       finalSkills.length > 0
-        ? finalSkills.map((s) => `${s.intitule} niveau ${s.niveau}`).join(', ')
-        : 'competence generale niveau 3';
+        ? finalSkills
+        : [{ intitule: 'Communication professionnelle', niveau: 3 }];
+    const skillLines = normalizedSkills
+      .map((s) => `- ${String(s.intitule).trim()} niveau ${Math.max(1, Math.min(5, Number(s.niveau) || 3))}`)
+      .join('\n')
 
     const title = String(parsed.titre ?? dto.title ?? 'Activite RH').trim();
     const description = String(parsed.description ?? dto.description ?? '').trim();
@@ -354,15 +359,21 @@ export class ChatService {
     const activityType = String(dto.type ?? 'training').toLowerCase();
     const duration = String(dto.duration ?? 'N/A');
     const location = String(dto.location ?? 'N/A');
+    // Keep a professional and deterministic prompt shape so the NLP parser
+    // consistently extracts top_n + required skills ("<skill> niveau <1-5>").
     const finalPrompt = [
-      `Mission RH: Identifier ${topN} employes pour l'activite "${title}".`,
-      `Contexte metier: ${context}.`,
-      `Type d'activite: ${activityType}.`,
-      `Description detaillee: ${description || 'Aucune description fournie'}.`,
-      `Contraintes: places=${topN}, duree=${duration}, localisation=${location}.`,
-      `Competences obligatoires et niveaux cibles: ${skillClause}.`,
-      `Consigne de selection: prioriser les profils avec competences validees, progression recente et forte adequation semantique.`,
-      `Format attendu: classement final avec justification concise par employe.`,
+      `Demande RH professionnelle`,
+      `Mission: proposer une shortlist de profils alignés aux besoins de l'activité.`,
+      `Titre activité: ${title}`,
+      `Description activité: ${description || 'Aucune description fournie'}`,
+      `Contexte métier: ${context}`,
+      `Type activité: ${activityType}`,
+      `Nombre de profils attendus (Top_n): ${topN}`,
+      `Contraintes opérationnelles: duree=${duration}; localisation=${location}`,
+      `Compétences requises (format strict "<compétence> niveau <1-5>"):`,
+      skillLines,
+      `Instruction d'évaluation: classer les employés par adéquation sémantique, compétences validées, progression et historique.`,
+      `Sortie attendue: classement final priorisé avec justification concise par profil.`,
     ].join('\n');
 
     return {

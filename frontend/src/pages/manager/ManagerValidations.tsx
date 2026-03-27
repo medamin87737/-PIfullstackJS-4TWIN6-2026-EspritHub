@@ -6,6 +6,18 @@ import { useData } from '../../context/DataContext'
 
 const API_BASE_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:3000'
 
+function normalizeScore(value: unknown): number {
+  const n = Number(value ?? 0)
+  if (!Number.isFinite(n)) return 0
+  if (n > 1) return n / 100
+  if (n < 0) return 0
+  return n
+}
+
+function formatScorePercent(value: unknown): string {
+  return `${(normalizeScore(value) * 100).toFixed(1)}%`
+}
+
 type ManagerRecommendation = {
   id: string
   _id?: string
@@ -332,15 +344,15 @@ export default function ManagerValidations() {
                 <div className="mt-3 flex flex-wrap items-center gap-4">
                   <div className="flex items-center gap-2">
                     <span className="text-xs text-muted-foreground">Score:</span>
-                    <span className="text-sm font-bold text-primary">{(rec.score_total * 100).toFixed(1)}%</span>
+                    <span className="text-sm font-bold text-primary">{formatScorePercent(rec.score_total)}</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <Target className="h-3.5 w-3.5 text-muted-foreground" />
-                    <span className="text-sm font-medium">{(rec.score_nlp * 100).toFixed(1)}%</span>
+                    <span className="text-sm font-medium">{formatScorePercent(rec.score_nlp)}</span>
                   </div>
                   <div className="flex items-center gap-1">
                     <TrendingUp className="h-3.5 w-3.5 text-emerald-500" />
-                    <span className="text-sm font-medium text-emerald-600">{(rec.score_competences * 100).toFixed(1)}%</span>
+                    <span className="text-sm font-medium text-emerald-600">{formatScorePercent(rec.score_competences)}</span>
                   </div>
                 </div>
 
@@ -404,7 +416,7 @@ export default function ManagerValidations() {
                   </div>
                 </div>
                 <div className="flex items-center gap-3">
-                  <span className="text-sm font-medium">{(rec.score_total * 100).toFixed(1)}%</span>
+                  <span className="text-sm font-medium">{formatScorePercent(rec.score_total)}</span>
                   <StatusBadge status={rec.status.toLowerCase()} />
                 </div>
                 {rec.absence_reason && (

@@ -18,7 +18,12 @@ function initStickyNav(): void {
 }
 
 function initScrollReveal(): void {
-  if (typeof window === 'undefined' || reducedMotionEnabled()) return
+  if (typeof window === 'undefined') return
+  if (reducedMotionEnabled()) {
+    // Accessibility mode: keep content visible without animation.
+    document.querySelectorAll('.reveal').forEach((el) => el.classList.add('revealed'))
+    return
+  }
 
   const candidates = document.querySelectorAll(
     'section, .card, .card-animated, h2, h3, .glass-card, img, p, table',
@@ -43,7 +48,18 @@ function initScrollReveal(): void {
   )
 
   document.querySelectorAll('.reveal').forEach((el) => {
-    if (!(el as HTMLElement).classList.contains('revealed')) observer.observe(el)
+    const node = el as HTMLElement
+    if (node.classList.contains('revealed')) return
+
+    // On reload, browser can restore scroll position below the top.
+    // Reveal elements already in/above viewport to avoid permanent hidden sections.
+    const rect = node.getBoundingClientRect()
+    if (rect.top <= window.innerHeight * 0.98) {
+      node.classList.add('revealed')
+      return
+    }
+
+    observer.observe(node)
   })
 }
 

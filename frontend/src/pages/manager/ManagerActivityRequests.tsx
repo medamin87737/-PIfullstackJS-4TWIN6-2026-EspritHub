@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react'
 import { useData } from '../../context/DataContext'
 import { useToast } from '../../../hooks/use-toast'
-import { ClipboardPlus } from 'lucide-react'
+import { ClipboardPlus, Plus, Trash2 } from 'lucide-react'
+import type { RequiredSkill } from '../../types'
 
 const API_BASE_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:3000'
 
@@ -16,6 +17,7 @@ type ActivityRequest = {
   status: 'PENDING' | 'APPROVED' | 'REJECTED'
   hr_note?: string
 }
+type SkillOption = { intitule: string; type?: string }
 
 export default function ManagerActivityRequests() {
   const { fetchWithAuth } = useData()
@@ -27,13 +29,80 @@ export default function ManagerActivityRequests() {
     description: '',
     objectifs: '',
     type: 'training',
-    requiredSkills: '',
     maxParticipants: 10,
     startDate: '',
     endDate: '',
     location: '',
     duration: '',
   })
+  const [requiredSkills, setRequiredSkills] = useState<RequiredSkill[]>([{ skill_name: '', desired_level: 'medium' }])
+  const [allSkills, setAllSkills] = useState<SkillOption[]>([])
+  const [skillsLoading, setSkillsLoading] = useState(false)
+  const [skillSearch, setSkillSearch] = useState('')
+  const [newSkillName, setNewSkillName] = useState('')
+  const [newSkillDetails, setNewSkillDetails] = useState('')
+  const [newSkillType, setNewSkillType] = useState<'knowledge' | 'know_how' | 'soft_skills'>('knowledge')
+
+  const addSkillRow = () => setRequiredSkills((prev) => [...prev, { skill_name: '', desired_level: 'medium' }])
+  const removeSkillRow = (idx: number) => setRequiredSkills((prev) => prev.filter((_, i) => i !== idx))
+  const updateSkillRow = (idx: number, updates: Partial<RequiredSkill>) =>
+    setRequiredSkills((prev) => prev.map((s, i) => (i === idx ? { ...s, ...updates } : s)))
+
+  const loadAllSkills = async () => {
+    setSkillsLoading(true)
+    try {
+      const [resCompetences, resQuestions] = await Promise.all([
+        fetchWithAuth(`${API_BASE_URL}/users/competences/all`),
+        fetchWithAuth(`${API_BASE_URL}/users/question-competences/all`),
+      ])
+      if (!resCompetences.ok || !resQuestions.ok) throw new Error('Chargement des compétences impossible')
+      const payloadCompetences = await resCompetences.json()
+      const payloadQuestions = await resQuestions.json()
+      const rowsCompetences = Array.isArray(payloadCompetences?.data) ? payloadCompetences.data : (Array.isArray(payloadCompetences) ? payloadCompetences : [])
+      const rowsQuestions = Array.isArray(payloadQuestions?.data) ? payloadQuestions.data : (Array.isArray(payloadQuestions) ? payloadQuestions : [])
+
+      const merged = [
+        ...rowsCompetences.map((r: any) => ({ intitule: String(r?.intitule ?? r?.name ?? '').trim(), type: r?.type ? String(r.type) : undefined })),
+        ...rowsQuestions.map((r: any) => ({ intitule: String(r?.intitule ?? '').trim(), type: r?.type ? String(r.type) : undefined })),
+      ].filter((s) => s.intitule.length > 0)
+      const unique = Array.from(new Map(merged.map((s) => [s.intitule.toLowerCase(), s])).values()).sort((a, b) => a.intitule.localeCompare(b.intitule))
+      setAllSkills(unique)
+    } catch (err: any) {
+      toast({ title: 'Erreur', description: err?.message ?? 'Chargement des compétences impossible', variant: 'destructive' })
+    } finally {
+      setSkillsLoading(false)
+    }
+  }
+
+  const createSkillInDb = async () => {
+    const name = newSkillName.trim()
+    if (!name) {
+      toast({ title: 'Nom requis', description: 'Saisissez le nom de la compétence.', variant: 'destructive' })
+      return
+    }
+    try {
+      const res = await fetchWithAuth(`${API_BASE_URL}/users/question-competences`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          intitule: name,
+          details: newSkillDetails.trim(),
+          status: 'active',
+          type: newSkillType,
+        }),
+      })
+      if (!res.ok) {
+        const msg = await res.text()
+        throw new Error(msg || 'Création de compétence impossible')
+      }
+      setNewSkillName('')
+      setNewSkillDetails('')
+      await loadAllSkills()
+      toast({ title: 'Compétence créée', description: `${name} ajoutée à la base.`, variant: 'success' })
+    } catch (err: any) {
+      toast({ title: 'Erreur', description: err?.message ?? 'Création de compétence impossible', variant: 'destructive' })
+    }
+  }
 
   const loadRequests = async () => {
     const res = await fetchWithAuth(`${API_BASE_URL}/manager/activity-requests/my`)
@@ -43,6 +112,7 @@ export default function ManagerActivityRequests() {
 
   useEffect(() => {
     void loadRequests()
+    void loadAllSkills()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
@@ -54,11 +124,9 @@ export default function ManagerActivityRequests() {
 
     setLoading(true)
     try {
-      const requiredSkills = form.requiredSkills
-        .split(',')
-        .map((s) => s.trim())
-        .filter(Boolean)
-        .map((s) => ({ skill_name: s, desired_level: 'medium' }))
+      const normalizedSkills = requiredSkills
+        .filter((s) => String(s.skill_name ?? '').trim())
+        .map((s) => ({ skill_name: String(s.skill_name).trim(), desired_level: s.desired_level ?? 'medium' }))
 
       const res = await fetchWithAuth(`${API_BASE_URL}/manager/activity-requests`, {
         method: 'POST',
@@ -68,7 +136,7 @@ export default function ManagerActivityRequests() {
           description: form.description,
           objectifs: form.objectifs,
           type: form.type,
-          requiredSkills,
+          requiredSkills: normalizedSkills,
           maxParticipants: form.maxParticipants,
           startDate: new Date(form.startDate).toISOString(),
           endDate: new Date(form.endDate).toISOString(),
@@ -86,13 +154,13 @@ export default function ManagerActivityRequests() {
         description: '',
         objectifs: '',
         type: 'training',
-        requiredSkills: '',
         maxParticipants: 10,
         startDate: '',
         endDate: '',
         location: '',
         duration: '',
       })
+      setRequiredSkills([{ skill_name: '', desired_level: 'medium' }])
       await loadRequests()
     } catch (err: any) {
       toast({ title: 'Erreur', description: err.message ?? 'Envoi impossible', variant: 'destructive' })
@@ -120,7 +188,88 @@ export default function ManagerActivityRequests() {
           </select>
           <textarea className="input-micro rounded-lg border px-3 py-2 md:col-span-2" rows={3} placeholder="Description" value={form.description} onChange={(e) => setForm((p) => ({ ...p, description: e.target.value }))} />
           <textarea className="input-micro rounded-lg border px-3 py-2 md:col-span-2" rows={2} placeholder="Objectifs" value={form.objectifs} onChange={(e) => setForm((p) => ({ ...p, objectifs: e.target.value }))} />
-          <input className="input-micro rounded-lg border px-3 py-2 md:col-span-2" placeholder="Compétences (ex: React,Leadership,Node)" value={form.requiredSkills} onChange={(e) => setForm((p) => ({ ...p, requiredSkills: e.target.value }))} />
+          <div className="rounded-lg border border-border bg-background p-3 md:col-span-2">
+            <div className="mb-3 flex items-center justify-between">
+              <p className="text-sm font-semibold">Compétences demandées</p>
+              <button type="button" onClick={addSkillRow} className="inline-flex items-center gap-1 rounded-lg bg-accent px-3 py-1.5 text-xs font-medium text-accent-foreground">
+                <Plus className="h-3.5 w-3.5" /> Ajouter compétence
+              </button>
+            </div>
+            <div className="mb-2 grid grid-cols-1 gap-2 md:grid-cols-[1fr_auto]">
+              <input
+                className="input-micro rounded-lg border px-3 py-2"
+                placeholder="Rechercher une compétence"
+                value={skillSearch}
+                onChange={(e) => setSkillSearch(e.target.value)}
+              />
+              <button type="button" onClick={() => void loadAllSkills()} className="rounded-lg border px-3 py-2 text-sm">
+                {skillsLoading ? 'Chargement...' : 'Actualiser liste'}
+              </button>
+            </div>
+            <div className="mb-3 grid grid-cols-1 gap-2 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_170px_170px]">
+              <input
+                className="input-micro rounded-lg border px-3 py-2"
+                placeholder="Nouvelle compétence"
+                value={newSkillName}
+                onChange={(e) => setNewSkillName(e.target.value)}
+              />
+              <input
+                className="input-micro rounded-lg border px-3 py-2"
+                placeholder="Détails (optionnel)"
+                value={newSkillDetails}
+                onChange={(e) => setNewSkillDetails(e.target.value)}
+              />
+              <select
+                className="input-micro rounded-lg border px-3 py-2"
+                value={newSkillType}
+                onChange={(e) => setNewSkillType((e.target.value as 'knowledge' | 'know_how' | 'soft_skills') ?? 'knowledge')}
+              >
+                <option value="knowledge">knowledge</option>
+                <option value="know_how">know_how</option>
+                <option value="soft_skills">soft_skills</option>
+              </select>
+              <button type="button" onClick={() => void createSkillInDb()} className="rounded-lg bg-primary px-3 py-2 text-sm font-medium text-primary-foreground whitespace-nowrap min-w-[170px]">
+                Ajouter à la base
+              </button>
+            </div>
+            <div className="space-y-2">
+              {requiredSkills.map((row, idx) => (
+                <div key={idx} className="grid grid-cols-1 gap-2 md:grid-cols-[1fr_160px_auto]">
+                  <select
+                    className="input-micro rounded-lg border px-3 py-2"
+                    value={row.skill_name}
+                    onChange={(e) => updateSkillRow(idx, { skill_name: e.target.value })}
+                  >
+                    <option value="">-- Sélectionner une compétence --</option>
+                    {allSkills
+                      .filter((s) => s.intitule.toLowerCase().includes(skillSearch.trim().toLowerCase()))
+                      .map((s, skillIdx) => (
+                        <option key={`${s.intitule}-${skillIdx}`} value={s.intitule}>
+                          {s.intitule}{s.type ? ` (${s.type})` : ''}
+                        </option>
+                      ))}
+                  </select>
+                  <select
+                    className="input-micro rounded-lg border px-3 py-2"
+                    value={row.desired_level}
+                    onChange={(e) => updateSkillRow(idx, { desired_level: e.target.value as any })}
+                  >
+                    <option value="low">Bas</option>
+                    <option value="medium">Moyen</option>
+                    <option value="high">Élevé</option>
+                    <option value="expert">Expert</option>
+                  </select>
+                  {requiredSkills.length > 1 ? (
+                    <button type="button" onClick={() => removeSkillRow(idx)} className="inline-flex items-center justify-center rounded-lg border px-2 py-2 text-muted-foreground hover:bg-destructive/10">
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  ) : (
+                    <div />
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
           <input type="number" className="input-micro rounded-lg border px-3 py-2" placeholder="Places" value={form.maxParticipants} onChange={(e) => setForm((p) => ({ ...p, maxParticipants: Number(e.target.value) }))} />
           <input className="input-micro rounded-lg border px-3 py-2" placeholder="Durée (ex: 3 jours)" value={form.duration} onChange={(e) => setForm((p) => ({ ...p, duration: e.target.value }))} />
           <input type="datetime-local" className="input-micro rounded-lg border px-3 py-2" value={form.startDate} onChange={(e) => setForm((p) => ({ ...p, startDate: e.target.value }))} />

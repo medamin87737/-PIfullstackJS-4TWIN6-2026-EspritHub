@@ -36,7 +36,7 @@ export default function Header() {
       return
     }
     if (user.role === 'HR') {
-      navigate('/hr/activities')
+      navigate(n.activity_id ? `/hr/recommendations/${n.activity_id}` : '/hr/activities')
       return
     }
     navigate('/admin/dashboard')

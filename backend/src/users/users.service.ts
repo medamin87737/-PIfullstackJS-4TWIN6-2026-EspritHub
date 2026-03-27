@@ -14,6 +14,7 @@ import { Competence, CompetenceDocument } from './schemas/competence.schema';
 import { QuestionCompetence, QuestionCompetenceDocument } from './schemas/question-competence.schema';
 import { CreateUserDto } from './dto/create-user.dto';
 import { LoginUserDto } from './dto/login-user.dto';
+import { CreateQuestionCompetenceDto } from './dto/create-question-competence.dto';
 
 @Injectable()
 export class UsersService {
@@ -382,8 +383,8 @@ export class UsersService {
 
   async getAllCompetences(requesterRole: string) {
     const role = String(requesterRole ?? '').toUpperCase();
-    if (role !== 'ADMIN' && role !== 'HR') {
-      throw new UnauthorizedException('Accès réservé HR/ADMIN');
+    if (role !== 'ADMIN' && role !== 'HR' && role !== 'MANAGER') {
+      throw new UnauthorizedException('Accès réservé HR/MANAGER/ADMIN');
     }
 
     const rows = await this.competenceModel
@@ -429,8 +430,8 @@ export class UsersService {
 
   async getAllQuestionCompetences(requesterRole: string) {
     const role = String(requesterRole ?? '').toUpperCase();
-    if (role !== 'ADMIN' && role !== 'HR') {
-      throw new UnauthorizedException('Accès réservé HR/ADMIN');
+    if (role !== 'ADMIN' && role !== 'HR' && role !== 'MANAGER') {
+      throw new UnauthorizedException('Accès réservé HR/MANAGER/ADMIN');
     }
 
     const rows = await this.questionCompetenceModel
@@ -443,9 +444,49 @@ export class UsersService {
       intitule: q.intitule ?? '',
       details: q.details ?? '',
       status: q.status ?? 'inactive',
+      type: q.type ?? 'knowledge',
       created_at: q.createdAt ?? null,
       updated_at: q.updatedAt ?? null,
     }));
+  }
+
+  async createQuestionCompetence(dto: CreateQuestionCompetenceDto, requesterRole: string) {
+    const role = String(requesterRole ?? '').toUpperCase();
+    if (role !== 'ADMIN' && role !== 'HR' && role !== 'MANAGER') {
+      throw new UnauthorizedException('Accès réservé HR/MANAGER/ADMIN');
+    }
+
+    const intitule = String(dto.intitule ?? '').trim();
+    if (!intitule) {
+      throw new BadRequestException('Intitulé de compétence requis');
+    }
+
+    const escaped = intitule.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const exists = await this.questionCompetenceModel
+      .findOne({ intitule: { $regex: `^${escaped}$`, $options: 'i' } })
+      .exec();
+    if (exists) {
+      throw new ConflictException('Cette compétence existe déjà');
+    }
+
+    const row = await this.questionCompetenceModel.create({
+      intitule,
+      details: String(dto.details ?? '').trim(),
+      status: dto.status ?? 'active',
+      type: dto.type ?? 'knowledge',
+    });
+
+    return {
+      success: true,
+      message: 'Compétence ajoutée avec succès',
+      data: {
+        id: row._id?.toString?.() ?? '',
+        intitule: row.intitule ?? '',
+        details: row.details ?? '',
+        status: row.status ?? 'active',
+        type: row.type ?? 'knowledge',
+      },
+    };
   }
 
 }

@@ -24,7 +24,6 @@ const roleNavItems: Record<string, NavItem[]> = {
     { label: 'Competences', path: '/admin/skills', icon: <Brain className="h-5 w-5" /> },
     { label: 'Questions', path: '/admin/questions', icon: <FileQuestion className="h-5 w-5" /> },
     { label: 'Analytiques', path: '/admin/analytics', icon: <BarChart3 className="h-5 w-5" /> },
-    { label: 'Reformulation', path: '/admin/prompt-rewriter', icon: <Sparkles className="h-5 w-5" /> },
   ],
   HR: [
     { label: 'Dashboard', path: '/hr/dashboard', icon: <LayoutDashboard className="h-5 w-5" /> },
@@ -45,6 +44,7 @@ const roleNavItems: Record<string, NavItem[]> = {
     { label: 'Dashboard', path: '/employee/dashboard', icon: <LayoutDashboard className="h-5 w-5" /> },
     { label: 'Mes Activites', path: '/employee/activities', icon: <ClipboardList className="h-5 w-5" /> },
     { label: 'Notifications', path: '/employee/notifications', icon: <Bell className="h-5 w-5" /> },
+    { label: 'Evolution Competences', path: '/employee/skill-updates', icon: <BarChart3 className="h-5 w-5" /> },
     { label: 'Historique', path: '/employee/history', icon: <History className="h-5 w-5" /> },
     { label: 'Mon Profil', path: '/employee/profile', icon: <UserCircle className="h-5 w-5" /> },
   ],

@@ -10,6 +10,7 @@ import { Fiche, FicheSchema } from '../users/schemas/fiche.schema'
 import { Competence, CompetenceSchema } from '../users/schemas/competence.schema'
 import { Activity, ActivitySchema } from '../activities/schemas/activity.schema'
 import { Department, DepartmentSchema } from '../users/schemas/department.schema'
+import { QuestionCompetence, QuestionCompetenceSchema } from '../users/schemas/question-competence.schema'
 import { AuthModule } from '../auth/auth.module'
 import { NotificationsModule } from '../notifications/notifications.module'
 import { MailModule } from '../mail/mail.module'
@@ -28,6 +29,7 @@ import { AuditModule } from '../audit/audit.module'
       { name: User.name, schema: UserSchema },
       { name: Fiche.name, schema: FicheSchema },
       { name: Competence.name, schema: CompetenceSchema },
+      { name: QuestionCompetence.name, schema: QuestionCompetenceSchema },
       { name: Activity.name, schema: ActivitySchema },
       { name: Department.name, schema: DepartmentSchema },
       { name: ActivityHistory.name, schema: ActivityHistorySchema },

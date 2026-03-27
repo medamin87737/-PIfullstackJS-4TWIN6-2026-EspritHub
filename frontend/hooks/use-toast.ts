@@ -8,6 +8,8 @@ import type { ToastActionElement, ToastProps } from '@/components/ui/toast'
 const TOAST_LIMIT = 3
 const TOAST_REMOVE_DELAY = 900
 const TOAST_AUTO_CLOSE_MS = 1800
+const TOAST_SOUND_ENABLED_KEY = 'accessibility_toast_sound_enabled'
+let lastToastSoundAt = 0
 
 type ToasterToast = ToastProps & {
   id: string
@@ -142,6 +144,12 @@ type Toast = Omit<ToasterToast, 'id'>
 
 function playToastSound(variant?: ToastProps['variant']) {
   if (typeof window === 'undefined') return
+  const soundEnabledRaw = window.localStorage.getItem(TOAST_SOUND_ENABLED_KEY)
+  if (soundEnabledRaw === 'false') return
+  const now = Date.now()
+  // Avoid double beep when two toasts are triggered almost at the same time.
+  if (now - lastToastSoundAt < 700) return
+  lastToastSoundAt = now
   const AudioCtx =
     window.AudioContext ||
     (window as typeof window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext
@@ -151,8 +159,14 @@ function playToastSound(variant?: ToastProps['variant']) {
     const ctx = new AudioCtx()
     const osc = ctx.createOscillator()
     const gain = ctx.createGain()
-    osc.type = 'sine'
-    osc.frequency.value = variant === 'destructive' ? 320 : 780
+    osc.type = variant === 'destructive' ? 'sawtooth' : 'sine'
+    if (variant === 'destructive') {
+      osc.frequency.value = 260
+    } else if (variant === 'warning') {
+      osc.frequency.value = 520
+    } else {
+      osc.frequency.value = 760
+    }
     gain.gain.setValueAtTime(0.0001, ctx.currentTime)
     gain.gain.exponentialRampToValueAtTime(0.08, ctx.currentTime + 0.02)
     gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.22)
@@ -182,7 +196,7 @@ function toast({ ...props }: Toast) {
     type: 'ADD_TOAST',
     toast: {
       ...props,
-      className: `${props.className ?? ''} toast-dynamic ${props.variant === 'destructive' ? 'toast-dynamic-danger' : ''}`.trim(),
+      className: `${props.className ?? ''} toast-dynamic toast-premium-edge ring-2 ring-black/80 border-black/80 ${props.variant === 'destructive' ? 'toast-dynamic-danger' : ''} ${props.variant === 'success' ? 'toast-dynamic-success' : ''} ${props.variant === 'warning' ? 'toast-dynamic-warning' : ''}`.trim(),
       duration: props.duration ?? TOAST_AUTO_CLOSE_MS,
       id,
       open: true,

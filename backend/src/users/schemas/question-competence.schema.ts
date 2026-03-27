@@ -13,6 +13,9 @@ export class QuestionCompetence {
 
   @Prop({ required: true, maxlength: 50 })
   status: string; // Statut de la question (active, inactive)
+
+  @Prop({ type: String, enum: ['knowledge', 'know_how', 'soft_skills'], default: 'knowledge' })
+  type?: string; // Type métier de compétence
 }
 
 export const QuestionCompetenceSchema =
@@ -20,4 +23,5 @@ export const QuestionCompetenceSchema =
 
 QuestionCompetenceSchema.index({ intitule: 1 });
 QuestionCompetenceSchema.index({ status: 1 });
+QuestionCompetenceSchema.index({ type: 1 });
 

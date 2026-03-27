@@ -175,6 +175,13 @@ export default function HRActivities() {
           >
             <Sparkles className="h-3.5 w-3.5" /> AI Reco
           </Link>
+          <Link
+            to={`/hr/recommendations/${a.id}`}
+            className="flex items-center gap-1 rounded-lg border border-emerald-600 bg-emerald-600 px-2.5 py-1 text-xs font-semibold text-white hover:bg-emerald-700"
+            title="Ouvrir et confirmer l'activité côté RH"
+          >
+            <Check className="h-3.5 w-3.5" /> Confirmer activité
+          </Link>
           <button
             type="button"
             onClick={() => openEdit(a)}

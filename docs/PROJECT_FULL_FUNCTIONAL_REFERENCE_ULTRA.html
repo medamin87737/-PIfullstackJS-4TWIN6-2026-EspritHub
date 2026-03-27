@@ -1,0 +1,280 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>SkillUpTn | Documentation Ultra Detaillee</title>
+  <style>
+    :root{
+      --bg:#f6f8fc;--panel:#ffffff;--text:#0f172a;--muted:#475569;--line:#dbe4f0;
+      --pri:#2563eb;--ok:#16a34a;--warn:#d97706;--bad:#dc2626;
+    }
+    *{box-sizing:border-box}
+    body{margin:0;background:var(--bg);color:var(--text);font:14px/1.6 "Segoe UI",Arial,sans-serif}
+    .wrap{max-width:1450px;margin:0 auto;padding:16px;display:grid;grid-template-columns:310px 1fr;gap:14px}
+    @media (max-width:1150px){.wrap{grid-template-columns:1fr}}
+    .toc{position:sticky;top:12px;max-height:calc(100vh - 24px);overflow:auto;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:12px}
+    .toc h2{margin:0 0 8px;font-size:16px}
+    .toc a{display:block;color:#1d4ed8;text-decoration:none;padding:6px 8px;border-radius:8px}
+    .toc a:hover{background:#eff6ff}
+    .hero,section{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px}
+    .hero h1{margin:0 0 6px;font-size:24px}
+    .muted{color:var(--muted)}
+    .chips span{display:inline-block;margin:3px 6px 3px 0;padding:3px 10px;border:1px solid #bfdbfe;border-radius:999px;background:#eff6ff;font-size:12px;color:#1e3a8a}
+    section{margin-top:12px}
+    section h2{margin:0 0 10px;padding:8px 10px;border-left:4px solid var(--pri);background:#f8fafc;border-radius:8px}
+    h3{margin:12px 0 7px;color:#1e293b}
+    .grid{display:grid;gap:10px}
+    .g2{grid-template-columns:repeat(2,minmax(0,1fr))}
+    .g3{grid-template-columns:repeat(3,minmax(0,1fr))}
+    @media (max-width:1000px){.g2,.g3{grid-template-columns:1fr}}
+    .card{border:1px solid var(--line);border-radius:12px;padding:10px;background:#fff}
+    .code{white-space:pre-wrap;font:12px/1.5 Consolas,monospace;border:1px solid #c7d6ea;border-radius:10px;padding:10px;background:#f8fbff}
+    .ok{color:var(--ok)} .warn{color:var(--warn)} .bad{color:var(--bad)}
+    table{width:100%;border-collapse:collapse}
+    th,td{border:1px solid #d7e3f3;padding:8px;vertical-align:top;text-align:left}
+    th{background:#eff6ff;color:#1e3a8a}
+    .timeline{border-left:3px solid #bfdbfe;padding-left:10px}
+    .step{margin:9px 0;padding:8px;border:1px solid #dbeafe;border-radius:10px;background:#f8fbff}
+    .small{font-size:12px}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <aside class="toc">
+      <h2>Sommaire detaille</h2>
+      <a href="#intro">0. Introduction</a>
+      <a href="#archi">1. Architecture globale</a>
+      <a href="#roles">2. Roles et permissions RBAC</a>
+      <a href="#pages">3. Pages frontend et boutons</a>
+      <a href="#api">4. APIs backend (routes + usages)</a>
+      <a href="#ia">5. IA/NLP: prompt, parsing, scoring</a>
+      <a href="#workflows">6. Workflows metier complets</a>
+      <a href="#decline">7. Refus employe et actions RH</a>
+      <a href="#employee">8. Espace employe: evolution competences</a>
+      <a href="#db">9. Modele de donnees MongoDB</a>
+      <a href="#notif">10. Notifications / toasts / sons</a>
+      <a href="#ops">11. Runbook operationnel</a>
+      <a href="#qa">12. Checklist QA</a>
+    </aside>
+
+    <main>
+      <header class="hero" id="intro">
+        <h1>SkillUpTn - Documentation complete et design clair</h1>
+        <p class="muted">
+          Reference fonctionnelle et technique ultra detaillee: interface, backend, IA, flux de validation RH/manager/employe,
+          gestion des refus, penalties, notification, historique et qualite de donnees.
+        </p>
+        <div class="chips">
+          <span>React + TypeScript</span><span>NestJS</span><span>MongoDB</span><span>JWT + RBAC</span><span>WebSocket</span><span>NLP/AI</span>
+        </div>
+      </header>
+
+      <section id="archi">
+        <h2>1) Architecture globale</h2>
+        <div class="grid g3">
+          <div class="card"><b>Frontend</b><br />`frontend/src`<br />Pages par role, DataContext, fetchWithAuth, toasts globaux, accessibilite, animations.</div>
+          <div class="card"><b>Backend</b><br />`backend/src`<br />Modules: auth, users, activities, recommendations, notifications, manager, chat, audit.</div>
+          <div class="card"><b>AI Service</b><br />Moteur de parsing prompt, matching skills, scoring multi-criteres, retraining calibrateur.</div>
+        </div>
+        <h3>Flux central</h3>
+        <div class="code">Creation activite -> prompt RH -> generate recommendations
+-> tri score_total desc -> validation RH -> validation manager
+-> employe accepte/refuse -> mise a jour competences
+-> activity_history + notification + audit -> retraining periodique</div>
+      </section>
+
+      <section id="roles">
+        <h2>2) Roles et permissions RBAC</h2>
+        <table>
+          <thead><tr><th>Role</th><th>Responsabilites</th><th>Endpoints principaux</th></tr></thead>
+          <tbody>
+            <tr><td>ADMIN</td><td>Configuration systeme, gestion users/departments, pilotage global</td><td>`/users/*`, `/departments/*`, `/api/recommendations/retrain-ai`</td></tr>
+            <tr><td>HR</td><td>Creation activites, lancement IA, confirmation evenement, arbitrage refus</td><td>`generate`, `hr-validate`, `hr-adjust-score`, `hr-keep-score`</td></tr>
+            <tr><td>MANAGER</td><td>Validation/rejet recommandations RH, demandes activites</td><td>`manager-validate`, `/users/competences/all`</td></tr>
+            <tr><td>EMPLOYEE</td><td>Repondre aux activites, donner motif en cas de refus, suivre evolution</td><td>`respond`, `my`, `my-skill-updates`</td></tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section id="pages">
+        <h2>3) Pages frontend et boutons (en detail)</h2>
+        <div class="grid g2">
+          <div class="card">
+            <h3>HRRecommendations</h3>
+            <ul>
+              <li><b>Lancer recommandation</b>: lance IA sur prompt.</li>
+              <li><b>Envoyer au manager</b>: pousse decisions RH.</li>
+              <li><b>Confirmer activite</b>: confirmation explicite RH.</li>
+              <li><b>Popup places manquantes</b>: annuler ou confirmer quand meme.</li>
+              <li><b>Refus employe</b>: clic employe -> affiche cause -> choix diminuer/garder.</li>
+              <li><b>Ajouter a la base</b>: creation competence manquante (niveau 1..5).</li>
+            </ul>
+          </div>
+          <div class="card">
+            <h3>HRActivities</h3>
+            <ul>
+              <li>Liste activites avec statuts et filtres.</li>
+              <li>Bouton AI Reco pour ouvrir recommandations.</li>
+              <li>Bouton Confirmer activite visible dans actions.</li>
+              <li>Edition inline complete (titre, seats, dates, priorite, statut).</li>
+            </ul>
+          </div>
+        </div>
+        <div class="grid g2">
+          <div class="card"><h3>Manager pages</h3><p>Chargement competences, validation recommandations, suivi activites department, visualisation score homogene.</p></div>
+          <div class="card"><h3>Employee pages</h3><p>Notifications, historique, profil, et page dediee evolution competences (`/employee/skill-updates`).</p></div>
+        </div>
+      </section>
+
+      <section id="api">
+        <h2>4) APIs backend (routes + usages)</h2>
+        <div class="code">POST   /api/recommendations/generate              -> generation IA
+POST   /api/recommendations/simulate              -> simulation what-if
+GET    /api/recommendations/activity/:activityId  -> liste recommandations
+POST   /api/recommendations/hr-validate           -> validation RH et transmission
+POST   /api/recommendations/manager-validate      -> validation manager
+POST   /api/recommendations/respond               -> reponse employe
+GET    /api/recommendations/my                    -> recommandations employe
+GET    /api/recommendations/my-skill-updates      -> historique skill updates employe
+POST   /api/recommendations/hr-adjust-score       -> penalite RH
+POST   /api/recommendations/hr-keep-score         -> garder score RH
+POST   /api/recommendations/search                -> recherche avancee
+POST   /api/recommendations/retrain-ai            -> retraining modele</div>
+        <p class="small muted">Catalogue competences: `GET /users/competences/all`, `GET /users/question-competences/all`, `POST /users/question-competences`.</p>
+      </section>
+
+      <section id="ia">
+        <h2>5) IA/NLP: prompt, parsing, scoring</h2>
+        <div class="grid g2">
+          <div class="card">
+            <h3>Prompt cible (court et robuste)</h3>
+            <div class="code">Top_n: 38
+Competences obligatoires et niveaux cibles:
+- Communication professionnelle niveau 3
+- Travail en equipe niveau 4
+- Gestion du temps niveau 4</div>
+            <p class="small">Le parsing nettoie puces/tirets/ponctuation, dedup, et evite faux positifs ("trouver 10 profil").</p>
+          </div>
+          <div class="card">
+            <h3>Composantes score_total</h3>
+            <table>
+              <thead><tr><th>Feature</th><th>Description</th><th>Poids type</th></tr></thead>
+              <tbody>
+                <tr><td>score_nlp</td><td>similarite semantique</td><td>0.25</td></tr>
+                <tr><td>score_competences</td><td>matching skills+niveaux</td><td>0.45</td></tr>
+                <tr><td>score_progression</td><td>axe upskill/expert</td><td>0.15</td></tr>
+                <tr><td>score_history</td><td>coherence historique</td><td>0.10</td></tr>
+                <tr><td>score_seniority</td><td>anciennete</td><td>0.05</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <section id="workflows">
+        <h2>6) Workflows metier complets</h2>
+        <div class="timeline">
+          <div class="step"><b>Etape 1 - RH prepare activite</b><br />Creation/edit avec competences reelles de la base + niveaux cibles.</div>
+          <div class="step"><b>Etape 2 - IA genere classement</b><br />Top_n respecte; si IA renvoie moins, backend complete avec profils eligibles.</div>
+          <div class="step"><b>Etape 3 - RH confirme</b><br />Bouton envoyer/confirm; popup si places manquantes (annuler ou confirmer quand meme).</div>
+          <div class="step"><b>Etape 4 - Manager traite</b><br />Valide/rejette recommandations en contexte departement.</div>
+          <div class="step"><b>Etape 5 - Employe repond</b><br />Acceptation ou refus motive; cause enregistree et consultable RH.</div>
+          <div class="step"><b>Etape 6 - Post-action</b><br />Maj competences + historique + notifications + audit + event status.</div>
+        </div>
+      </section>
+
+      <section id="decline">
+        <h2>7) Refus employe et actions RH</h2>
+        <div class="grid g2">
+          <div class="card">
+            <h3>Comportement attendu</h3>
+            <ul>
+              <li>Cause refus toujours visible par RH.</li>
+              <li>RH choisit <b>Diminuer score</b> ou <b>Garder score</b>.</li>
+              <li>Action appliquee au moment de confirmation evenement.</li>
+              <li>Employe notifie de la decision RH.</li>
+            </ul>
+          </div>
+          <div class="card">
+            <h3>Impacts techniques</h3>
+            <ul>
+              <li>Recalcul de rank apres penalite.</li>
+              <li>Log audit par action RH.</li>
+              <li>Notification in-app avec payload activity/recommendation.</li>
+              <li>Tracabilite activity_history.</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <section id="employee">
+        <h2>8) Espace employe: evolution competences</h2>
+        <div class="card">
+          <p>Nouvelle page sidebar employee: <b>Evolution competences</b> pour suivre chaque variation.</p>
+          <div class="code">Route: /employee/skill-updates
+API: GET /api/recommendations/my-skill-updates
+Affichage: activite, statut, date, motif, skill_updates (avant/apres/delta)</div>
+        </div>
+      </section>
+
+      <section id="db">
+        <h2>9) Modele de donnees MongoDB</h2>
+        <div class="grid g3">
+          <div class="card"><b>users</b><br />Infos identity, role, dep, auth.</div>
+          <div class="card"><b>activities</b><br />Titre, places, statut, required skills.</div>
+          <div class="card"><b>recommendations</b><br />Scores, rank, status, motifs, notes.</div>
+          <div class="card"><b>competences</b><br />Skill eval employee.</div>
+          <div class="card"><b>question_competences</b><br />Catalogue skills global.</div>
+          <div class="card"><b>activity_history</b><br />Mises a jour post-activite.</div>
+          <div class="card"><b>notifications</b><br />Messages cibles temps reel.</div>
+          <div class="card"><b>audit_logs</b><br />Trails securite et operations.</div>
+          <div class="card"><b>departments/fiches</b><br />Structure org et snapshots.</div>
+        </div>
+      </section>
+
+      <section id="notif">
+        <h2>10) Notifications / toasts / sons</h2>
+        <div class="grid g2">
+          <div class="card">
+            <h3>Toasts globaux</h3>
+            <p>Succes/erreur animes, position bas-droite, style uniforme across app, fallback inline sur pages critiques.</p>
+          </div>
+          <div class="card">
+            <h3>Accessibilite</h3>
+            <p>Switch ON/OFF son popup, options visuelles, experience stable apres reload.</p>
+          </div>
+        </div>
+      </section>
+
+      <section id="ops">
+        <h2>11) Runbook operationnel</h2>
+        <div class="code">1. Verifier .env backend (Mongo/JWT/AI/OpenRouter)
+2. Verifier seed comptes RH/Manager/Employee
+3. Verifier chargement competences formulaires
+4. Executer scenario complet generate -> validate -> respond
+5. Verifier refus + actions RH + notifications employe
+6. Verifier /employee/skill-updates
+7. Lancer retrain AI periodique</div>
+      </section>
+
+      <section id="qa">
+        <h2>12) Checklist QA</h2>
+        <table>
+          <thead><tr><th>Test</th><th>Resultat attendu</th><th>Statut</th></tr></thead>
+          <tbody>
+            <tr><td>Prompt avec skills valides</td><td>Aucun faux "skill introuvable"</td><td class="ok">OK</td></tr>
+            <tr><td>Top_n > retour IA</td><td>Backend complete jusqu'a limite disponibles</td><td class="ok">OK</td></tr>
+            <tr><td>Refus employe</td><td>Cause obligatoire + visible RH</td><td class="ok">OK</td></tr>
+            <tr><td>Decision RH apres refus</td><td>Diminuer/Garder score + notif employe</td><td class="ok">OK</td></tr>
+            <tr><td>Confirmation activite RH</td><td>Boutons visibles + popup places manquantes</td><td class="ok">OK</td></tr>
+            <tr><td>Reload page recommendations</td><td>Composants restent visibles (no reveal bug)</td><td class="ok">OK</td></tr>
+          </tbody>
+        </table>
+        <p class="small muted">Export PDF: ouvrir ce fichier dans navigateur puis Imprimer -> Enregistrer en PDF.</p>
+      </section>
+    </main>
+  </div>
+</body>
+</html>
+

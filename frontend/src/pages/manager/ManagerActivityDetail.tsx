@@ -19,6 +19,18 @@ type ApiRecommendation = {
 
 const API_BASE_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:3000'
 
+function normalizeScore(value: unknown): number {
+  const n = Number(value ?? 0)
+  if (!Number.isFinite(n)) return 0
+  if (n > 1) return n / 100
+  if (n < 0) return 0
+  return n
+}
+
+function formatScorePercent(value: unknown): string {
+  return `${(normalizeScore(value) * 100).toFixed(1)}%`
+}
+
 export default function ManagerActivityDetail() {
   const { id } = useParams()
   const navigate = useNavigate()
@@ -266,9 +278,9 @@ export default function ManagerActivityDetail() {
                           </div>
                         )}
                       </td>
-                      <td className="px-4 py-3 text-sm font-semibold">{(Number(rec.score_total) * 100).toFixed(1)}%</td>
-                      <td className="px-4 py-3"><div className="flex items-center gap-2"><Target className="h-3.5 w-3.5 text-muted-foreground" /><span className="text-sm font-medium">{(Number(rec.score_nlp) * 100).toFixed(1)}%</span></div></td>
-                      <td className="px-4 py-3"><div className="flex items-center gap-1"><TrendingUp className="h-3.5 w-3.5 text-emerald-500" /><span className="text-sm font-medium text-emerald-600">{(Number(rec.score_competences) * 100).toFixed(1)}%</span></div></td>
+                      <td className="px-4 py-3 text-sm font-semibold">{formatScorePercent(rec.score_total)}</td>
+                      <td className="px-4 py-3"><div className="flex items-center gap-2"><Target className="h-3.5 w-3.5 text-muted-foreground" /><span className="text-sm font-medium">{formatScorePercent(rec.score_nlp)}</span></div></td>
+                      <td className="px-4 py-3"><div className="flex items-center gap-1"><TrendingUp className="h-3.5 w-3.5 text-emerald-500" /><span className="text-sm font-medium text-emerald-600">{formatScorePercent(rec.score_competences)}</span></div></td>
                       <td className="px-4 py-3">
                         <StatusBadge status={String(rec.status).toLowerCase()} />
                         {rec.absence_reason && <p className="mt-1 text-[11px] text-destructive">Motif: {rec.absence_reason}</p>}

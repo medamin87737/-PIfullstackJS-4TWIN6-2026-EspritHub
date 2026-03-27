@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useCallback, useEffect, type ReactNode } from 'react'
 import type { User, Department, Activity, Recommendation, Notification, QuestionCompetence, UserStatus, NotificationType } from '../types'
 import { useAuth } from './AuthContext'
+import { toast } from '../../hooks/use-toast'
 
 const API_BASE_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:3000'
 
@@ -10,6 +11,20 @@ function getAuthStorage(): Storage {
 
 function getAuthItem(key: string): string | null {
   return localStorage.getItem(key) ?? sessionStorage.getItem(key)
+}
+
+function methodLabel(method: string): string {
+  switch (method.toUpperCase()) {
+    case 'POST':
+      return 'Création'
+    case 'PATCH':
+    case 'PUT':
+      return 'Mise à jour'
+    case 'DELETE':
+      return 'Suppression'
+    default:
+      return 'Action'
+  }
 }
 
 interface DataContextType {
@@ -231,6 +246,53 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
   const fetchWithAuth = useCallback(
     async (url: string, init: RequestInit = {}) => {
+      const method = String(init.method ?? 'GET').toUpperCase()
+      const isMutation = method === 'POST' || method === 'PATCH' || method === 'PUT' || method === 'DELETE'
+      const silentToast = String(new Headers(init.headers || {}).get('x-toast-silent') ?? '').toLowerCase() === 'true'
+      const toastMutationResult = async (res: Response) => {
+        if (silentToast) return
+        if (!isMutation) return
+        if (res.ok) {
+          toast({
+            title: 'Succès',
+            description: `${methodLabel(method)} effectuée avec succès.`,
+            variant: 'success',
+            duration: 1600,
+          })
+          return
+        }
+        let message = `Erreur ${res.status}`
+        try {
+          const payload = await res.clone().json()
+          if (typeof payload?.message === 'string') message = payload.message
+          else if (Array.isArray(payload?.message) && payload.message.length > 0) message = String(payload.message[0])
+        } catch {
+          // keep default message
+        }
+        toast({
+          title: 'Action refusée',
+          description: message,
+          variant: 'destructive',
+          duration: 2600,
+        })
+      }
+      const toastReadError = async (res: Response) => {
+        if (silentToast || isMutation || res.ok) return
+        let message = `Erreur ${res.status}`
+        try {
+          const payload = await res.clone().json()
+          if (typeof payload?.message === 'string') message = payload.message
+          else if (Array.isArray(payload?.message) && payload.message.length > 0) message = String(payload.message[0])
+        } catch {
+          // keep default message
+        }
+        toast({
+          title: 'Erreur de chargement',
+          description: message,
+          variant: 'destructive',
+          duration: 2600,
+        })
+      }
       let token = getAuthItem('auth_token')
       if (!token) {
         token = await refreshAccessToken()
@@ -241,17 +303,53 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
       const headers = new Headers(init.headers || {})
       headers.set('Authorization', `Bearer ${token}`)
-      const firstTry = await fetch(url, { ...init, headers })
+      let firstTry: Response
+      try {
+        firstTry = await fetch(url, { ...init, headers })
+      } catch {
+        if (!silentToast) {
+          toast({
+            title: 'Erreur réseau',
+            description: 'Connexion au serveur impossible.',
+            variant: 'destructive',
+            duration: 2600,
+          })
+        }
+        throw new Error('Connexion au serveur impossible')
+      }
 
       // Some guards return 403 instead of 401 for expired/invalid token.
-      if (firstTry.status !== 401 && firstTry.status !== 403) return firstTry
+      if (firstTry.status !== 401 && firstTry.status !== 403) {
+        await toastMutationResult(firstTry)
+        await toastReadError(firstTry)
+        return firstTry
+      }
 
       const renewedToken = await refreshAccessToken()
-      if (!renewedToken) return firstTry
+      if (!renewedToken) {
+        await toastMutationResult(firstTry)
+        return firstTry
+      }
 
       const retryHeaders = new Headers(init.headers || {})
       retryHeaders.set('Authorization', `Bearer ${renewedToken}`)
-      return fetch(url, { ...init, headers: retryHeaders })
+      let finalResponse: Response
+      try {
+        finalResponse = await fetch(url, { ...init, headers: retryHeaders })
+      } catch {
+        if (!silentToast) {
+          toast({
+            title: 'Erreur réseau',
+            description: 'Connexion au serveur impossible.',
+            variant: 'destructive',
+            duration: 2600,
+          })
+        }
+        throw new Error('Connexion au serveur impossible')
+      }
+      await toastMutationResult(finalResponse)
+      await toastReadError(finalResponse)
+      return finalResponse
     },
     [refreshAccessToken],
   )

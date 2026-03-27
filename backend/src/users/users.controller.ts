@@ -23,6 +23,7 @@ import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { LoginUserDto } from './dto/login-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
+import { CreateQuestionCompetenceDto } from './dto/create-question-competence.dto';
 import { AuthService } from '../auth/auth/auth.service';
 import { JwtAuthGuard } from '../auth/auth/jwt-auth/jwt-auth.guard';
 import { Roles } from '../auth/auth/roles.decorator';
@@ -151,9 +152,9 @@ export class UsersController {
     return this.usersService.getFicheCompetences(ficheId, requesterId, requesterRole);
   }
 
-  /** Liste globale des compétences (HR/ADMIN) */
+  /** Liste globale des compétences (HR/MANAGER/ADMIN) */
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('HR', 'ADMIN')
+  @Roles('HR', 'MANAGER', 'ADMIN')
   @Get('competences/all')
   async getAllCompetences(@Req() req: any) {
     const requesterRole = req.user?.role ?? '';
@@ -161,14 +162,24 @@ export class UsersController {
     return { success: true, data, count: data.length };
   }
 
-  /** Liste globale des questions compétences (HR/ADMIN) */
+  /** Liste globale des questions compétences (HR/MANAGER/ADMIN) */
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('HR', 'ADMIN')
+  @Roles('HR', 'MANAGER', 'ADMIN')
   @Get('question-competences/all')
   async getAllQuestionCompetences(@Req() req: any) {
     const requesterRole = req.user?.role ?? '';
     const data = await this.usersService.getAllQuestionCompetences(requesterRole);
     return { success: true, data, count: data.length };
+  }
+
+  /** Ajouter une question compétence (HR/MANAGER/ADMIN) */
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('HR', 'MANAGER', 'ADMIN')
+  @Post('question-competences')
+  @UsePipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true }))
+  async createQuestionCompetence(@Body() dto: CreateQuestionCompetenceDto, @Req() req: any) {
+    const requesterRole = req.user?.role ?? '';
+    return this.usersService.createQuestionCompetence(dto, requesterRole);
   }
 
   /** Update user by ID - HR or ADMIN */

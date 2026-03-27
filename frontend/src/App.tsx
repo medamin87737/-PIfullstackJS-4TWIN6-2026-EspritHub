@@ -45,6 +45,7 @@ import EmployeeActivities from './pages/employee/EmployeeActivities'
 import EmployeeNotifications from './pages/employee/EmployeeNotifications'
 import EmployeeHistory from './pages/employee/EmployeeHistory'
 import EmployeeProfile from './pages/employee/EmployeeProfile'
+import EmployeeSkillUpdates from './pages/employee/EmployeeSkillUpdates'
 import { initGlobalAnimations } from './initAnimations'
 
 function RouteTransition({ children }: { children: React.ReactNode }) {
@@ -173,6 +174,7 @@ export default function App() {
                     <Route path="/employee/activities" element={<EmployeeActivities />} />
                     <Route path="/employee/notifications" element={<EmployeeNotifications />} />
                     <Route path="/employee/history" element={<EmployeeHistory />} />
+                    <Route path="/employee/skill-updates" element={<EmployeeSkillUpdates />} />
                     <Route path="/employee/profile" element={<EmployeeProfile />} />
                   </Route>
 
