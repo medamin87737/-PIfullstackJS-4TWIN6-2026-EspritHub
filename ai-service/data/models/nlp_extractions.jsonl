@@ -67,3 +67,11 @@
 {"ts": "2026-03-27T15:43:50.417773", "activity_type": "technical", "context": "consolidate_medium", "skills_count": 1, "confidence_score": 0.8}
 {"ts": "2026-03-27T15:45:25.783087", "activity_type": "technical", "context": "consolidate_medium", "skills_count": 1, "confidence_score": 0.55}
 {"ts": "2026-03-27T15:48:46.880497", "activity_type": "technical", "context": "consolidate_medium", "skills_count": 1, "confidence_score": 0.55}
+{"ts": "2026-03-27T20:39:07.580300", "activity_type": "technical", "context": "consolidate_medium", "skills_count": 1, "confidence_score": 0.55}
+{"ts": "2026-03-27T21:20:19.605639", "activity_type": "technical", "context": "consolidate_medium", "skills_count": 1, "confidence_score": 0.55}
+{"ts": "2026-03-27T21:22:30.907919", "activity_type": "technical", "context": "consolidate_medium", "skills_count": 1, "confidence_score": 0.55}
+{"ts": "2026-03-27T21:28:10.113213", "activity_type": "technical", "context": "consolidate_medium", "skills_count": 1, "confidence_score": 0.55}
+{"ts": "2026-03-27T21:30:21.060518", "activity_type": "technical", "context": "consolidate_medium", "skills_count": 1, "confidence_score": 0.8}
+{"ts": "2026-03-27T21:35:51.978601", "activity_type": "technical", "context": "exploit_expert", "skills_count": 1, "confidence_score": 0.8}
+{"ts": "2026-03-27T21:39:18.571620", "activity_type": "technical", "context": "exploit_expert", "skills_count": 1, "confidence_score": 0.8}
+{"ts": "2026-03-27T23:55:48.004093", "activity_type": "technical", "context": "consolidate_medium", "skills_count": 1, "confidence_score": 0.55}

@@ -2,8 +2,9 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useData } from '../../context/DataContext'
 import StatusBadge from '../../components/shared/StatusBadge'
-import { ArrowLeft, Sparkles, Send, Zap, Target, Medal, MessageSquare, TrendingUp } from 'lucide-react'
+import { ArrowLeft, Sparkles, Send, Zap, Target, Medal, MessageSquare, TrendingUp, FileCheck } from 'lucide-react'
 import { useToast } from '../../../hooks/use-toast'
+import { useSpellCheck } from '../../hooks/useSpellCheck'
 
 const API_BASE_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:3000'
 
@@ -168,6 +169,7 @@ export default function HRRecommendations() {
   const navigate = useNavigate()
   const { activities, updateActivity, fetchWithAuth } = useData()
   const { toast } = useToast()
+  const { correctText, checking: spellChecking } = useSpellCheck()
   const [aiRunning, setAiRunning] = useState(false)
   const [promptGenerating, setPromptGenerating] = useState(false)
   const [promptTyping, setPromptTyping] = useState(false)
@@ -831,6 +833,32 @@ export default function HRRecommendations() {
     }
   }
 
+  const handleSpellCheck = async () => {
+    if (!hrPrompt.trim()) {
+      showNotice('error', 'Saisissez un prompt avant de lancer la correction.')
+      return
+    }
+    const result = await correctText(hrPrompt)
+    if (!result) {
+      showNotice('error', 'Service de correction indisponible. Réessayez.')
+      return
+    }
+    if (result.corrections === 0) {
+      showNotice('success', 'Aucune faute détectée — le prompt est correct.')
+      return
+    }
+    setHrPrompt(result.correctedText)
+    showNotice(
+      'success',
+      `${result.corrections} correction(s) appliquée(s) [${result.detectedLanguage}]`,
+    )
+    toast({
+      title: 'Prompt corrigé',
+      description: `${result.corrections} correction(s) orthographique(s) appliquée(s).`,
+      variant: 'success',
+    })
+  }
+
   if (!activity) return <div className="p-8 text-center text-muted-foreground">Activite non trouvee</div>
 
   return (
@@ -879,14 +907,25 @@ export default function HRRecommendations() {
             <MessageSquare className="h-4 w-4 text-primary" />
             Prompt RH
           </label>
-          <button
-            onClick={generatePromptFromActivity}
-            disabled={promptGenerating}
-            className="flex items-center gap-2 rounded-lg border border-primary bg-primary/10 px-3 py-2 text-xs font-medium text-primary hover:bg-primary/20 disabled:opacity-50"
-          >
-            <Sparkles className="h-3.5 w-3.5" />
-            {promptGenerating ? 'Génération...' : 'Générer prompt auto'}
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => void handleSpellCheck()}
+              disabled={spellChecking || !hrPrompt.trim()}
+              title="Corriger les fautes d'orthographe avec LanguageTool"
+              className="flex items-center gap-2 rounded-lg border border-amber-500 bg-amber-50 px-3 py-2 text-xs font-medium text-amber-700 hover:bg-amber-100 disabled:opacity-50 dark:bg-amber-950/30 dark:text-amber-400 dark:border-amber-600 dark:hover:bg-amber-900/40"
+            >
+              <FileCheck className="h-3.5 w-3.5" />
+              {spellChecking ? 'Correction...' : 'Corriger'}
+            </button>
+            <button
+              onClick={generatePromptFromActivity}
+              disabled={promptGenerating}
+              className="flex items-center gap-2 rounded-lg border border-primary bg-primary/10 px-3 py-2 text-xs font-medium text-primary hover:bg-primary/20 disabled:opacity-50"
+            >
+              <Sparkles className="h-3.5 w-3.5" />
+              {promptGenerating ? 'Génération...' : 'Générer prompt auto'}
+            </button>
+          </div>
         </div>
         <textarea
           value={hrPrompt}
@@ -895,8 +934,10 @@ export default function HRRecommendations() {
           rows={4}
           className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
         />
-        {promptTyping && (
-          <p className="mt-2 text-xs text-primary">Generation IA en cours...</p>
+        {(promptTyping || spellChecking) && (
+          <p className="mt-2 text-xs text-primary">
+            {spellChecking ? 'Correction orthographique en cours...' : 'Generation IA en cours...'}
+          </p>
         )}
       </div>
       {skillPickerOpen && (
