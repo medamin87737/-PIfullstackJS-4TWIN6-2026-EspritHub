@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useData } from '../../context/DataContext'
 import StatusBadge from '../../components/shared/StatusBadge'
-import { ArrowLeft, Sparkles, Send, Zap, Target, Medal, MessageSquare, TrendingUp, FileCheck, Mic, MicOff } from 'lucide-react'
+import { ArrowLeft, Sparkles, Send, Zap, Target, Medal, MessageSquare, TrendingUp, FileCheck, Mic, MicOff, Smartphone } from 'lucide-react'
 import { useToast } from '../../../hooks/use-toast'
 import { useSpellCheck } from '../../hooks/useSpellCheck'
 import { useSpeechRecognition } from '../../hooks/useSpeechRecognition'
@@ -213,6 +213,7 @@ export default function HRRecommendations() {
   const [minScoreFilter, setMinScoreFilter] = useState('')
   const [confirmSendOpen, setConfirmSendOpen] = useState(false)
   const [missingSeats, setMissingSeats] = useState(0)
+  const [smsSending, setSmsSending] = useState<Record<string, boolean>>({})
   const typingTimerRef = useRef<number | null>(null)
   const noticeTimerRef = useRef<number | null>(null)
   const previewHideTimerRef = useRef<number | null>(null)
@@ -842,6 +843,31 @@ export default function HRRecommendations() {
     }
   }
 
+  const sendSmsToEmployee = async (recommendationId: string, employeeName: string) => {
+    setSmsSending((prev) => ({ ...prev, [recommendationId]: true }))
+    try {
+      const res = await fetchWithAuth(`${API_BASE_URL}/api/recommendations/send-sms-reminder`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ recommendationId }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data?.message ?? 'Envoi SMS impossible')
+      if (data?.sent) {
+        toast({ title: 'SMS envoyé', description: `Rappel envoyé à ${employeeName}`, variant: 'success' })
+        showNotice('success', `SMS envoyé à ${employeeName}`)
+      } else {
+        toast({ title: 'SMS non envoyé', description: data?.message ?? 'Numéro introuvable', variant: 'destructive' })
+        showNotice('error', data?.message ?? 'Numéro de téléphone introuvable')
+      }
+    } catch (err: any) {
+      toast({ title: 'Erreur SMS', description: err.message ?? 'Envoi impossible', variant: 'destructive' })
+      showNotice('error', String(err?.message ?? 'Envoi SMS impossible'))
+    } finally {
+      setSmsSending((prev) => ({ ...prev, [recommendationId]: false }))
+    }
+  }
+
   const handleSpellCheck = async () => {
     if (!hrPrompt.trim()) {
       showNotice('error', 'Saisissez un prompt avant de lancer la correction.')
@@ -1327,16 +1353,27 @@ export default function HRRecommendations() {
                         )}
                       </td>
                       <td className="px-4 py-3">
-                        {['PENDING', 'HR_APPROVED', 'HR_REJECTED'].includes(rec.status) ? (
+                        <div className="flex flex-col gap-1.5">
+                          {/* Bouton SMS reminder */}
                           <button
-                            onClick={() => removeRecommendation(rec._id)}
-                            className="rounded-lg border border-border px-3 py-1.5 text-xs font-medium hover:bg-accent"
+                            onClick={() => sendSmsToEmployee(rec._id, typeof rec.userId === 'string' ? rec.userId : rec.userId.name)}
+                            disabled={smsSending[rec._id]}
+                            title="Envoyer un SMS de rappel à cet employé"
+                            className="flex items-center gap-1.5 rounded-lg border border-violet-400 bg-violet-50 px-3 py-1.5 text-xs font-medium text-violet-700 hover:bg-violet-100 disabled:opacity-50 dark:bg-violet-950/30 dark:text-violet-400 dark:border-violet-600"
                           >
-                            Retirer de la liste
+                            <Smartphone className="h-3.5 w-3.5" />
+                            {smsSending[rec._id] ? 'Envoi...' : 'SMS rappel'}
                           </button>
-                        ) : (
-                          <span className="text-xs text-muted-foreground">-</span>
-                        )}
+                          {/* Bouton retirer */}
+                          {['PENDING', 'HR_APPROVED', 'HR_REJECTED'].includes(rec.status) && (
+                            <button
+                              onClick={() => removeRecommendation(rec._id)}
+                              className="rounded-lg border border-border px-3 py-1.5 text-xs font-medium hover:bg-accent"
+                            >
+                              Retirer
+                            </button>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   )

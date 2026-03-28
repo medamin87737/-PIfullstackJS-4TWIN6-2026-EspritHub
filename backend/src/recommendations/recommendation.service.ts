@@ -17,6 +17,7 @@ import { MailService } from '../mail/mail.service'
 import { NotificationType } from '../notifications/schemas/notification.schema'
 import { AuditService } from '../audit/audit.service'
 import { SearchRecommendationsDto } from './dto/search-recommendations.dto'
+import { SmsService } from '../sms/sms.service'
 
 type EligibleEmployee = {
   id: string
@@ -45,6 +46,7 @@ export class RecommendationService {
     private readonly notificationService: NotificationsService,
     private readonly mailService: MailService,
     private readonly auditService: AuditService,
+    private readonly smsService: SmsService,
   ) {}
 
   private aiServiceUrl(): string {
@@ -1349,6 +1351,58 @@ export class RecommendationService {
     } catch {
       throw new HttpException('AI retraining failed', HttpStatus.SERVICE_UNAVAILABLE)
     }
+  }
+
+  /**
+   * Envoie un SMS de rappel manuel à un employé recommandé.
+   * Appelé par le RH depuis l'interface, un clic par employé.
+   */
+  async sendSmsReminder(recommendationId: string, hrUserId: string): Promise<{ sent: boolean; message: string }> {
+    const hr = await this.userModel.findById(this.resolveUserId(hrUserId)).select('_id role').exec()
+    if (!hr || !['HR', 'hr', 'ADMIN', 'admin'].includes(String(hr.role))) {
+      throw new HttpException('Only HR can send SMS reminders', HttpStatus.FORBIDDEN)
+    }
+
+    const rec = await this.recommendationModel
+      .findById(recommendationId)
+      .populate('activityId')
+      .exec()
+    if (!rec) throw new HttpException('Recommendation not found', HttpStatus.NOT_FOUND)
+
+    const employee = await this.userModel
+      .findById(rec.userId)
+      .select('name email telephone')
+      .exec()
+    if (!employee) throw new HttpException('Employee not found', HttpStatus.NOT_FOUND)
+
+    if (!employee.telephone) {
+      return { sent: false, message: `Aucun numéro de téléphone enregistré pour ${employee.name}` }
+    }
+
+    const activity = rec.activityId as any
+    const activityTitle = activity?.title ?? activity?.titre ?? 'Activité'
+    const activityDate = activity?.date ?? activity?.startDate ?? new Date()
+
+    await this.smsService.sendRecommendationReminder({
+      to: employee.telephone,
+      employeeName: employee.name,
+      activityTitle,
+      activityDate,
+      deadlineDays: 3,
+      frontendUrl: process.env.FRONTEND_URL,
+    })
+
+    await this.auditService.logAction({
+      domain: 'recommendations',
+      action: 'sms_reminder_sent',
+      actorId: hrUserId,
+      actorRole: 'HR',
+      entityType: 'Recommendation',
+      entityId: recommendationId,
+      after: { employee: employee.name, phone: employee.telephone, activityTitle },
+    })
+
+    return { sent: true, message: `SMS envoyé à ${employee.name} (${employee.telephone})` }
   }
 }
 

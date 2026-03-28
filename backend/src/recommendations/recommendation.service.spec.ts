@@ -8,6 +8,7 @@ describe('RecommendationService workflow guards', () => {
   const notificationService: any = {}
   const mailService: any = {}
   const auditService: any = { logAction: jest.fn() }
+  const smsService: any = { sendRecommendationReminder: jest.fn() }
 
   const userModel: any = {
     findById: jest.fn(),
@@ -16,6 +17,7 @@ describe('RecommendationService workflow guards', () => {
   }
   const ficheModel: any = { findOne: jest.fn() }
   const competenceModel: any = { find: jest.fn() }
+  const questionCompetenceModel: any = { find: jest.fn() }
   const activityModel: any = { findById: jest.fn() }
   const departmentModel: any = { findById: jest.fn(), findOne: jest.fn() }
   const recommendationModel: any = {
@@ -31,6 +33,7 @@ describe('RecommendationService workflow guards', () => {
     userModel,
     ficheModel,
     competenceModel,
+    questionCompetenceModel,
     activityModel,
     departmentModel,
     recommendationModel,
@@ -38,6 +41,7 @@ describe('RecommendationService workflow guards', () => {
     notificationService,
     mailService,
     auditService,
+    smsService,
   )
 
   beforeEach(() => {
