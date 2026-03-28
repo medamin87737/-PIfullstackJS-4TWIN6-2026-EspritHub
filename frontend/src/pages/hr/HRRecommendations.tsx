@@ -2,9 +2,10 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useData } from '../../context/DataContext'
 import StatusBadge from '../../components/shared/StatusBadge'
-import { ArrowLeft, Sparkles, Send, Zap, Target, Medal, MessageSquare, TrendingUp, FileCheck } from 'lucide-react'
+import { ArrowLeft, Sparkles, Send, Zap, Target, Medal, MessageSquare, TrendingUp, FileCheck, Mic, MicOff } from 'lucide-react'
 import { useToast } from '../../../hooks/use-toast'
 import { useSpellCheck } from '../../hooks/useSpellCheck'
+import { useSpeechRecognition } from '../../hooks/useSpeechRecognition'
 
 const API_BASE_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:3000'
 
@@ -170,6 +171,14 @@ export default function HRRecommendations() {
   const { activities, updateActivity, fetchWithAuth } = useData()
   const { toast } = useToast()
   const { correctText, checking: spellChecking } = useSpellCheck()
+  const {
+    isSupported: speechSupported,
+    isListening,
+    interimText,
+    errorMessage: speechError,
+    startListening,
+    stopListening,
+  } = useSpeechRecognition('fr-FR')
   const [aiRunning, setAiRunning] = useState(false)
   const [promptGenerating, setPromptGenerating] = useState(false)
   const [promptTyping, setPromptTyping] = useState(false)
@@ -908,6 +917,33 @@ export default function HRRecommendations() {
             Prompt RH
           </label>
           <div className="flex items-center gap-2">
+            {/* Bouton micro vocal */}
+            {speechSupported && (
+              <button
+                type="button"
+                onClick={() => {
+                  if (isListening) {
+                    stopListening()
+                  } else {
+                    startListening((finalText) => {
+                      setHrPrompt((prev) => {
+                        const base = prev.trim()
+                        return base ? `${base} ${finalText}` : finalText
+                      })
+                    })
+                  }
+                }}
+                title={isListening ? 'Arrêter la dictée' : 'Dicter le prompt (vocal)'}
+                className={`flex items-center gap-1.5 rounded-lg border px-3 py-2 text-xs font-medium transition-colors ${
+                  isListening
+                    ? 'border-red-500 bg-red-500 text-white animate-pulse hover:bg-red-600'
+                    : 'border-rose-400 bg-rose-50 text-rose-600 hover:bg-rose-100 dark:bg-rose-950/30 dark:text-rose-400 dark:border-rose-600'
+                }`}
+              >
+                {isListening ? <MicOff className="h-3.5 w-3.5" /> : <Mic className="h-3.5 w-3.5" />}
+                {isListening ? 'Arrêter' : 'Dicter'}
+              </button>
+            )}
             <button
               onClick={() => void handleSpellCheck()}
               disabled={spellChecking || !hrPrompt.trim()}
@@ -927,14 +963,37 @@ export default function HRRecommendations() {
             </button>
           </div>
         </div>
-        <textarea
-          value={hrPrompt}
-          onChange={(e) => setHrPrompt(e.target.value.replace(/\|$/, ''))}
-          placeholder='Ex: Trouve 5 profils React niveau 5 et leadership niveau 3 pour une formation avancée frontend.'
-          rows={4}
-          className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-        />
-        {(promptTyping || spellChecking) && (
+
+        {/* Textarea avec aperçu interim vocal */}
+        <div className="relative">
+          <textarea
+            value={hrPrompt}
+            onChange={(e) => setHrPrompt(e.target.value.replace(/\|$/, ''))}
+            placeholder='Ex: Trouve 5 profils React niveau 5 et leadership niveau 3 pour une formation avancée frontend.'
+            rows={4}
+            className={`w-full rounded-lg border bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring ${
+              isListening ? 'border-red-400 ring-2 ring-red-300/50' : 'border-input'
+            }`}
+          />
+          {/* Texte interim en cours de dictée */}
+          {isListening && interimText && (
+            <div className="absolute bottom-2 left-3 right-3 rounded bg-red-50 px-2 py-1 text-xs italic text-red-600 dark:bg-red-950/40 dark:text-red-400">
+              🎙 {interimText}
+            </div>
+          )}
+        </div>
+
+        {/* Indicateurs d'état */}
+        {isListening && (
+          <p className="mt-2 flex items-center gap-1.5 text-xs text-red-500">
+            <span className="inline-block h-2 w-2 animate-ping rounded-full bg-red-500" />
+            Dictée en cours — parlez maintenant...
+          </p>
+        )}
+        {speechError && !isListening && (
+          <p className="mt-2 text-xs text-destructive">{speechError}</p>
+        )}
+        {(promptTyping || spellChecking) && !isListening && (
           <p className="mt-2 text-xs text-primary">
             {spellChecking ? 'Correction orthographique en cours...' : 'Generation IA en cours...'}
           </p>
