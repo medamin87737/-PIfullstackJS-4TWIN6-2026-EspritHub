@@ -2,8 +2,9 @@ import { useEffect, useMemo, useState } from 'react'
 import { useLocation } from 'react-router-dom'
 import { useData } from '../../context/DataContext'
 import StatusBadge from '../../components/shared/StatusBadge'
-import { Check, X, Calendar, MapPin, Target } from 'lucide-react'
+import { Check, X, Calendar, MapPin, Target, Sparkles } from 'lucide-react'
 import { useToast } from '../../../hooks/use-toast'
+import { useRewrite } from '../../hooks/useRewrite'
 
 const API_BASE_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:3000'
 
@@ -23,8 +24,10 @@ export default function EmployeeActivities() {
   const { fetchWithAuth } = useData()
   const { toast } = useToast()
   const location = useLocation()
+  const { rewrite, rewriting } = useRewrite()
   const [declineModal, setDeclineModal] = useState<string | null>(null)
   const [declineReason, setDeclineReason] = useState('')
+  const [rewriteNotice, setRewriteNotice] = useState<string | null>(null)
   const [myRecs, setMyRecs] = useState<EmployeeRecommendation[]>([])
   const token = useMemo(
     () => localStorage.getItem('auth_token') ?? sessionStorage.getItem('auth_token'),
@@ -108,6 +111,17 @@ export default function EmployeeActivities() {
     })()
   }
 
+  const handleRewrite = async () => {
+    if (!declineReason.trim()) return
+    const result = await rewrite(declineReason)
+    if (!result) {
+      toast({ title: 'Reformulation impossible', description: 'Service indisponible, réessayez.', variant: 'destructive' })
+      return
+    }
+    setDeclineReason(result.rewritten)
+    setRewriteNotice('Texte reformulé avec succès.')
+  }
+
   return (
     <div className="flex flex-col gap-6">
       <div className="reveal reveal-left animate-slide-up">
@@ -181,18 +195,53 @@ export default function EmployeeActivities() {
           <div className="reveal reveal-scale w-full max-w-md rounded-xl border border-border bg-card shadow-xl animate-slide-up">
             <div className="border-b border-border px-6 py-4">
               <h2 className="text-lg font-semibold text-card-foreground">Justification du refus</h2>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Rédigez votre motif — l'IA peut le reformuler en message professionnel.
+              </p>
             </div>
-            <div className="flex flex-col gap-4 p-6">
+            <div className="flex flex-col gap-3 p-6">
               <textarea
                 value={declineReason}
-                onChange={(e) => setDeclineReason(e.target.value)}
+                onChange={(e) => { setDeclineReason(e.target.value); setRewriteNotice(null) }}
                 placeholder="Veuillez indiquer la raison du refus..."
                 rows={4}
-                className="rounded-lg border border-input bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
               />
-              <div className="flex justify-end gap-3">
-                <button onClick={() => { setDeclineModal(null); setDeclineReason('') }} className="rounded-lg border border-border px-4 py-2 text-sm font-medium text-card-foreground hover:bg-accent">Annuler</button>
-                <button onClick={() => declineActivity(declineModal)} className="rounded-lg bg-destructive px-4 py-2 text-sm font-medium text-destructive-foreground hover:opacity-90">Confirmer le refus</button>
+
+              {/* Reformulation notice */}
+              {rewriteNotice && (
+                <p className="text-xs px-3 py-2 rounded-lg border border-emerald-300 bg-emerald-50 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-400 dark:border-emerald-700">
+                  ✓ {rewriteNotice}
+                </p>
+              )}
+
+              <div className="flex items-center justify-between gap-2">
+                {/* Rewrite button */}
+                <button
+                  type="button"
+                  onClick={() => void handleRewrite()}
+                  disabled={rewriting || !declineReason.trim()}
+                  title="Reformuler en message professionnel avec l'IA"
+                  className="flex items-center gap-1.5 rounded-lg border border-violet-500 bg-violet-50 px-3 py-2 text-xs font-medium text-violet-700 hover:bg-violet-100 disabled:opacity-50 dark:bg-violet-950/30 dark:text-violet-400 dark:border-violet-600 dark:hover:bg-violet-900/40"
+                >
+                  <Sparkles className="h-3.5 w-3.5" />
+                  {rewriting ? 'Reformulation...' : 'Reformuler avec l\'IA'}
+                </button>
+
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => { setDeclineModal(null); setDeclineReason(''); setRewriteNotice(null) }}
+                    className="rounded-lg border border-border px-4 py-2 text-sm font-medium text-card-foreground hover:bg-accent"
+                  >
+                    Annuler
+                  </button>
+                  <button
+                    onClick={() => declineActivity(declineModal)}
+                    className="rounded-lg bg-destructive px-4 py-2 text-sm font-medium text-destructive-foreground hover:opacity-90"
+                  >
+                    Confirmer le refus
+                  </button>
+                </div>
               </div>
             </div>
           </div>
