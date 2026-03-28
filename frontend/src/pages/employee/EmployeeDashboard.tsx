@@ -6,7 +6,7 @@ import StatCard from '../../components/shared/StatCard'
 import StatusBadge from '../../components/shared/StatusBadge'
 import { ClipboardList, Bell, CheckCircle, TrendingUp, ArrowRight } from 'lucide-react'
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
-import { useI18n } from '../../hooks/useI18n'
+import { useTranslation } from '../../context/TranslationContext'
 
 const API_BASE_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:3000'
 
@@ -23,7 +23,7 @@ type MyRecommendation = {
 export default function EmployeeDashboard() {
   const { getUnreadCount, getUserNotifications, fetchWithAuth } = useData()
   const { user } = useAuth()
-  const t = useI18n()
+  const { t } = useTranslation()
   const [myRecs, setMyRecs] = useState<MyRecommendation[]>([])
 
   useEffect(() => {

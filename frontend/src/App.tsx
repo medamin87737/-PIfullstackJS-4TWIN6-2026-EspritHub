@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-route
 import { AuthProvider } from './context/AuthContext'
 import { DataProvider } from './context/DataContext'
 import { AccessibilityProvider } from './context/AccessibilityContext'
+import { TranslationProvider } from './context/TranslationContext'
 import AccessibilityWidget from './components/shared/AccessibilityWidget'
 import AppLoader from './components/shared/AppLoader'
 import RealtimeNotifications from './components/shared/RealtimeNotifications'
@@ -97,14 +98,15 @@ export default function App() {
 
   return (
     <BrowserRouter>
-      <AccessibilityProvider>
-        <AuthProvider>
-          <DataProvider>
-            <AnimationBootstrap />
-            <RouteProgress />
-            <RealtimeNotifications />
-            <RouteTransition>
-              <Routes>
+      <TranslationProvider>
+        <AccessibilityProvider>
+          <AuthProvider>
+            <DataProvider>
+              <AnimationBootstrap />
+              <RouteProgress />
+              <RealtimeNotifications />
+              <RouteTransition>
+                <Routes>
                   {/* Public */}
                   <Route path="/login" element={<LoginPage />} />
                   <Route path="/auth/google/callback" element={<GoogleAuthCallback />} />
@@ -187,6 +189,7 @@ export default function App() {
           </DataProvider>
         </AuthProvider>
       </AccessibilityProvider>
+    </TranslationProvider>
     </BrowserRouter>
   )
 }

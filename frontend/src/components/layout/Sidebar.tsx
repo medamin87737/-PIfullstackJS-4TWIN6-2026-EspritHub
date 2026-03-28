@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
+import { useTranslation } from '../../context/TranslationContext'
 import {
   LayoutDashboard, Users, Building2, Brain, FileQuestion,
   ClipboardList, Sparkles, History, UserCircle, Bell,
@@ -8,7 +9,6 @@ import {
   FolderOpen
 } from 'lucide-react'
 import { cn } from '../../../lib/utils'
-import { useI18n } from '../../hooks/useI18n'
 
 interface NavItem {
   label: string
@@ -58,7 +58,7 @@ interface SidebarProps {
 export default function Sidebar({ collapsed, setCollapsed }: SidebarProps) {
   const { user, logout } = useAuth()
   const location = useLocation()
-  const t = useI18n()
+  const { t } = useTranslation()
   const [isLoggingOut, setIsLoggingOut] = useState(false)
 
   if (!user) return null

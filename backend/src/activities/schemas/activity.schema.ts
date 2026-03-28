@@ -46,8 +46,18 @@ export class Activity {
   @Prop()
   nb_seats?: number;
 
-  @Prop()
-  location?: string;
+  @Prop({
+    type: {
+      lat: Number,
+      lng: Number,
+      address: String,
+    },
+  })
+  location?: {
+    lat: number;
+    lng: number;
+    address: string;
+  };
 
   @Prop()
   duration?: string;

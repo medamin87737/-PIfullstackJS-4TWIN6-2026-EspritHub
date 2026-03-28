@@ -4,12 +4,12 @@ import { useAuth } from '../../context/AuthContext'
 import StatCard from '../../components/shared/StatCard'
 import StatusBadge from '../../components/shared/StatusBadge'
 import { ClipboardList, Users, Sparkles, CheckCircle, Plus, ArrowRight } from 'lucide-react'
-import { useI18n } from '../../hooks/useI18n'
+import { useTranslation } from '../../context/TranslationContext'
 
 export default function HRDashboard() {
   const { activities, recommendations, users, getUnreadCount } = useData()
   const { user } = useAuth()
-  const t = useI18n()
+  const { t } = useTranslation()
 
   const openActivities = activities.filter(a => a.status === 'open')
   const totalRecommended = recommendations.length

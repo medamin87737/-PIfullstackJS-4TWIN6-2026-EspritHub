@@ -67,3 +67,6 @@
 {"ts": "2026-03-27T15:43:50.417773", "activity_type": "technical", "context": "consolidate_medium", "skills_count": 1, "confidence_score": 0.8}
 {"ts": "2026-03-27T15:45:25.783087", "activity_type": "technical", "context": "consolidate_medium", "skills_count": 1, "confidence_score": 0.55}
 {"ts": "2026-03-27T15:48:46.880497", "activity_type": "technical", "context": "consolidate_medium", "skills_count": 1, "confidence_score": 0.55}
+{"ts": "2026-03-27T20:52:36.656103", "activity_type": "management", "context": "upskill_low", "skills_count": 1, "confidence_score": 0.8}
+{"ts": "2026-03-27T20:53:32.711824", "activity_type": "management", "context": "upskill_low", "skills_count": 1, "confidence_score": 0.55}
+{"ts": "2026-03-27T21:48:25.981302", "activity_type": "technical", "context": "upskill_low", "skills_count": 1, "confidence_score": 0.8}

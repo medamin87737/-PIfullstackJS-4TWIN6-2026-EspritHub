@@ -4,7 +4,7 @@ import { useAuth } from '../context/AuthContext'
 import { Eye, EyeOff, LogIn, AlertCircle, Mail, Lock, UserRound, KeyRound } from 'lucide-react'
 import type { UserRole } from '../types'
 import { useAccessibility } from '../context/AccessibilityContext'
-import { useI18n } from '../hooks/useI18n'
+import { useTranslation } from '../context/TranslationContext'
 
 const roleRoutes: Record<UserRole, string> = {
   ADMIN: '/admin/dashboard',
@@ -20,10 +20,8 @@ export default function LoginPage() {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const { login, user } = useAuth()
-  const { language } = useAccessibility()
+  const { t, language, setLanguage, isTranslating, supportedLanguages, translatePage } = useTranslation()
   const navigate = useNavigate()
-
-  const t = useI18n()
 
   useEffect(() => {
     if (loading) return

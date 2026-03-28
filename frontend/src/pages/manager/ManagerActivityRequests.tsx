@@ -1,10 +1,12 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, lazy, Suspense } from 'react'
 import { useData } from '../../context/DataContext'
 import { useToast } from '../../../hooks/use-toast'
-import { ClipboardPlus, Plus, Trash2 } from 'lucide-react'
+import { ClipboardPlus, Plus, Trash2, MapPin } from 'lucide-react'
 import type { RequiredSkill } from '../../types'
 
 const API_BASE_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:3000'
+
+const LocationPicker = lazy(() => import('../../components/LocationPicker'))
 
 type ActivityRequest = {
   _id: string
@@ -32,7 +34,11 @@ export default function ManagerActivityRequests() {
     maxParticipants: 10,
     startDate: '',
     endDate: '',
-    location: '',
+    location: {
+      lat: 36.8065,
+      lng: 10.1815,
+      address: 'Tunis, Tunisie'
+    },
     duration: '',
   })
   const [requiredSkills, setRequiredSkills] = useState<RequiredSkill[]>([{ skill_name: '', desired_level: 'medium' }])
@@ -157,7 +163,11 @@ export default function ManagerActivityRequests() {
         maxParticipants: 10,
         startDate: '',
         endDate: '',
-        location: '',
+        location: {
+          lat: 36.8065,
+          lng: 10.1815,
+          address: 'Tunis, Tunisie'
+        },
         duration: '',
       })
       setRequiredSkills([{ skill_name: '', desired_level: 'medium' }])
@@ -274,7 +284,30 @@ export default function ManagerActivityRequests() {
           <input className="input-micro rounded-lg border px-3 py-2" placeholder="Durée (ex: 3 jours)" value={form.duration} onChange={(e) => setForm((p) => ({ ...p, duration: e.target.value }))} />
           <input type="datetime-local" className="input-micro rounded-lg border px-3 py-2" value={form.startDate} onChange={(e) => setForm((p) => ({ ...p, startDate: e.target.value }))} />
           <input type="datetime-local" className="input-micro rounded-lg border px-3 py-2" value={form.endDate} onChange={(e) => setForm((p) => ({ ...p, endDate: e.target.value }))} />
-          <input className="input-micro rounded-lg border px-3 py-2 md:col-span-2" placeholder="Lieu" value={form.location} onChange={(e) => setForm((p) => ({ ...p, location: e.target.value }))} />
+          <div className="md:col-span-2 rounded-lg border border-border bg-background p-4 space-y-3">
+            <div className="flex items-center gap-2">
+              <MapPin className="h-4 w-4" />
+              <p className="text-sm font-semibold">Localisation</p>
+            </div>
+            <input
+              className="input-micro rounded-lg border px-3 py-2 w-full"
+              placeholder="Adresse"
+              value={form.location.address}
+              onChange={(e) => setForm((p) => ({ ...p, location: { ...p.location, address: e.target.value } }))}
+            />
+            <Suspense fallback={
+              <div className="h-64 bg-gray-100 rounded-lg flex items-center justify-center">
+                <div className="text-gray-500">Chargement de la carte...</div>
+              </div>
+            }>
+              <LocationPicker
+                onLocationSelect={(lat: number, lng: number, address: string) => {
+                  setForm((p) => ({ ...p, location: { lat, lng, address } }))
+                }}
+                initialLocation={{ lat: form.location.lat, lng: form.location.lng }}
+              />
+            </Suspense>
+          </div>
         </div>
         <button
           onClick={submit}

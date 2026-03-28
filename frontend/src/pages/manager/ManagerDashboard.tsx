@@ -5,7 +5,7 @@ import { useAuth } from '../../context/AuthContext'
 import StatCard from '../../components/shared/StatCard'
 import StatusBadge from '../../components/shared/StatusBadge'
 import { ClipboardList, Users, CheckCircle, Clock, ArrowRight } from 'lucide-react'
-import { useI18n } from '../../hooks/useI18n'
+import { useTranslation } from '../../context/TranslationContext'
 import type { Activity, User } from '../../types'
 
 const API_BASE_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:3000'
@@ -13,7 +13,7 @@ const API_BASE_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:3000'
 export default function ManagerDashboard() {
   const { fetchWithAuth, getUnreadCount } = useData()
   const { user } = useAuth()
-  const t = useI18n()
+  const { t } = useTranslation()
   const [myActivities, setMyActivities] = useState<Activity[]>([])
   const [myTeam, setMyTeam] = useState<User[]>([])
   const [pendingValidations, setPendingValidations] = useState(0)
