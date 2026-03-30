@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useData } from '../../context/DataContext'
 import StatusBadge from '../../components/shared/StatusBadge'
-import { ArrowLeft, Sparkles, Send, Zap, Target, Medal, MessageSquare, TrendingUp } from 'lucide-react'
+import { ArrowLeft, Sparkles, Send, Zap, Target, Medal, MessageSquare, TrendingUp, FileDown, FileSpreadsheet, Loader2 } from 'lucide-react'
 import { useToast } from '../../../hooks/use-toast'
 
 const API_BASE_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:3000'
@@ -202,6 +202,7 @@ export default function HRRecommendations() {
   const [minScoreFilter, setMinScoreFilter] = useState('')
   const [confirmSendOpen, setConfirmSendOpen] = useState(false)
   const [missingSeats, setMissingSeats] = useState(0)
+  const [exportLoading, setExportLoading] = useState<'pdf' | 'xlsx' | null>(null)
   const typingTimerRef = useRef<number | null>(null)
   const noticeTimerRef = useRef<number | null>(null)
   const previewHideTimerRef = useRef<number | null>(null)
@@ -213,6 +214,50 @@ export default function HRRecommendations() {
       noticeTimerRef.current = null
     }, 4200)
   }
+
+  // ─── Export PDF / Excel ──────────────────────────────────────────────────
+  const handleExport = async (format: 'pdf' | 'xlsx') => {
+    if (!activityId) {
+      toast({ title: 'Erreur', description: 'Activité introuvable.' })
+      return
+    }
+    if (aiRecs.length === 0) {
+      toast({ title: 'Aucune donnée', description: 'Générez les recommandations avant d\'exporter.', variant: 'destructive' })
+      return
+    }
+    setExportLoading(format)
+    try {
+      // Utilise fetchWithAuth → token + auto-refresh géré automatiquement
+      const res = await fetchWithAuth(
+        `${API_BASE_URL}/api/recommendations/${activityId}/export?format=${format}`,
+      )
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ message: 'Export impossible' }))
+        throw new Error(String(err?.message ?? 'Export impossible'))
+      }
+      const blob = await res.blob()
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      const disposition = res.headers.get('Content-Disposition') ?? ''
+      const match = disposition.match(/filename="?([^"]+)"?/)
+      a.href = url
+      a.download = match?.[1] ?? `recommandations_${activityId}.${format}`
+      document.body.appendChild(a)
+      a.click()
+      a.remove()
+      URL.revokeObjectURL(url)
+      toast({
+        title: `Export ${format.toUpperCase()} réussi`,
+        description: `Le fichier a été téléchargé.`,
+        variant: 'success',
+      })
+    } catch (err: any) {
+      toast({ title: 'Erreur export', description: err.message ?? 'Export impossible.', variant: 'destructive' })
+    } finally {
+      setExportLoading(null)
+    }
+  }
+
 
   const appendSkillToPrompt = (skill: string, level = 3) => {
     const clean = String(skill ?? '').trim()
@@ -560,6 +605,34 @@ export default function HRRecommendations() {
     }
   }, [])
 
+  // ─── Socket.IO : écoute export_ready pour notifier l'utilisateur ─────────
+  useEffect(() => {
+    if (!token) return
+    let socket: any
+    try {
+      // Dynamically import socket.io-client to avoid SSR issues
+      import('socket.io-client').then(({ io }) => {
+        const userId = (() => {
+          try { return JSON.parse(atob((token ?? '').split('.')[1] ?? ''))?.sub ?? '' }
+          catch { return '' }
+        })()
+        socket = io(API_BASE_URL, { query: { userId }, transports: ['websocket', 'polling'] })
+        socket.on('export_ready', (data: { activityId: string; format: string; message: string }) => {
+          toast({
+            title: '📥 Export prêt',
+            description: data.message ?? `Export ${data.format?.toUpperCase()} généré avec succès.`,
+            variant: 'success',
+          })
+        })
+      }).catch(() => {
+        // socket.io-client absent — fonctionnement sans temps-réel
+      })
+    } catch {
+      // ignore
+    }
+    return () => { socket?.disconnect?.() }
+  }, [token, toast])
+
   const sendToManager = async (forcePartial = false) => {
     if (!token || !activityId || !activity) {
       toast({ title: 'Erreur', description: 'Session expirée. Reconnectez-vous.' })
@@ -856,7 +929,34 @@ export default function HRRecommendations() {
           <h1 className="text-2xl font-bold text-foreground">Validation des recommandations RH</h1>
           <p className="text-sm text-muted-foreground">{activity.title}</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
+          {/* ─── Export PDF ─────────────────────── */}
+          <button
+            id="btn-export-pdf"
+            onClick={() => void handleExport('pdf')}
+            disabled={exportLoading !== null || aiRecs.length === 0}
+            title="Exporter en PDF"
+            className="flex items-center gap-2 rounded-lg border border-rose-500 bg-rose-500/10 px-3 py-2 text-xs font-semibold text-rose-600 hover:bg-rose-500/20 disabled:cursor-not-allowed disabled:opacity-50 transition-all"
+          >
+            {exportLoading === 'pdf'
+              ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              : <FileDown className="h-3.5 w-3.5" />}
+            {exportLoading === 'pdf' ? 'Export...' : 'PDF'}
+          </button>
+          {/* ─── Export Excel ───────────────────── */}
+          <button
+            id="btn-export-xlsx"
+            onClick={() => void handleExport('xlsx')}
+            disabled={exportLoading !== null || aiRecs.length === 0}
+            title="Exporter en Excel"
+            className="flex items-center gap-2 rounded-lg border border-emerald-500 bg-emerald-500/10 px-3 py-2 text-xs font-semibold text-emerald-600 hover:bg-emerald-500/20 disabled:cursor-not-allowed disabled:opacity-50 transition-all"
+          >
+            {exportLoading === 'xlsx'
+              ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              : <FileSpreadsheet className="h-3.5 w-3.5" />}
+            {exportLoading === 'xlsx' ? 'Export...' : 'Excel'}
+          </button>
+          {/* ─── Boutons existants ──────────────── */}
           <button onClick={runAI} disabled={aiRunning}
             className="flex items-center gap-2 rounded-lg border border-primary bg-primary/10 px-4 py-2 text-sm font-medium text-primary hover:bg-primary/20 disabled:opacity-50">
             {aiRunning ? <Zap className="h-4 w-4 animate-pulse" /> : <Zap className="h-4 w-4" />}
