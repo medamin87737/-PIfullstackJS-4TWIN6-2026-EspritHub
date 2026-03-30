@@ -1,0 +1,398 @@
+/**
+ * Styles pour le composant Hand Gesture Control
+ * 
+ * Design responsive pour écrans desktop et laptop (minimum 1024px)
+ * Requirements: 6.1, 6.2, 6.3, 6.4, 6.5, 10.6
+ */
+
+.hand-gesture-control {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  padding: 1.5rem;
+  max-width: 1200px;
+  margin: 0 auto;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+}
+
+/* En-tête */
+.hgc-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 1rem;
+  border-bottom: 2px solid #e0e0e0;
+}
+
+.hgc-header h2 {
+  margin: 0;
+  font-size: 1.5rem;
+  color: #333;
+}
+
+/* Bouton caméra */
+.hgc-camera-toggle {
+  padding: 0.75rem 1.5rem;
+  font-size: 1rem;
+  font-weight: 600;
+  border: 2px solid #007bff;
+  border-radius: 8px;
+  background: white;
+  color: #007bff;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.hgc-camera-toggle:hover {
+  background: #007bff;
+  color: white;
+}
+
+.hgc-camera-toggle.active {
+  background: #28a745;
+  border-color: #28a745;
+  color: white;
+}
+
+.hgc-camera-toggle:focus {
+  outline: 3px solid #80bdff;
+  outline-offset: 2px;
+}
+
+/* Conteneur vidéo */
+.hgc-video-container {
+  position: relative;
+  width: 100%;
+  max-width: 640px;
+  margin: 0 auto;
+  background: #000;
+  border-radius: 12px;
+  overflow: hidden;
+  aspect-ratio: 4 / 3;
+}
+
+.hgc-video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.hgc-canvas-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.hgc-video-placeholder {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #1a1a1a;
+  color: #999;
+  font-size: 1.2rem;
+}
+
+/* Affichage du geste */
+.hgc-gesture-display {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 1rem;
+  background: #f8f9fa;
+  border-radius: 8px;
+}
+
+.hgc-gesture-icon {
+  font-size: 3rem;
+  line-height: 1;
+}
+
+.hgc-gesture-label {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #333;
+}
+
+.hgc-confidence {
+  font-size: 0.9rem;
+  color: #666;
+}
+
+/* Barre de progression */
+.hgc-progress-container {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.hgc-progress-label {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #007bff;
+  text-align: center;
+}
+
+.hgc-progress-bar {
+  width: 100%;
+  height: 8px;
+  background: #e0e0e0;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.hgc-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #007bff, #0056b3);
+  transition: width 0.1s linear;
+  border-radius: 4px;
+}
+
+/* Statut du système */
+.hgc-status {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1rem;
+  border-radius: 8px;
+  font-size: 1rem;
+}
+
+.hgc-status-idle,
+.hgc-status-detecting {
+  background: #e7f3ff;
+  color: #004085;
+  border: 1px solid #b8daff;
+}
+
+.hgc-status-validating {
+  background: #fff3cd;
+  color: #856404;
+  border: 1px solid #ffeaa7;
+}
+
+.hgc-status-processing {
+  background: #d1ecf1;
+  color: #0c5460;
+  border: 1px solid #bee5eb;
+}
+
+.hgc-status-cooldown {
+  background: #f8d7da;
+  color: #721c24;
+  border: 1px solid #f5c6cb;
+}
+
+.hgc-status-error {
+  background: #f8d7da;
+  color: #721c24;
+  border: 1px solid #f5c6cb;
+}
+
+.hgc-status-icon {
+  font-size: 1.2rem;
+}
+
+.hgc-status-message {
+  flex: 1;
+  font-weight: 500;
+}
+
+.hgc-fps {
+  font-size: 0.85rem;
+  color: #666;
+  font-family: monospace;
+}
+
+/* Messages d'erreur */
+.hgc-error {
+  padding: 1rem;
+  background: #f8d7da;
+  color: #721c24;
+  border: 1px solid #f5c6cb;
+  border-radius: 8px;
+  font-size: 0.95rem;
+}
+
+.hgc-error strong {
+  display: block;
+  margin-bottom: 0.25rem;
+}
+
+/* Liste des recommandations */
+.hgc-recommendations {
+  padding: 1rem;
+  background: #f8f9fa;
+  border-radius: 8px;
+}
+
+.hgc-recommendations h3 {
+  margin: 0 0 1rem 0;
+  font-size: 1.2rem;
+  color: #333;
+}
+
+.hgc-no-recommendations {
+  color: #666;
+  font-style: italic;
+  margin: 0;
+}
+
+.hgc-recommendation-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.hgc-recommendation-item {
+  padding: 1rem;
+  background: white;
+  border: 2px solid #dee2e6;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+}
+
+.hgc-recommendation-item.active {
+  border-color: #007bff;
+  background: #e7f3ff;
+  box-shadow: 0 2px 8px rgba(0, 123, 255, 0.2);
+}
+
+.hgc-rec-title {
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 0.25rem;
+}
+
+.hgc-rec-category {
+  font-size: 0.85rem;
+  color: #666;
+}
+
+/* Boutons d'action */
+.hgc-actions {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+}
+
+.hgc-btn {
+  flex: 1;
+  max-width: 200px;
+  padding: 1rem 2rem;
+  font-size: 1.1rem;
+  font-weight: 600;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.hgc-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.hgc-btn:focus {
+  outline: 3px solid #80bdff;
+  outline-offset: 2px;
+}
+
+.hgc-btn-accept {
+  background: #28a745;
+  color: white;
+}
+
+.hgc-btn-accept:hover:not(:disabled) {
+  background: #218838;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(40, 167, 69, 0.3);
+}
+
+.hgc-btn-reject {
+  background: #dc3545;
+  color: white;
+}
+
+.hgc-btn-reject:hover:not(:disabled) {
+  background: #c82333;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(220, 53, 69, 0.3);
+}
+
+/* Aide */
+.hgc-help {
+  padding: 1rem;
+  background: #f8f9fa;
+  border-radius: 8px;
+}
+
+.hgc-help summary {
+  cursor: pointer;
+  font-weight: 600;
+  color: #007bff;
+  user-select: none;
+}
+
+.hgc-help summary:hover {
+  color: #0056b3;
+}
+
+.hgc-help ul {
+  margin-top: 0.75rem;
+  padding-left: 1.5rem;
+}
+
+.hgc-help li {
+  margin-bottom: 0.5rem;
+  color: #333;
+}
+
+/* Responsive pour écrans plus petits (minimum 1024px selon requirements) */
+@media (max-width: 1024px) {
+  .hand-gesture-control {
+    padding: 1rem;
+  }
+
+  .hgc-video-container {
+    max-width: 100%;
+  }
+
+  .hgc-actions {
+    flex-direction: column;
+  }
+
+  .hgc-btn {
+    max-width: 100%;
+  }
+}
+
+/* Animations */
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.6;
+  }
+}
+
+.hgc-status-validating .hgc-status-icon {
+  animation: pulse 1s ease-in-out infinite;
+}
+
+.hgc-status-processing .hgc-status-icon {
+  animation: pulse 0.8s ease-in-out infinite;
+}

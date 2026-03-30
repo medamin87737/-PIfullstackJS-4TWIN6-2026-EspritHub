@@ -4,6 +4,7 @@ import { useData } from '../../context/DataContext'
 import StatusBadge from '../../components/shared/StatusBadge'
 import { Check, X, Calendar, MapPin, Target } from 'lucide-react'
 import { useToast } from '../../../hooks/use-toast'
+import { MiniHandGestureControl } from '../../components/MiniHandGestureControl'
 
 const API_BASE_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:3000'
 
@@ -26,6 +27,7 @@ export default function EmployeeActivities() {
   const [declineModal, setDeclineModal] = useState<string | null>(null)
   const [declineReason, setDeclineReason] = useState('')
   const [myRecs, setMyRecs] = useState<EmployeeRecommendation[]>([])
+  const [activeGestureControl, setActiveGestureControl] = useState<string | null>(null)
   const token = useMemo(
     () => localStorage.getItem('auth_token') ?? sessionStorage.getItem('auth_token'),
     [],
@@ -84,6 +86,7 @@ export default function EmployeeActivities() {
     setMyRecs((prev) => prev.filter((r) => r.id !== rec.id))
     toast({ title: 'Presence confirmee', description: 'Votre confirmation a ete envoyee.' })
   }
+  
   const declineActivity = (recId: string) => {
     void (async () => {
       const rec = myRecs.find((r) => r.id === recId)
@@ -106,6 +109,15 @@ export default function EmployeeActivities() {
       setDeclineReason('')
       toast({ title: 'Refus envoye', description: 'Votre motif d absence a ete transmis a RH.', variant: 'destructive' })
     })()
+  }
+
+  // Gestionnaire pour activer/désactiver le contrôle gestuel d'une activité
+  const toggleGestureControl = (recId: string) => {
+    if (activeGestureControl === recId) {
+      setActiveGestureControl(null)
+    } else {
+      setActiveGestureControl(recId)
+    }
   }
 
   return (
@@ -157,7 +169,40 @@ export default function EmployeeActivities() {
                   </div>
                 </div>
 
-                {/* Actions */}
+                {/* Contrôle gestuel mini - par activité */}
+                {rec.status === 'NOTIFIED' && (
+                  <div className="mt-4">
+                    <MiniHandGestureControl
+                      recommendationId={rec.id}
+                      onAccept={() => acceptActivity(rec)}
+                      onReject={() => {
+                        // Refus automatique via geste
+                        void (async () => {
+                          const res = await fetchWithAuth(`${API_BASE_URL}/api/recommendations/respond`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ 
+                              recommendationId: rec.id, 
+                              response: 'DECLINED', 
+                              justification: 'Refusé via contrôle gestuel' 
+                            }),
+                          })
+                          if (!res.ok) {
+                            toast({ title: 'Erreur', description: 'Refus impossible.', variant: 'destructive' })
+                            return
+                          }
+                          setMyRecs((prev) => prev.filter((r) => r.id !== rec.id))
+                          setActiveGestureControl(null)
+                          toast({ title: 'Refus envoye', description: 'Votre refus a ete transmis via geste.', variant: 'destructive' })
+                        })()
+                      }}
+                      isActive={activeGestureControl === rec.id}
+                      onToggle={() => toggleGestureControl(rec.id)}
+                    />
+                  </div>
+                )}
+
+                {/* Actions traditionnelles */}
                 {rec.status === 'NOTIFIED' && (
                   <div className="mt-4 flex items-center justify-end gap-2 border-t border-border pt-3">
                     <button onClick={() => acceptActivity(rec)}
