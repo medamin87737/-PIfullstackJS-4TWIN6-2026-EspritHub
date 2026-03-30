@@ -163,5 +163,15 @@ export class NotificationsService {
     this.notificationGateway.sendToUser(hrId, 'employee_response', payload)
     this.notificationGateway.sendToUser(managerId, 'employee_response', payload)
   }
+
+  notifyExportReady(userId: string, activityId: string, format: 'pdf' | 'excel'): void {
+    const label = format === 'pdf' ? 'PDF' : 'Excel'
+    this.notificationGateway.sendToUser(userId, 'export_ready', {
+      activityId,
+      format,
+      message: `Export ${label} prêt pour téléchargement`,
+    })
+    this.logger.log(`export_ready emitted → userId=${userId} activityId=${activityId} format=${format}`)
+  }
 }
 

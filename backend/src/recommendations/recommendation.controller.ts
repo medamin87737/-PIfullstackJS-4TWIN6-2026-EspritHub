@@ -1,9 +1,11 @@
-import { Body, Controller, Delete, Get, Param, Post, Req, UseGuards, UsePipes, ValidationPipe } from '@nestjs/common'
+import { Body, Controller, Delete, Get, Param, Post, Query, Req, Res, UseGuards, UsePipes, ValidationPipe } from '@nestjs/common'
+import type { Response } from 'express'
 import { ApiTags } from '@nestjs/swagger'
 import { JwtAuthGuard } from '../auth/auth/jwt-auth/jwt-auth.guard'
 import { RolesGuard } from '../auth/auth/roles/roles.guard'
 import { Roles } from '../auth/auth/roles.decorator'
 import { RecommendationService } from './recommendation.service'
+import { NotificationsService } from '../notifications/notifications.service'
 import { GenerateRecommendationDto } from './dto/generate-recommendation.dto'
 import { HrValidateDto } from './dto/hr-validate.dto'
 import { ManagerValidateDto } from './dto/manager-validate.dto'
@@ -19,7 +21,10 @@ import { HrKeepScoreDto } from './dto/hr-keep-score.dto'
 @UseGuards(JwtAuthGuard, RolesGuard)
 @UsePipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true, transform: true }))
 export class RecommendationController {
-  constructor(private readonly recommendationService: RecommendationService) {}
+  constructor(
+    private readonly recommendationService: RecommendationService,
+    private readonly notificationsService: NotificationsService,
+  ) {}
 
   private reqUserId(req: any): string {
     return req.user?.sub ?? req.user?.userId
@@ -118,6 +123,32 @@ export class RecommendationController {
   @Roles('HR')
   async hrKeepScore(@Body() dto: HrKeepScoreDto, @Req() req: any) {
     return this.recommendationService.hrKeepScore(dto.recommendationId, this.reqUserId(req), dto.note)
+  }
+
+  @Get(':activityId/export')
+  @Roles('HR', 'MANAGER')
+  async exportRecommendations(
+    @Param('activityId') activityId: string,
+    @Query('format') format: string,
+    @Res() res: Response,
+    @Req() req: any,
+  ) {
+    // Accepte ?format=pdf | ?format=xlsx | ?format=excel
+    const fmt: 'pdf' | 'excel' = format === 'xlsx' || format === 'excel' ? 'excel' : 'pdf'
+    const { buffer, filename, mimeType } = await this.recommendationService.exportRecommendations(activityId, fmt)
+
+    // 🔔 Notifie via Socket.IO que l'export est prêt
+    const userId: string = req.user?.sub ?? req.user?.userId ?? ''
+    if (userId) {
+      this.notificationsService.notifyExportReady(userId, activityId, fmt)
+    }
+
+    res.set({
+      'Content-Type': mimeType,
+      'Content-Disposition': `attachment; filename="${filename}"`,
+      'Content-Length': buffer.length,
+    })
+    res.end(buffer)
   }
 }
 
