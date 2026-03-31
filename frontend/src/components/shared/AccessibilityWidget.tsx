@@ -12,6 +12,8 @@ export default function AccessibilityWidget() {
     setAutoReadSelection,
     voiceCommandsActive,
     toggleVoiceCommands,
+    colorBlindMode,
+    toggleColorBlindMode,
   } = useAccessibility()
 
   const [open, setOpen] = useState(false)
@@ -147,6 +149,38 @@ export default function AccessibilityWidget() {
             <p className="mt-1 text-[11px] text-muted-foreground">
               Active ou desactive le son des notifications de succes/erreur.
             </p>
+          </div>
+
+          {/* Colorblind mode */}
+          <div className="mb-2 rounded-lg border border-border bg-background/60 p-2.5">
+            <div className="flex items-center justify-between gap-2">
+              <div>
+                <p className="text-xs font-medium text-foreground">Mode daltonien</p>
+                <p className="text-[11px] text-muted-foreground">
+                  Palette haute visibilité (bleu/jaune) pour deutéranopie et protanopie.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={toggleColorBlindMode}
+                className={`relative h-5 w-9 shrink-0 rounded-full border transition-colors ${
+                  colorBlindMode ? 'bg-[#0072B2] border-[#0072B2]' : 'bg-background border-input'
+                }`}
+                aria-pressed={colorBlindMode}
+                aria-label="Activer le mode daltonien"
+              >
+                <span
+                  className={`absolute left-0.5 top-0.5 h-4 w-4 rounded-full bg-white shadow transition-transform ${
+                    colorBlindMode ? 'translate-x-4' : ''
+                  }`}
+                />
+              </button>
+            </div>
+            {colorBlindMode && (
+              <p className="mt-1.5 text-[11px] font-medium text-[#0072B2]">
+                ✓ Mode daltonien actif — couleurs adaptées
+              </p>
+            )}
           </div>
 
           <p className="mt-2 text-[11px] text-muted-foreground">

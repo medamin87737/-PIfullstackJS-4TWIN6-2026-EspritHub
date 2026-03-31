@@ -11,6 +11,8 @@ interface AccessibilityContextType {
   speak: (text: string) => void
   voiceCommandsActive: boolean
   toggleVoiceCommands: () => void
+  colorBlindMode: boolean
+  toggleColorBlindMode: () => void
 }
 
 const AccessibilityContext = createContext<AccessibilityContextType | undefined>(undefined)
@@ -20,8 +22,23 @@ export function AccessibilityProvider({ children }: { children: ReactNode }) {
   const [zoom, setZoomState] = useState<ZoomLevel>('large')
   const [autoReadSelection, setAutoReadSelectionState] = useState(false)
   const [voiceCommandsActive, setVoiceCommandsActive] = useState(false)
+  const [colorBlindMode, setColorBlindMode] = useState(() => {
+    if (typeof window === 'undefined') return false
+    return window.localStorage.getItem('accessibility_colorblind') === 'true'
+  })
 
   const recognitionRef = useRef<any>(null)
+
+  // Apply colorblind mode class on <html>
+  useEffect(() => {
+    if (typeof document === 'undefined') return
+    document.documentElement.classList.toggle('colorblind', colorBlindMode)
+    window.localStorage.setItem('accessibility_colorblind', String(colorBlindMode))
+  }, [colorBlindMode])
+
+  const toggleColorBlindMode = useCallback(() => {
+    setColorBlindMode((prev) => !prev)
+  }, [])
 
   // Apply zoom to root font-size
   useEffect(() => {
@@ -224,6 +241,8 @@ export function AccessibilityProvider({ children }: { children: ReactNode }) {
         speak,
         voiceCommandsActive,
         toggleVoiceCommands,
+        colorBlindMode,
+        toggleColorBlindMode,
       }}
     >
       {children}

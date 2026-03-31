@@ -16,6 +16,7 @@ import { NotificationsModule } from '../notifications/notifications.module'
 import { MailModule } from '../mail/mail.module'
 import { ActivityHistory, ActivityHistorySchema } from './schemas/activity-history.schema'
 import { AuditModule } from '../audit/audit.module'
+import { SmsModule } from '../sms/sms.module'
 
 @Module({
   imports: [
@@ -24,6 +25,7 @@ import { AuditModule } from '../audit/audit.module'
     NotificationsModule,
     MailModule,
     AuditModule,
+    SmsModule,
     MongooseModule.forFeature([
       { name: Recommendation.name, schema: RecommendationSchema },
       { name: User.name, schema: UserSchema },
