@@ -1,0 +1,383 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>SkillUpTn - Documentation Projet Ultra Détaillée</title>
+  <style>
+    :root{
+      --bg:#0a1220; --panel:#0f172a; --card:#111827; --line:#243042;
+      --text:#e5e7eb; --muted:#9ca3af; --pri:#f97316; --sec:#22d3ee;
+      --ok:#16a34a; --warn:#f59e0b; --bad:#dc2626;
+    }
+    *{box-sizing:border-box}
+    html{scroll-behavior:smooth}
+    body{margin:0;font-family:Segoe UI,Arial,sans-serif;background:linear-gradient(180deg,#070f1b 0%,var(--bg) 100%);color:var(--text);line-height:1.55}
+    .layout{display:grid;grid-template-columns:280px 1fr;gap:16px;max-width:1400px;margin:18px auto;padding:0 16px 28px}
+    @media (max-width:1100px){.layout{grid-template-columns:1fr}}
+    .toc{position:sticky;top:14px;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:12px;max-height:calc(100vh - 28px);overflow:auto}
+    .toc h2{margin:0 0 8px;font-size:16px;color:#fff}
+    .toc a{display:block;padding:7px 9px;margin:3px 0;border-radius:8px;color:#93c5fd;text-decoration:none;font-size:13px}
+    .toc a:hover{background:#172235}
+    .main{min-width:0}
+    .hero{background:radial-gradient(1400px 280px at 20% -35%,#fb923c3d 0,#0000 60%),var(--panel);border:1px solid var(--line);border-radius:16px;padding:18px}
+    .hero h1{margin:0 0 8px;color:#fff}
+    .muted{color:var(--muted)}
+    .tag{display:inline-block;margin:3px 6px 3px 0;padding:3px 10px;border-radius:999px;border:1px solid #334155;background:#0b1325;font-size:12px}
+    section{margin-top:14px;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px}
+    section h2{margin:0 0 10px;padding:8px 10px;border-left:4px solid var(--pri);background:#111827;border-radius:8px}
+    h3{margin:14px 0 8px;color:#fde68a}
+    .grid{display:grid;gap:10px}
+    .g2{grid-template-columns:repeat(2,minmax(0,1fr))}
+    .g3{grid-template-columns:repeat(3,minmax(0,1fr))}
+    @media (max-width:1000px){.g2,.g3{grid-template-columns:1fr}}
+    .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px}
+    .code{white-space:pre-wrap;font-family:Consolas,monospace;font-size:13px;background:#091325;border:1px solid #27364f;border-radius:10px;padding:12px}
+    .ok{color:#bbf7d0}.warn{color:#fde68a}.bad{color:#fecaca}
+    table{width:100%;border-collapse:collapse}
+    th,td{border:1px solid #2a3952;padding:8px;vertical-align:top;text-align:left}
+    th{background:#0f172a;color:#fde68a}
+    .small{font-size:12px}
+    .footer{margin:20px 0 4px;color:var(--muted);font-size:12px}
+  </style>
+</head>
+<body>
+  <div class="layout">
+    <aside class="toc">
+      <h2>Sommaire</h2>
+      <a href="#resume">0. Résumé exécutif</a>
+      <a href="#architecture">1. Architecture complète</a>
+      <a href="#routing">2. Routing frontend (toutes pages)</a>
+      <a href="#roles">3. Rôles et permissions</a>
+      <a href="#uiactions">4. Boutons et actions UI</a>
+      <a href="#backend">5. Endpoints backend détaillés</a>
+      <a href="#events">6. Événements métier</a>
+      <a href="#workflowdetail">6.bis Workflow détaillé pas à pas</a>
+      <a href="#db">7. Schéma des collections</a>
+      <a href="#model">8. Modèle IA (features + formules)</a>
+      <a href="#training">9. Entraînement / retraining</a>
+      <a href="#notifications">10. Notifications et temps réel</a>
+      <a href="#ux">11. UX transverse (toasts, accessibilité)</a>
+      <a href="#runbook">12. Runbook opérationnel</a>
+    </aside>
+
+    <main class="main">
+      <header class="hero">
+        <h1>SkillUpTn - Documentation Projet Ultra Détaillée</h1>
+        <p class="muted">Document fonctionnel + technique: chaque événement principal, chaque chaîne de traitement, pages, boutons, fonctions liées, endpoints, stockage et logique IA.</p>
+        <div>
+          <span class="tag">Frontend React + TS</span>
+          <span class="tag">Backend NestJS</span>
+          <span class="tag">AI FastAPI</span>
+          <span class="tag">MongoDB</span>
+          <span class="tag">JWT + RBAC</span>
+        </div>
+      </header>
+
+      <section id="resume">
+        <h2>0) Résumé exécutif</h2>
+        <div class="card">
+          SkillUpTn gère un cycle complet:
+          <div class="code">Définition activité -> Prompt RH -> Génération recommandations -> Validation RH -> Validation manager -> Réponse employé (accept/refuse) -> Mise à jour compétences -> Feedback/retraining IA</div>
+          Les objectifs du système:
+          <ul>
+            <li>recommander les meilleurs profils selon compétences + sémantique + progression + historique + ancienneté,</li>
+            <li>expliquer les résultats et conserver la traçabilité (audit + historique + notifications),</li>
+            <li>s’améliorer via feedback et retraining.</li>
+          </ul>
+        </div>
+      </section>
+
+      <section id="architecture">
+        <h2>1) Architecture complète</h2>
+        <div class="grid g3">
+          <div class="card"><b>Frontend</b><br/>`frontend/src`<br/>Routes protégées, dashboards par rôle, composants UI, toasts globaux, accessibilité.</div>
+          <div class="card"><b>Backend</b><br/>`backend/src`<br/>Modules: users, activities, recommendations, manager, notifications, chat, audit, auth.</div>
+          <div class="card"><b>AI Service</b><br/>`ai-service`<br/>Parsing prompt, scoring, ranking, feedback log, retraining calibrateur.</div>
+        </div>
+        <div class="card">
+          <h3>Flux recommandation</h3>
+          <div class="code">HRRecommendations.tsx/runAI()
+ -> POST /api/recommendations/generate
+ -> RecommendationService.generateRecommendations()
+ -> POST AI /recommend
+ -> sauvegarde recommendations (Mongo)
+ -> notifications RH/Manager</div>
+        </div>
+      </section>
+
+      <section id="routing">
+        <h2>2) Routing frontend (toutes pages)</h2>
+        <div class="grid g2">
+          <div class="card"><b>Public</b><br/>`/login`, `/auth/google/callback`</div>
+          <div class="card"><b>ADMIN</b><br/>`/admin/dashboard`, `/admin/users`, `/admin/departments`, `/admin/skills`, `/admin/questions`, `/admin/analytics`, `/admin/prompt-rewriter`</div>
+          <div class="card"><b>HR</b><br/>`/hr/dashboard`, `/hr/activities`, `/hr/create-activity`, `/hr/recommendations/:activityId`, `/hr/import-employees`, `/hr/activity-requests`, `/hr/history`, `/hr/analytics`, `/hr/prompt-rewriter`</div>
+          <div class="card"><b>MANAGER</b><br/>`/manager/dashboard`, `/manager/activities`, `/manager/activity/:id`, `/manager/validations`, `/manager/activity-requests`, `/manager/history`</div>
+          <div class="card"><b>EMPLOYEE</b><br/>`/employee/dashboard`, `/employee/activities`, `/employee/notifications`, `/employee/history`, `/employee/profile`</div>
+          <div class="card"><b>Catch-all</b><br/>`* -> /login`</div>
+        </div>
+      </section>
+
+      <section id="roles">
+        <h2>3) Rôles et permissions</h2>
+        <div class="card">
+          <table>
+            <thead><tr><th>Rôle</th><th>Ce qu’il fait</th><th>Exemples endpoints</th></tr></thead>
+            <tbody>
+              <tr><td>ADMIN</td><td>Administration globale (users, départements, analytics)</td><td>`/users`, `/departments`, `/api/recommendations/retrain-ai`</td></tr>
+              <tr><td>HR</td><td>Créer activités, lancer recommandations, valider vers manager</td><td>`/api/recommendations/generate`, `/api/recommendations/hr-validate`</td></tr>
+              <tr><td>MANAGER</td><td>Demander activités, valider/rejeter recommandations RH</td><td>`/api/recommendations/manager-validate`, `/manager/*`</td></tr>
+              <tr><td>EMPLOYEE</td><td>Accepter/refuser invitation avec justification</td><td>`/api/recommendations/respond`, `/api/recommendations/my`</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section id="uiactions">
+        <h2>4) Boutons et actions UI (détaillé)</h2>
+        <div class="card">
+          <h3>HRRecommendations (page centrale)</h3>
+          <table>
+            <thead><tr><th>Bouton</th><th>Fonction</th><th>Action backend</th><th>Résultat</th></tr></thead>
+            <tbody>
+              <tr><td>Lancer recommandation</td><td>`runAI()`</td><td>`POST /api/recommendations/generate`</td><td>calcule ranking + met à jour tableau.</td></tr>
+              <tr><td>Générer prompt auto</td><td>`generatePromptFromActivity()`</td><td>local</td><td>overlay animé + injection prompt final dans textarea.</td></tr>
+              <tr><td>Envoyer au manager</td><td>`sendToManager()`</td><td>`POST /api/recommendations/hr-validate`</td><td>transfert recommandations validées.</td></tr>
+              <tr><td>Ajouter à la base</td><td>`createMissingSkill()`</td><td>`POST /users/question-competences`</td><td>catalogue compétences enrichi.</td></tr>
+              <tr><td>Diminuer score</td><td>`decreaseDeclinedScore()`</td><td>`POST /api/recommendations/hr-adjust-score`</td><td>score pénalisé, rang recalculé.</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="grid g2">
+          <div class="card"><b>Create/Edit Activity</b><br/>sélection compétences depuis liste, niveau, ajout compétence manquante à la base.</div>
+          <div class="card"><b>ManagerActivityRequests</b><br/>même logique compétences (liste + ajout base), envoi demande RH.</div>
+        </div>
+      </section>
+
+      <section id="backend">
+        <h2>5) Endpoints backend détaillés</h2>
+        <div class="card">
+          <h3>Recommendations API</h3>
+          <div class="code">POST   /api/recommendations/generate
+POST   /api/recommendations/simulate
+GET    /api/recommendations/activity/:activityId
+POST   /api/recommendations/hr-validate
+POST   /api/recommendations/manager-validate
+POST   /api/recommendations/respond
+GET    /api/recommendations/my
+POST   /api/recommendations/manual-add
+DELETE /api/recommendations/:recommendationId
+POST   /api/recommendations/search
+POST   /api/recommendations/retrain-ai
+POST   /api/recommendations/hr-adjust-score</div>
+        </div>
+        <div class="card">
+          <h3>Users / Skills catalog</h3>
+          <div class="code">GET  /users/competences/all
+GET  /users/question-competences/all
+POST /users/question-competences</div>
+          <p class="small muted">Accès étendu à HR + MANAGER + ADMIN pour charger les compétences dans les formulaires.</p>
+        </div>
+      </section>
+
+      <section id="events">
+        <h2>6) Événements métier</h2>
+        <div class="grid g2">
+          <div class="card">
+            <h3>Refus employé</h3>
+            - justification obligatoire,<br/>
+            - cause stockée,<br/>
+            - visible côté RH,<br/>
+            - régénération exclut employés déjà refusés.
+          </div>
+          <div class="card">
+            <h3>Acceptation employé</h3>
+            - progression positive des compétences de l’activité,<br/>
+            - historique + notifications + audit enregistrés.
+          </div>
+        </div>
+        <div class="card">
+          <h3>Top_n garanti</h3>
+          Si l’IA renvoie moins que demandé, backend complète la liste jusqu’à Top_n (limite disponibilité).
+        </div>
+      </section>
+
+      <section id="workflowdetail">
+        <h2>6.bis) Workflow détaillé pas à pas (end-to-end)</h2>
+        <div class="card">
+          <h3>A. Création et préparation activité (RH / Manager)</h3>
+          <table>
+            <thead><tr><th>Étape</th><th>Action UI</th><th>API</th><th>Effet DB / logique</th></tr></thead>
+            <tbody>
+              <tr><td>1</td><td>Créer activité</td><td>`POST /activities`</td><td>Nouvelle activité + places + contexte + compétences cibles.</td></tr>
+              <tr><td>2</td><td>Ajouter compétences depuis liste</td><td>`GET /users/competences/all` + `GET /users/question-competences/all`</td><td>Évite le texte libre ambigu; compétences alignées base.</td></tr>
+              <tr><td>3</td><td>Ajouter compétence manquante</td><td>`POST /users/question-competences`</td><td>Catalogue enrichi immédiatement.</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="card">
+          <h3>B. Génération recommandations IA (RH)</h3>
+          <table>
+            <thead><tr><th>Étape</th><th>Action UI</th><th>API</th><th>Effet DB / logique</th></tr></thead>
+            <tbody>
+              <tr><td>1</td><td>Saisir prompt ou générer auto</td><td>Local + règles de format</td><td>Format strict: `Top_n`, compétences + niveaux.</td></tr>
+              <tr><td>2</td><td>Lancer recommandation</td><td>`POST /api/recommendations/generate`</td><td>Parsing skills, validation against base, scoring IA.</td></tr>
+              <tr><td>3</td><td>Tri des résultats</td><td>backend + frontend</td><td>Tri `score_total` desc, tie-break par rang.</td></tr>
+              <tr><td>4</td><td>Top_n demandé</td><td>backend post-process</td><td>Complétion de liste si IA renvoie moins (selon disponibilité).</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="card">
+          <h3>C. Validation RH et confirmation événement</h3>
+          <table>
+            <thead><tr><th>Étape</th><th>Action UI</th><th>API</th><th>Effet DB / logique</th></tr></thead>
+            <tbody>
+              <tr><td>1</td><td>Clique `Envoyer au manager` ou `Confirmer activité`</td><td>`POST /api/recommendations/hr-validate`</td><td>Recommandations passent à l’étape manager.</td></tr>
+              <tr><td>2</td><td>Places manquantes</td><td>popup locale</td><td>Choix: annuler et continuer collecte, ou confirmer quand même.</td></tr>
+              <tr><td>3</td><td>Si toutes places couvertes</td><td>update activité</td><td>Événement marqué confirmé / completed.</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="card">
+          <h3>D. Validation manager et notification employé</h3>
+          <table>
+            <thead><tr><th>Étape</th><th>Action UI</th><th>API</th><th>Effet DB / logique</th></tr></thead>
+            <tbody>
+              <tr><td>1</td><td>Manager approuve/rejette</td><td>`POST /api/recommendations/manager-validate`</td><td>Statuts manager appliqués.</td></tr>
+              <tr><td>2</td><td>Notification ciblée</td><td>service notifications</td><td>Employés reçoivent invitation activité.</td></tr>
+              <tr><td>3</td><td>Temps réel</td><td>WebSocket gateway</td><td>UI actualisée instantanément (header + pages).</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="card">
+          <h3>E. Réponse employé, refus et arbitrage RH</h3>
+          <table>
+            <thead><tr><th>Étape</th><th>Action UI</th><th>API</th><th>Effet DB / logique</th></tr></thead>
+            <tbody>
+              <tr><td>1</td><td>Employé accepte</td><td>`POST /api/recommendations/respond`</td><td>Status accepté + progression compétences liée niveaux.</td></tr>
+              <tr><td>2</td><td>Employé refuse (motif obligatoire)</td><td>`POST /api/recommendations/respond`</td><td>Cause stockée et visible RH; exclusion du profil dans régénération.</td></tr>
+              <tr><td>3</td><td>RH ouvre refus et lit la cause</td><td>UI RH recommandations</td><td>Décision RH: diminuer score ou garder score.</td></tr>
+              <tr><td>4</td><td>RH diminue score</td><td>`POST /api/recommendations/hr-adjust-score`</td><td>Score diminué + rank recalculé + notification employé.</td></tr>
+              <tr><td>5</td><td>RH garde score</td><td>`POST /api/recommendations/hr-keep-score`</td><td>Score conservé + trace audit + notification employé.</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="card">
+          <h3>F. Historisation, traçabilité, amélioration continue</h3>
+          <table>
+            <thead><tr><th>Composant</th><th>Rôle</th><th>Données conservées</th></tr></thead>
+            <tbody>
+              <tr><td>`activity_history`</td><td>Historique compétence par activité</td><td>before/after, delta, motif, date.</td></tr>
+              <tr><td>`notifications`</td><td>Suivi informations utilisateur</td><td>type, titre, message, payload ciblé.</td></tr>
+              <tr><td>`audit_logs`</td><td>Traçabilité sécurité et métier</td><td>acteur, action, avant/après, metadata.</td></tr>
+              <tr><td>Retraining IA</td><td>Amélioration du calibrage</td><td>feedback accepté/refusé/validé/rejeté.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section id="db">
+        <h2>7) Collections/tables (MongoDB)</h2>
+        <div class="grid g3">
+          <div class="card"><b>users</b><br/>profil + rôle + statut + département.</div>
+          <div class="card"><b>departments</b><br/>structure org + manager.</div>
+          <div class="card"><b>activities</b><br/>activité + requiredSkills + dates + places.</div>
+          <div class="card"><b>fiches</b><br/>snapshot RH par saison.</div>
+          <div class="card"><b>competences</b><br/>scores auto/hierarchie par compétence.</div>
+          <div class="card"><b>question_competences</b><br/>catalogue de compétences global.</div>
+          <div class="card"><b>recommendations</b><br/>scores, rang, statut, motif, notes.</div>
+          <div class="card"><b>activity_history</b><br/>feedback + skill_updates + date.</div>
+          <div class="card"><b>notifications</b><br/>alertes in-app + payload data.</div>
+        </div>
+      </section>
+
+      <section id="model">
+        <h2>8) Modèle IA: features et formules</h2>
+        <div class="card">
+          <table>
+            <thead><tr><th>Feature</th><th>Interprétation</th><th>Poids défaut</th></tr></thead>
+            <tbody>
+              <tr><td>score_nlp</td><td>similarité sémantique prompt/profil</td><td>0.25</td></tr>
+              <tr><td>score_competences</td><td>matching compétences + niveau requis</td><td>0.45</td></tr>
+              <tr><td>score_progression</td><td>bonus/malus selon contexte upskill/expert</td><td>0.15</td></tr>
+              <tr><td>score_history</td><td>adéquation historique activités</td><td>0.10</td></tr>
+              <tr><td>score_seniority</td><td>facteur ancienneté</td><td>0.05</td></tr>
+            </tbody>
+          </table>
+          <p class="small muted">Poids ajustables via variable env `AI_SCORING_WEIGHTS`.</p>
+        </div>
+        <div class="card">
+          <h3>Mise à jour post-réponse (liée niveaux)</h3>
+          <div class="code">Niveau 1: +/-0.20
+Niveau 2: +/-0.30
+Niveau 3: +/-0.40
+Niveau 4: +/-0.50
+Niveau 5: +/-0.60
+Bornes: [0,10]</div>
+        </div>
+      </section>
+
+      <section id="training">
+        <h2>9) Entraînement / retraining</h2>
+        <div class="card">
+          <b>Endpoint:</b> `POST /api/recommendations/retrain-ai`<br/>
+          Backend appelle AI `/retrain`:
+          <ul>
+            <li>collecte feedback (accepted/declined/approved/rejected),</li>
+            <li>construit dataset labellisé,</li>
+            <li>fallback faible supervision si labels insuffisants,</li>
+            <li>entraîne LogisticRegression calibrator,</li>
+            <li>sauvegarde `score_calibrator.pkl`.</li>
+          </ul>
+        </div>
+      </section>
+
+      <section id="notifications">
+        <h2>10) Notifications et navigation</h2>
+        <div class="card">
+          - Bell header charge notifications utilisateur,<br/>
+          - clic notif RH redirige vers la recommandation de l’activité,<br/>
+          - employé reçoit notifications de mise à jour score compétences (augmentation/diminution),<br/>
+          - websocket gateway pour temps réel.
+        </div>
+      </section>
+
+      <section id="ux">
+        <h2>11) UX transverse</h2>
+        <div class="grid g2">
+          <div class="card">
+            <h3>Toasts</h3>
+            Popups globaux succès/erreur, réseau, lecture/mutation API, position bas-droite, style animé.
+          </div>
+          <div class="card">
+            <h3>Accessibilité</h3>
+            zoom, langue, lecture auto, commandes vocales, switch son toasts on/off.
+          </div>
+        </div>
+      </section>
+
+      <section id="runbook">
+        <h2>12) Runbook opérationnel</h2>
+        <div class="card">
+          <div class="code">1) Vérifier backend + ai-service up
+2) Vérifier .env (MONGO, JWT, AI URL)
+3) Vérifier catalogue compétences chargé
+4) Générer recommandations RH
+5) Valider RH -> Manager -> Employé
+6) Contrôler refus/motifs/remplacements
+7) Relancer retraining périodiquement</div>
+          <p class="small muted">Export PDF: ouvrir ce HTML dans navigateur -> Imprimer -> Enregistrer en PDF.</p>
+        </div>
+      </section>
+
+      <p class="footer">Version enrichie (ultra détaillée) - SkillUpTn Documentation</p>
+    </main>
+  </div>
+</body>
+</html>
+
