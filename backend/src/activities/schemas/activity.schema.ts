@@ -46,18 +46,8 @@ export class Activity {
   @Prop()
   nb_seats?: number;
 
-  @Prop({
-    type: {
-      lat: Number,
-      lng: Number,
-      address: String,
-    },
-  })
-  location?: {
-    lat: number;
-    lng: number;
-    address: string;
-  };
+  @Prop()
+  location?: string; // Toujours string dans la BD
 
   @Prop()
   duration?: string;

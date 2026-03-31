@@ -58,6 +58,12 @@ type SimulationResult = {
 }
 type InlineNotice = { type: 'success' | 'error'; message: string } | null
 type SkillOption = { intitule: string; type?: string; source?: 'competence' | 'question' }
+type UserCompetence = {
+  user_id: string;
+  competence_id: string;
+  intitule: string;
+  niveau: number;
+}
 
 function normalizeParsedActivity(raw: any): ApiRecommendation['parsed_activity'] | null {
   if (!raw || typeof raw !== 'object') return null
@@ -187,6 +193,7 @@ export default function HRRecommendations() {
   const [selectedMissingSkill, setSelectedMissingSkill] = useState('')
   const [skillsLoading, setSkillsLoading] = useState(false)
   const [allSkills, setAllSkills] = useState<SkillOption[]>([])
+  const [userCompetences, setUserCompetences] = useState<UserCompetence[]>([])
   const [skillSearch, setSkillSearch] = useState('')
   const [selectedSkillLevel, setSelectedSkillLevel] = useState(3)
   const [newSkillName, setNewSkillName] = useState('')
@@ -419,6 +426,29 @@ export default function HRRecommendations() {
       setEmployees(mapped)
     }
     void loadEmployees()
+  }, [fetchWithAuth, token])
+
+  // Charger les compétences de tous les utilisateurs pour filtrage
+  useEffect(() => {
+    const loadUserCompetences = async () => {
+      if (!token) return
+      try {
+        const res = await fetchWithAuth(`${API_BASE_URL}/users/user-competences/all`)
+        if (!res.ok) return
+        const data = await res.json()
+        const rows = Array.isArray(data?.data) ? data.data : (Array.isArray(data) ? data : [])
+        const mapped = rows.map((c: any) => ({
+          user_id: String(c?.user_id ?? c?.userId ?? ''),
+          competence_id: String(c?.competence_id ?? c?.competenceId ?? ''),
+          intitule: String(c?.intitule ?? c?.competence?.intitule ?? ''),
+          niveau: Number(c?.niveau ?? c?.level ?? 0),
+        })) as UserCompetence[]
+        setUserCompetences(mapped)
+      } catch (e) {
+        console.error('Erreur chargement compétences utilisateurs:', e)
+      }
+    }
+    void loadUserCompetences()
   }, [fetchWithAuth, token])
 
   const runAI = async () => {
@@ -725,17 +755,42 @@ export default function HRRecommendations() {
   }
 
   const declinedRecs = sortedAiRecs.filter((r) => r.status === 'EMPLOYEE_DECLINED')
-  const filteredEmployees = employees
-    .filter((e) => {
-      const q = employeeQuery.trim().toLowerCase()
-      if (!q) return true
-      return (
-        e.name.toLowerCase().includes(q) ||
-        e.email.toLowerCase().includes(q) ||
-        e.matricule.toLowerCase().includes(q)
-      )
-    })
-    .slice(0, 30)
+  
+  // Filtrer les employés par compétences requises de l'activité
+  const filteredEmployees = useMemo(() => {
+    // Obtenir les compétences requises de l'activité
+    const requiredSkills = activity?.required_skills || []
+    const requiredSkillNames = requiredSkills.map((s: any) => 
+      normalizeSkillKey(String(s?.skill_name ?? s?.intitule ?? ''))
+    ).filter(Boolean)
+    
+    return employees
+      .filter((e) => {
+        // Filtre par recherche texte
+        const q = employeeQuery.trim().toLowerCase()
+        if (q && !(
+          e.name.toLowerCase().includes(q) ||
+          e.email.toLowerCase().includes(q) ||
+          e.matricule.toLowerCase().includes(q)
+        )) {
+          return false
+        }
+        
+        // Filtre par compétences - l'employé doit avoir au moins une compétence requise
+        if (requiredSkillNames.length > 0 && userCompetences.length > 0) {
+          const userSkills = userCompetences.filter(uc => uc.user_id === e.id)
+          const hasMatchingSkill = userSkills.some(uc => 
+            requiredSkillNames.some(reqSkill => 
+              normalizeSkillKey(uc.intitule) === reqSkill
+            )
+          )
+          return hasMatchingSkill
+        }
+        
+        return true
+      })
+      .slice(0, 30)
+  }, [employees, employeeQuery, activity?.required_skills, userCompetences])
   const filteredSkills = useMemo(() => {
     const q = skillSearch.trim().toLowerCase()
     const rows = Array.isArray(allSkills) ? allSkills : []

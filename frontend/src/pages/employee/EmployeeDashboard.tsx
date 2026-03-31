@@ -6,7 +6,6 @@ import StatCard from '../../components/shared/StatCard'
 import StatusBadge from '../../components/shared/StatusBadge'
 import { ClipboardList, Bell, CheckCircle, TrendingUp, ArrowRight } from 'lucide-react'
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
-import { useTranslation } from '../../context/TranslationContext'
 
 const API_BASE_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:3000'
 
@@ -23,7 +22,6 @@ type MyRecommendation = {
 export default function EmployeeDashboard() {
   const { getUnreadCount, getUserNotifications, fetchWithAuth } = useData()
   const { user } = useAuth()
-  const { t } = useTranslation()
   const [myRecs, setMyRecs] = useState<MyRecommendation[]>([])
 
   useEffect(() => {
@@ -94,25 +92,25 @@ export default function EmployeeDashboard() {
   return (
     <div className="flex flex-col gap-6">
       <div className="reveal reveal-left animate-slide-up">
-        <h1 className="text-2xl font-bold text-foreground">{t('dashboard.employee.title')}</h1>
+        <h1 className="text-2xl font-bold text-foreground">Tableau de bord Employe</h1>
         <p className="text-sm text-muted-foreground">
-          {t('dashboard.employee.subtitle')} {user?.name}
+          Bienvenue {user?.name}
         </p>
       </div>
 
       <div className="reveal-grid grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <StatCard title={t('dashboard.employee.card.proposedActivities')} value={myRecs.length} icon={<ClipboardList className="h-5 w-5" />} />
-        <StatCard title={t('dashboard.employee.card.participations')} value={accepted.length} icon={<CheckCircle className="h-5 w-5" />} />
-        <StatCard title={t('dashboard.employee.card.pending')} value={pending.length} icon={<TrendingUp className="h-5 w-5" />} />
-        <StatCard title={t('dashboard.employee.card.notifications')} value={unread} icon={<Bell className="h-5 w-5" />} />
+        <StatCard title="Activites proposees" value={myRecs.length} icon={<ClipboardList className="h-5 w-5" />} />
+        <StatCard title="Participations" value={accepted.length} icon={<CheckCircle className="h-5 w-5" />} />
+        <StatCard title="En attente" value={pending.length} icon={<TrendingUp className="h-5 w-5" />} />
+        <StatCard title="Notifications" value={unread} icon={<Bell className="h-5 w-5" />} />
       </div>
 
       <div className="reveal-grid grid grid-cols-1 gap-6 lg:grid-cols-2">
         {/* My skills */}
         <div className="reveal reveal-right rounded-xl border border-border bg-card p-5 card-animated">
-          <h3 className="mb-4 text-sm font-semibold text-card-foreground">{t('dashboard.employee.section.mySkills')}</h3>
+          <h3 className="mb-4 text-sm font-semibold text-card-foreground">Mes competences</h3>
           {userCompetences.length === 0 ? (
-            <p className="py-4 text-center text-sm text-muted-foreground">{t('dashboard.employee.section.noSkills')}</p>
+            <p className="py-4 text-center text-sm text-muted-foreground">Aucune competence</p>
           ) : (
             <div className="flex flex-col gap-3">
               {userCompetences.map(c => (
@@ -147,7 +145,7 @@ export default function EmployeeDashboard() {
 
         {/* Progression chart */}
         <div className="reveal reveal-scale rounded-xl border border-border bg-card p-5 card-animated">
-          <h3 className="mb-4 text-sm font-semibold text-card-foreground">{t('dashboard.employee.section.progression')}</h3>
+          <h3 className="mb-4 text-sm font-semibold text-card-foreground">Progression</h3>
           <ResponsiveContainer width="100%" height={200}>
             <LineChart data={progressionData}>
               <CartesianGrid strokeDasharray="3 3" stroke="hsl(220, 13%, 89%)" />
@@ -163,14 +161,14 @@ export default function EmployeeDashboard() {
       {/* Recent notifications */}
       <div className="reveal reveal-right rounded-xl border border-border bg-card card-animated">
         <div className="flex items-center justify-between border-b border-border px-5 py-4">
-          <h3 className="text-sm font-semibold text-card-foreground">{t('dashboard.employee.section.recentNotifications')}</h3>
+          <h3 className="text-sm font-semibold text-card-foreground">Notifications recentes</h3>
           <Link to="/employee/notifications" className="flex items-center gap-1 text-xs font-medium text-primary hover:underline">
-            {t('dashboard.employee.section.viewAll')} <ArrowRight className="h-3 w-3" />
+            Voir tout <ArrowRight className="h-3 w-3" />
           </Link>
         </div>
         <div className="divide-y divide-border">
           {recentNotifs.length === 0 ? (
-            <p className="px-5 py-6 text-center text-sm text-muted-foreground">{t('dashboard.employee.section.noNotifications')}</p>
+            <p className="px-5 py-6 text-center text-sm text-muted-foreground">Aucune notification</p>
           ) : (
             recentNotifs.map(n => (
               <div key={n.id} className="flex items-center justify-between px-5 py-3 transition-all hover:bg-muted/30">

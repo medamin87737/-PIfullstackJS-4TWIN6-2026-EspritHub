@@ -66,7 +66,14 @@ export class UsersController {
     };
   }
 
-  /** Google OAuth login */
+  /** Récupérer toutes les compétences de tous les utilisateurs (pour système de recommandation) */
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('HR', 'ADMIN', 'MANAGER')
+  @Get('user-competences/all')
+  async getAllUserCompetences() {
+    const data = await this.usersService.getAllUserCompetences();
+    return { success: true, data };
+  }
   @Get('google/login')
   @UseGuards(AuthGuard('google'))
   async googleLogin() {

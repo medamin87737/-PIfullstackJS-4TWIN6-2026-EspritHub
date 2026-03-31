@@ -3,7 +3,6 @@ import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-route
 import { AuthProvider } from './context/AuthContext'
 import { DataProvider } from './context/DataContext'
 import { AccessibilityProvider } from './context/AccessibilityContext'
-import { TranslationProvider } from './context/TranslationContext'
 import AccessibilityWidget from './components/shared/AccessibilityWidget'
 import AppLoader from './components/shared/AppLoader'
 import RealtimeNotifications from './components/shared/RealtimeNotifications'
@@ -26,6 +25,7 @@ import PromptRewriter from './pages/shared/PromptRewriter'
 import HRDashboard from './pages/hr/HRDashboard'
 import HRActivities from './pages/hr/HRActivities'
 import CreateActivity from './pages/hr/CreateActivity'
+import HRActivityChatCreator from './pages/hr/HRActivityChatCreator'
 import HRRecommendations from './pages/hr/HRRecommendations'
 import HRHistory from './pages/hr/HRHistory'
 import HRAnalytics from './pages/hr/HRAnalytics'
@@ -98,11 +98,10 @@ export default function App() {
 
   return (
     <BrowserRouter>
-      <TranslationProvider>
-        <AccessibilityProvider>
-          <AuthProvider>
-            <DataProvider>
-              <AnimationBootstrap />
+      <AccessibilityProvider>
+        <AuthProvider>
+          <DataProvider>
+            <AnimationBootstrap />
               <RouteProgress />
               <RealtimeNotifications />
               <RouteTransition>
@@ -140,6 +139,7 @@ export default function App() {
                     <Route path="/hr/dashboard" element={<HRDashboard />} />
                     <Route path="/hr/activities" element={<HRActivities />} />
                     <Route path="/hr/create-activity" element={<CreateActivity />} />
+                    <Route path="/hr/create-activity-chat" element={<HRActivityChatCreator />} />
                     <Route path="/hr/recommendations/:activityId" element={<HRRecommendations />} />
                     <Route path="/hr/import-employees" element={<HRImportEmployees />} />
                     <Route path="/hr/activity-requests" element={<HRActivityRequests />} />
@@ -189,7 +189,6 @@ export default function App() {
           </DataProvider>
         </AuthProvider>
       </AccessibilityProvider>
-    </TranslationProvider>
     </BrowserRouter>
   )
 }

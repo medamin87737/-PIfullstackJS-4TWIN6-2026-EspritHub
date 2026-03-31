@@ -4,7 +4,6 @@ import { useAuth } from '../../context/AuthContext'
 import { useData } from '../../context/DataContext'
 import { Bell, Sun, Moon } from 'lucide-react'
 import { cn } from '../../../lib/utils'
-import { useTranslation } from '../../context/TranslationContext'
 import WeatherWidget from '../WeatherWidget'
 
 export default function Header() {
@@ -13,7 +12,6 @@ export default function Header() {
   const navigate = useNavigate()
   const [darkMode, setDarkMode] = useState(false)
   const [showNotifications, setShowNotifications] = useState(false)
-  const { t } = useTranslation()
 
   if (!user) return null
 
@@ -85,13 +83,13 @@ export default function Header() {
               <div className="absolute right-0 top-full z-50 mt-2 w-80 rounded-xl border border-border bg-card shadow-lg animate-fade-in">
                 <div className="border-b border-border px-4 py-3">
                   <h3 className="text-sm font-semibold text-card-foreground">
-                    {t('header.notifications')}
+                    Notifications
                   </h3>
                 </div>
                 <div className="max-h-80 overflow-y-auto">
                   {userNotifications.length === 0 ? (
                     <p className="px-4 py-6 text-center text-sm text-muted-foreground">
-                      {t('header.noNotifications')}
+                      Aucune notification
                     </p>
                   ) : (
                     userNotifications.slice(0, 5).map((n) => (

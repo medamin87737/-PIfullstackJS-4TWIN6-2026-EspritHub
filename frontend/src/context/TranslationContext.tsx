@@ -1,7 +1,8 @@
 import { createContext, useContext, useState, useCallback, type ReactNode, useEffect, useRef } from 'react';
+import { translateWithPuter } from '../services/puterService';
+import { t as i18nTranslate, hasTranslation } from '../utils/i18n';
 
-export type Language = 
-  | 'auto' | 'en' | 'fr' | 'es' | 'de' | 'it' | 'pt' | 'ru' | 'zh' | 'ja' | 'ko' | 'ar' | 'hi' | 'tr' | 'nl' | 'pl' | 'sv' | 'da' | 'no' | 'fi' | 'cs' | 'hu' | 'ro' | 'bg' | 'hr' | 'sr' | 'uk' | 'he' | 'th' | 'vi' | 'id' | 'ms' | 'tl' | 'sw' | 'ta' | 'te' | 'mr' | 'bn' | 'ur' | 'fa' | 'gu' | 'kn' | 'ml' | 'pa' | 'or' | 'as' | 'ne' | 'si' | 'my' | 'km' | 'lo' | 'mn' | 'uz' | 'kk' | 'ky' | 'tg' | 'az' | 'ka' | 'hy' | 'eu' | 'ca' | 'gl' | 'sq' | 'be' | 'is' | 'ga' | 'cy' | 'gd' | 'lb' | 'mt' | 'mi' | 'sm' | 'haw' | 'ht' | 'jw' | 'su' | 'mg' | 'ny' | 'sn' | 'yo' | 'ig' | 'ha' | 'am' | 'so' | 'af' | 'st' | 'xh' | 'zu' | 'rw' | 'ln' | 'kg' | 'wo' | 'ba' | 'tt' | 'kv' | 'cv' | 'udm' | 'mhr' | 'sah' | 'tyv' | 'xal' | 'krc' | 'ce' | 'ab' | 'os' | 'roa' | 'ia' | 'eo' | 'vo' | 'ie' | 'kw' | 'br' | 'co' | 'nds' | 'pdc' | 'de_at' | 'gsw' | 'bar' | 'frr' | 'stq' | 'li' | 'nl_be' | 'af' | 'wa' | 'pcd' | 'fr_ca' | 'fr_ch' | 'rm' | 'fur' | 'lld' | 'sc' | 'scn' | 'vec' | 'nap' | 'lij' | 'eml' | 'lmo' | 'rgn' | 'wa' | 'pms' | 'lzh' | 'zh_classical' | 'zh_min_nan' | 'zh_yue' | 'cdo' | 'gan' | 'hak' | 'wuu' | 'hsn' | 'czh' | 'cpx' | 'nan' | 'mnp' | 'cmn' | 'zh' | 'yue' | 'gan' | 'hsn' | 'czh' | 'cpx' | 'mnp' | 'nan' | 'wuu' | 'hak' | 'cdo' | 'lzh' | 'zh_classical' | 'zh_min_nan';
+export type Language = 'auto' | 'en' | 'fr' | 'es' | 'de' | 'it';
 
 interface TranslationContextType {
   language: Language;
@@ -141,44 +142,36 @@ export function TranslationProvider({ children }: { children: ReactNode }) {
     saveOriginalTextsToStorage();
   }, [saveOriginalTextsToStorage]);
 
-  // Fonction de traduction avec API MyMemory (gratuit)
+  // Fonction de traduction avec Puter.js AI (100% gratuit, illimité, LLM)
   const translateText = useCallback(async (text: string, targetLang: string): Promise<string> => {
     if (!text || text.trim() === '') return text;
     if (targetLang === 'auto' || targetLang === 'fr') return text;
     
-    // Vérifier le cache
+    // Vérifier le cache d'abord
     if (cacheRef.current[targetLang]?.[text]) {
       return cacheRef.current[targetLang][text];
     }
 
     try {
-      // Utiliser MyMemory API (gratuit, 1000 mots/jour)
-      const encodedText = encodeURIComponent(text);
-      const url = `https://api.mymemory.translated.net/get?q=${encodedText}&langpair=fr|${targetLang}`;
+      // Utiliser Puter.js AI (100% gratuit, pas de clé API, illimité)
+      const translated = await translateWithPuter(text, targetLang);
       
-      const response = await fetch(url);
-      const data = await response.json();
-      
-      if (data.responseStatus === 200 && data.responseData?.translatedText) {
-        const translated = data.responseData.translatedText;
-        
-        // Sauvegarder dans le cache
+      // Sauvegarder dans le cache si traduction réussie
+      if (translated !== text) {
         if (!cacheRef.current[targetLang]) {
           cacheRef.current[targetLang] = {};
         }
         cacheRef.current[targetLang][text] = translated;
-        
-        return translated;
       }
       
-      return text;
+      return translated;
     } catch (error) {
-      console.error('Translation error:', error);
-      return text;
+      console.error('Puter.js translation error:', error);
+      return text; // Fallback: retourner le texte original
     }
   }, []);
 
-  // Fonction pour traduire la page entière
+// Fonction pour traduire la page entière - OPTIMISÉE
   const translatePage = useCallback(async () => {
     if (language === 'auto' || language === 'fr') {
       // Restaurer les textes originaux
@@ -199,18 +192,71 @@ export function TranslationProvider({ children }: { children: ReactNode }) {
 
     try {
       if (typeof document !== 'undefined') {
-        // Seulement les éléments explicitement marqués comme traduisibles
-        const elements = document.querySelectorAll('[data-translatable="true"]');
+        const selectors = [
+          'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
+          'p', 'span', 'button:not([type="submit"])', 'a', 'label',
+          'td', 'th', 'li', 'dt', 'dd',
+          '[data-translatable="true"]'
+        ];
         
-        for (let i = 0; i < elements.length; i++) {
-          const el = elements[i];
-          const originalText = originalTextRef.current[`el_${i}`] || el.textContent || '';
+        const elements = Array.from(document.querySelectorAll(selectors.join(', ')));
+        
+        // Filtrer et collecter les textes uniques
+        const textMap = new Map<Element, string>();
+        const uniqueTexts = new Set<string>();
+        
+        for (const el of elements) {
+          const text = el.textContent?.trim();
+          if (!text || text.length === 0 || text.length > 200) continue;
+          if (/^[\d\s\W]+$/.test(text)) continue; // Uniquement chiffres/symboles
+          if (el.closest('script') || el.closest('style')) continue;
           
-          if (originalText && originalText.trim().length > 0 && originalText.trim().length < 500) {
-            const translated = await translateText(originalText, language);
-            if (translated !== originalText) {
-              el.textContent = translated;
+          // Ne PAS traduire les clés i18n (format: sidebar.hr.history)
+          if (/^[a-z]+\.[a-z]+\.[a-z]+(\.[a-z]+)*$/.test(text)) continue;
+          
+          // Vérifier cache
+          if (cacheRef.current[language]?.[text]) {
+            el.textContent = cacheRef.current[language][text];
+            continue;
+          }
+          
+          textMap.set(el, text);
+          uniqueTexts.add(text);
+        }
+        
+        // Traduction en batch parallèle (max 5 simultanés)
+        const textsArray = Array.from(uniqueTexts);
+        const batchSize = 5;
+        const results = new Map<string, string>();
+        
+        for (let i = 0; i < textsArray.length; i += batchSize) {
+          const batch = textsArray.slice(i, i + batchSize);
+          const batchPromises = batch.map(async (text) => {
+            const translated = await translateText(text, language);
+            results.set(text, translated);
+            
+            // Mettre à jour le cache
+            if (!cacheRef.current[language]) {
+              cacheRef.current[language] = {};
             }
+            cacheRef.current[language][text] = translated;
+            
+            return translated;
+          });
+          
+          await Promise.all(batchPromises);
+          
+          // Petit délai pour éviter le rate limiting
+          if (i + batchSize < textsArray.length) {
+            await new Promise(resolve => setTimeout(resolve, 50));
+          }
+        }
+        
+        // Appliquer les traductions
+        for (const [el, originalText] of textMap) {
+          const translated = results.get(originalText);
+          if (translated && translated !== originalText) {
+            el.textContent = translated;
           }
         }
       }
@@ -221,19 +267,36 @@ export function TranslationProvider({ children }: { children: ReactNode }) {
     }
   }, [language, saveOriginalTexts, translateText]);
 
-  // Fonction t() pour traduire un texte spécifique
+  // Fonction t() - utilise i18n pour les clés, API pour le contenu dynamique
   const t = useCallback((text: string): string => {
-    if (language === 'auto' || language === 'fr') return text;
+    const effectiveLang = language === 'auto' ? 'fr' : language;
     
-    // Vérifier le cache d'abord
-    if (cacheRef.current[language]?.[text]) {
-      return cacheRef.current[language][text];
+    // DEBUG: Vérifier si c'est une clé i18n
+    const isKey = hasTranslation(text);
+    if (text.includes('sidebar') || text.includes('dashboard')) {
+      console.log(`[t()] Key: ${text}, hasTranslation: ${isKey}, lang: ${effectiveLang}`);
     }
     
-    // Traduction asynchrone en arrière-plan
-    translateText(text, language).then(translated => {
+    // Si c'est une clé i18n connue, la traduire avec i18n
+    if (isKey) {
+      const translated = i18nTranslate(text, effectiveLang);
+      console.log(`[t()] Translated ${text} -> ${translated}`);
+      return translated;
+    }
+    
+    // Si langue est FR ou AUTO, retourner le texte tel quel (pas de traduction API)
+    if (language === 'auto' || language === 'fr') {
+      return text;
+    }
+    
+    // Pour le contenu dynamique (pas une clé i18n), vérifier le cache
+    if (cacheRef.current[effectiveLang]?.[text]) {
+      return cacheRef.current[effectiveLang][text];
+    }
+    
+    // Contenu dynamique - traduction API en arrière-plan
+    translateText(text, effectiveLang).then(translated => {
       if (translated !== text && typeof window !== 'undefined') {
-        // Forcer la mise à jour si nécessaire
         const event = new CustomEvent('translation-updated', { detail: { original: text, translated } });
         window.dispatchEvent(event);
       }
@@ -242,12 +305,14 @@ export function TranslationProvider({ children }: { children: ReactNode }) {
     return text;
   }, [language, translateText]);
 
-  // Écouter les changements de langue pour traduire automatiquement
-  // NOTE: Désactivé pour éviter les erreurs DOM - utiliser translatePage() manuellement
-  // ou marquer les éléments avec data-translatable="true"
+  // Écouter les changements de langue - DÉSACTIVÉ (trop lent)
+  // NOTE: Utiliser t() pour les traductions i18n individuelles
+  // La traduction de page complète est désactivée pour éviter les ralentissements
   /*
   useEffect(() => {
-    translatePage();
+    if (language !== 'fr' && language !== 'auto') {
+      translatePage();
+    }
   }, [language, translatePage]);
   */
 

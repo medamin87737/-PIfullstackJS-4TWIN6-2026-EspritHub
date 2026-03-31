@@ -1,7 +1,6 @@
 import { useState } from 'react'
 import { useAccessibility } from '../../context/AccessibilityContext'
-import { useTranslation } from '../../context/TranslationContext'
-import { Globe, Loader2 } from 'lucide-react'
+import { Globe } from 'lucide-react'
 
 const TOAST_SOUND_ENABLED_KEY = 'accessibility_toast_sound_enabled'
 
@@ -15,10 +14,7 @@ export default function AccessibilityWidget() {
     toggleVoiceCommands,
   } = useAccessibility()
 
-  const { language, setLanguage, isTranslating, supportedLanguages, translatePage } = useTranslation()
-
   const [open, setOpen] = useState(false)
-  const [showLangDropdown, setShowLangDropdown] = useState(false)
   const [toastSoundEnabled, setToastSoundEnabled] = useState(() => {
     if (typeof window === 'undefined') return true
     return window.localStorage.getItem(TOAST_SOUND_ENABLED_KEY) !== 'false'
@@ -80,55 +76,6 @@ export default function AccessibilityWidget() {
                 A++
               </button>
             </div>
-          </div>
-
-          {/* Language - Nouveau sélecteur toutes langues */}
-          <div className="mb-3">
-            <p className="mb-1 text-xs font-medium text-muted-foreground flex items-center gap-1">
-              <Globe className="h-3 w-3" />
-              Traduction (API externe)
-            </p>
-            <div className="relative">
-              <button
-                type="button"
-                onClick={() => setShowLangDropdown(!showLangDropdown)}
-                disabled={isTranslating}
-                className="w-full flex items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-xs hover:bg-accent disabled:opacity-50"
-              >
-                <span className="flex items-center gap-2">
-                  {isTranslating && <Loader2 className="h-3 w-3 animate-spin" />}
-                  <span>
-                    {supportedLanguages.find(l => l.code === language)?.flag} {' '}
-                    {supportedLanguages.find(l => l.code === language)?.name || 'Français'}
-                  </span>
-                </span>
-                <span className="text-muted-foreground">▼</span>
-              </button>
-
-              {showLangDropdown && (
-                <div className="absolute z-50 mt-1 w-full max-h-60 overflow-y-auto rounded-md border border-input bg-card shadow-lg">
-                  {supportedLanguages.map((lang) => (
-                    <button
-                      key={lang.code}
-                      type="button"
-                      onClick={() => {
-                        setLanguage(lang.code as any)
-                        setShowLangDropdown(false)
-                      }}
-                      className={`w-full flex items-center gap-2 px-3 py-2 text-xs text-left hover:bg-accent ${
-                        language === lang.code ? 'bg-accent' : ''
-                      }`}
-                    >
-                      <span>{lang.flag}</span>
-                      <span>{lang.name}</span>
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-            <p className="mt-1 text-[10px] text-muted-foreground">
-              50+ langues via MyMemory API. Cliquez pour traduire la page.
-            </p>
           </div>
 
           {/* Vocal reader auto switch */}
