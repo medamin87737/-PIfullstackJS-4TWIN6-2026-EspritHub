@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useData } from '../../context/DataContext'
 import StatusBadge from '../../components/shared/StatusBadge'
-import { ArrowLeft, Sparkles, Send, Zap, Target, Medal, MessageSquare, TrendingUp, FileCheck, FileDown, FileSpreadsheet, Loader2, Mic, MicOff, Smartphone } from 'lucide-react'
+import { ArrowLeft, Sparkles, Send, Zap, Target, Medal, MessageSquare, TrendingUp, FileCheck, FileDown, FileSpreadsheet, Loader2, Mic, MicOff, Smartphone, Award } from 'lucide-react'
 import { useToast } from '../../../hooks/use-toast'
 import { useSpellCheck } from '../../hooks/useSpellCheck'
 import { useSpeechRecognition } from '../../hooks/useSpeechRecognition'
@@ -222,6 +222,7 @@ export default function HRRecommendations() {
   const [missingSeats, setMissingSeats] = useState(0)
   const [smsSending, setSmsSending] = useState<Record<string, boolean>>({})
   const [exportLoading, setExportLoading] = useState<'pdf' | 'xlsx' | null>(null)
+  const [certLoading, setCertLoading] = useState(false)
   const typingTimerRef = useRef<number | null>(null)
   const noticeTimerRef = useRef<number | null>(null)
   const previewHideTimerRef = useRef<number | null>(null)
@@ -277,6 +278,37 @@ export default function HRRecommendations() {
     }
   }
 
+
+  // ─── Générer les certificats pour tous les employés classés ─────────────
+  const handleGenerateCertificates = async () => {
+    if (!activityId) return
+    if (aiRecs.length === 0) {
+      toast({ title: 'Aucune recommandation', description: 'Générez d\'abord les recommandations IA.', variant: 'destructive' })
+      return
+    }
+    setCertLoading(true)
+    try {
+      const res = await fetchWithAuth(`${API_BASE_URL}/api/recommendations/${activityId}/generate-certificates`, {
+        method: 'POST',
+        headers: { 'x-toast-silent': 'true' },
+      })
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ message: 'Génération impossible' }))
+        throw new Error(String(err?.message ?? 'Génération impossible'))
+      }
+      const body = await res.json()
+      const count = body?.count ?? 0
+      toast({
+        title: '🎓 Certificats générés',
+        description: `${count} certificat(s) envoyé(s) dans les notifications des employés.`,
+        variant: 'success',
+      })
+    } catch (err: any) {
+      toast({ title: 'Erreur certificats', description: err.message ?? 'Génération impossible.', variant: 'destructive' })
+    } finally {
+      setCertLoading(false)
+    }
+  }
 
   const appendSkillToPrompt = (skill: string, level = 3) => {
     const clean = String(skill ?? '').trim()
@@ -1074,7 +1106,19 @@ export default function HRRecommendations() {
               : <FileSpreadsheet className="h-3.5 w-3.5" />}
             {exportLoading === 'xlsx' ? 'Export...' : 'Excel'}
           </button>
-          {/* ─── Boutons existants ──────────────── */}
+          {/* ─── Générer Certificats ────────────── */}
+          <button
+            id="btn-generate-certificates"
+            onClick={() => void handleGenerateCertificates()}
+            disabled={certLoading || aiRecs.length === 0}
+            title={aiRecs.length === 0 ? 'Générez d\'abord les recommandations IA' : 'Générer et envoyer les certificats aux employés classés'}
+            className="flex items-center gap-2 rounded-lg border border-amber-500 bg-amber-500/10 px-3 py-2 text-xs font-semibold text-amber-600 hover:bg-amber-500/20 disabled:cursor-not-allowed disabled:opacity-50 transition-all"
+          >
+            {certLoading
+              ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              : <Award className="h-3.5 w-3.5" />}
+            {certLoading ? 'Génération...' : 'Générer certificats'}
+          </button>
           <button onClick={runAI} disabled={aiRunning}
             className="flex items-center gap-2 rounded-lg border border-primary bg-primary/10 px-4 py-2 text-sm font-medium text-primary hover:bg-primary/20 disabled:opacity-50">
             {aiRunning ? <Zap className="h-4 w-4 animate-pulse" /> : <Zap className="h-4 w-4" />}

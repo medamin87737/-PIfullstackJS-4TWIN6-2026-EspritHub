@@ -5,6 +5,7 @@ import { JwtAuthGuard } from '../auth/auth/jwt-auth/jwt-auth.guard'
 import { RolesGuard } from '../auth/auth/roles/roles.guard'
 import { Roles } from '../auth/auth/roles.decorator'
 import { RecommendationService } from './recommendation.service'
+import { CertificateService } from './certificate.service'
 import { NotificationsService } from '../notifications/notifications.service'
 import { GenerateRecommendationDto } from './dto/generate-recommendation.dto'
 import { HrValidateDto } from './dto/hr-validate.dto'
@@ -24,6 +25,7 @@ export class RecommendationController {
   constructor(
     private readonly recommendationService: RecommendationService,
     private readonly notificationsService: NotificationsService,
+    private readonly certificateService: CertificateService,
   ) {}
 
   private reqUserId(req: any): string {
@@ -129,6 +131,26 @@ export class RecommendationController {
   @Roles('HR')
   async hrKeepScore(@Body() dto: HrKeepScoreDto, @Req() req: any) {
     return this.recommendationService.hrKeepScore(dto.recommendationId, this.reqUserId(req), dto.note)
+  }
+
+  // ── Certificats — routes spécifiques AVANT les routes :param génériques ──
+
+  @Get('certificates/my')
+  @Roles('EMPLOYEE')
+  async myCertificates(@Req() req: any) {
+    return this.certificateService.getMyCertificates(this.reqUserId(req))
+  }
+
+  @Get('certificates/:certificateId/download')
+  @Roles('EMPLOYEE', 'HR', 'MANAGER', 'ADMIN')
+  async downloadCertificate(@Param('certificateId') certificateId: string, @Req() req: any) {
+    return this.certificateService.downloadCertificate(certificateId, this.reqUserId(req))
+  }
+
+  @Post(':activityId/generate-certificates')
+  @Roles('HR')
+  async generateCertificates(@Param('activityId') activityId: string, @Req() req: any) {
+    return this.certificateService.generateForActivity(activityId, this.reqUserId(req))
   }
 
   @Get(':activityId/export')

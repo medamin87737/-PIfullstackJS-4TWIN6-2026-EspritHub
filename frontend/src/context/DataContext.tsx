@@ -190,6 +190,7 @@ function mapBackendNotificationToUi(raw: any, fallbackUserId?: string): Notifica
     title: raw?.title ?? '',
     message: raw?.message ?? '',
     type: mapBackendNotificationTypeToFrontend(raw?.type),
+    rawType: String(raw?.type ?? ''),
     read: Boolean(raw?.read),
     activity_id:
       raw?.activityId
@@ -203,6 +204,7 @@ function mapBackendNotificationToUi(raw: any, fallbackUserId?: string): Notifica
         : raw?.created_at
           ? new Date(raw.created_at).toISOString()
           : new Date().toISOString(),
+    data: raw?.data && typeof raw.data === 'object' ? raw.data : undefined,
   }
 }
 

@@ -131,9 +131,11 @@ export interface Notification {
   title: string
   message: string
   type: NotificationType
+  rawType?: string          // type brut backend (ex: CERTIFICATE_ISSUED)
   read: boolean
   activity_id?: string
   created_at: string
+  data?: Record<string, any>
 }
 
 // ============ ANALYTICS ============
