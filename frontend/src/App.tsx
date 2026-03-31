@@ -31,6 +31,7 @@ import HRHistory from './pages/hr/HRHistory'
 import HRAnalytics from './pages/hr/HRAnalytics'
 import HRImportEmployees from './pages/hr/HRImportEmployees'
 import HRActivityRequests from './pages/hr/HRActivityRequests'
+import HRReports from './pages/hr/HRReports'
 
 // Manager pages
 import ManagerDashboard from './pages/manager/ManagerDashboard'
@@ -138,6 +139,7 @@ export default function App() {
                   >
                     <Route path="/hr/dashboard" element={<HRDashboard />} />
                     <Route path="/hr/activities" element={<HRActivities />} />
+                    <Route path="/hr/reports" element={<HRReports />} />
                     <Route path="/hr/create-activity" element={<CreateActivity />} />
                     <Route path="/hr/create-activity-chat" element={<HRActivityChatCreator />} />
                     <Route path="/hr/recommendations/:activityId" element={<HRRecommendations />} />

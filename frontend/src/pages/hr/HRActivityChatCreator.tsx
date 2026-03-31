@@ -217,6 +217,38 @@ export default function HRActivityChatCreator() {
   const [showPreview, setShowPreview] = useState(false);
   const [editField, setEditField] = useState<string | null>(null);
   const [editValue, setEditValue] = useState('');
+
+  const buildExampleActivity = useCallback((): ActivityData => {
+    const now = new Date();
+    const start = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+    start.setHours(9, 0, 0, 0);
+    const end = new Date(start);
+    end.setHours(17, 0, 0, 0);
+
+    return {
+      title: 'Formation React & TypeScript avancée',
+      description:
+        'Session pratique pour renforcer la qualité du code front-end, la performance et les bonnes pratiques de développement React/TypeScript.',
+      type: 'training',
+      location: 'Salle Innovation - Siège Tunis',
+      startDate: start.toISOString(),
+      endDate: end.toISOString(),
+      maxParticipants: 12,
+      departmentId: departments[0]?.id || '',
+      requiredSkills: [
+        { skill_name: 'React', desired_level: 'high' },
+        { skill_name: 'TypeScript', desired_level: 'high' },
+        { skill_name: 'Communication', desired_level: 'medium' },
+      ],
+      objectives: [
+        'Mettre en place une architecture front-end maintenable',
+        'Ameliorer la qualite des composants et la gestion d etat',
+        'Uniformiser les pratiques de revue de code dans l equipe',
+      ],
+      experienceLevel: 'mid',
+      priority: 'medium',
+    };
+  }, [departments]);
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -442,8 +474,13 @@ export default function HRActivityChatCreator() {
         seats: payload.maxParticipants,
         date: new Date(payload.startDate).toISOString(),
         duration: 'N/A',
-        location: payload.location,
-        priority: completeActivity.priority === 'high' ? 'urgent' : completeActivity.priority === 'medium' ? 'normal' : 'low',
+        location: completeActivity.location,
+        priority:
+          completeActivity.priority === 'high'
+            ? 'exploit_expert'
+            : completeActivity.priority === 'medium'
+              ? 'consolidate_medium'
+              : 'develop_low',
         status: 'open',
         created_by: user?.name ?? 'HR',
         created_at: new Date().toISOString(),
@@ -506,6 +543,16 @@ export default function HRActivityChatCreator() {
       await handleSendToManager();
       return;
     }
+
+    if (
+      lowerText.includes('exemple complet') ||
+      lowerText.includes('activité exemple') ||
+      lowerText.includes('activite exemple') ||
+      lowerText.includes('tester exemple')
+    ) {
+      handleLoadCompleteExample();
+      return;
+    }
     
     // Détecter complétion de champ
     const completionMatch = userText.match(/(?:ajoute|ajouter|complète|modifier|changer)\s+(?:la|le)?\s*(\w+)\s*(?::|est|=)?\s*(.+)/i);
@@ -554,6 +601,21 @@ export default function HRActivityChatCreator() {
     departmentId: 'Département',
     location: 'Lieu',
     requiredSkills: 'Compétences'
+  };
+
+  const handleLoadCompleteExample = () => {
+    const example = buildExampleActivity();
+    const missing = example.departmentId ? [] : ['departmentId'];
+    setCurrentActivity(example);
+    setMissingFields(missing);
+    setShowPreview(true);
+    addMessage({
+      role: 'assistant',
+      content:
+        missing.length === 0
+          ? '✅ Exemple complet chargé. Vous pouvez tester directement avec "Envoyer au manager".'
+          : '✅ Exemple chargé. Il manque uniquement le département: sélectionnez un département puis envoyez au manager.'
+    });
   };
 
   return (
@@ -723,13 +785,13 @@ export default function HRActivityChatCreator() {
             
             <div className="mt-2 flex items-center gap-2 text-xs text-muted-foreground">
               <Wand2 className="h-3 w-3" />
-              <span>Commandes: "envoyer au manager" | "recommande" | "modifier [champ]"</span>
+              <span>Commandes: "envoyer au manager" | "recommande" | "modifier [champ]" | "exemple complet"</span>
             </div>
           </div>
         </div>
 
         {/* Preview Panel */}
-        {showPreview && currentActivity && (
+        {showPreview && (
           <div className="w-1/2 border-l bg-card overflow-y-auto">
             <div className="p-4 border-b">
               <h2 className="font-semibold flex items-center gap-2">
@@ -737,7 +799,15 @@ export default function HRActivityChatCreator() {
                 Aperçu de l'activité
               </h2>
             </div>
-            
+            {!currentActivity ? (
+              <div className="p-4">
+                <div className="rounded-lg border bg-background p-4 text-sm text-muted-foreground">
+                  Aucun formulaire n'est rempli pour le moment.
+                  <br />
+                  Décrivez une activité dans le chat ou tapez <span className="font-medium text-foreground">"exemple complet"</span>.
+                </div>
+              </div>
+            ) : (
             <div className="p-4 space-y-4">
               {/* Title */}
               <div>
@@ -874,6 +944,7 @@ export default function HRActivityChatCreator() {
                 </button>
               </div>
             </div>
+            )}
           </div>
         )}
       </div>

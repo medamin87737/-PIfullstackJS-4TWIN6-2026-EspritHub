@@ -5,7 +5,7 @@ import {
   LayoutDashboard, Users, Building2, Brain, FileQuestion,
   ClipboardList, Sparkles, History, UserCircle, Bell,
   ChevronLeft, ChevronRight, LogOut, BarChart3,
-  FolderOpen
+  FolderOpen, FileText
 } from 'lucide-react'
 import { cn } from '../../../lib/utils'
 
@@ -27,6 +27,7 @@ const roleNavItems: Record<string, NavItem[]> = {
   HR: [
     { label: 'Dashboard', path: '/hr/dashboard', icon: <LayoutDashboard className="h-5 w-5" /> },
     { label: 'Activites', path: '/hr/activities', icon: <ClipboardList className="h-5 w-5" /> },
+    { label: 'Rapport', path: '/hr/reports', icon: <FileText className="h-5 w-5" /> },
     { label: 'Import CSV Employes', path: '/hr/import-employees', icon: <Users className="h-5 w-5" /> },
     { label: 'Demandes Managers', path: '/hr/activity-requests', icon: <ClipboardList className="h-5 w-5" /> },
     { label: 'Historique', path: '/hr/history', icon: <History className="h-5 w-5" /> },
