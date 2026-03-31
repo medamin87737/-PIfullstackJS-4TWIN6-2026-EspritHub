@@ -57,13 +57,22 @@ export default function ManagerActivityRequests() {
   const loadAllSkills = async () => {
     setSkillsLoading(true)
     try {
-      const [resCompetences, resQuestions] = await Promise.all([
+      const [resCompetences, resQuestions] = await Promise.allSettled([
         fetchWithAuth(`${API_BASE_URL}/users/competences/all`),
         fetchWithAuth(`${API_BASE_URL}/users/question-competences/all`),
       ])
-      if (!resCompetences.ok || !resQuestions.ok) throw new Error('Chargement des compétences impossible')
-      const payloadCompetences = await resCompetences.json()
-      const payloadQuestions = await resQuestions.json()
+
+      const competencesResponse =
+        resCompetences.status === 'fulfilled' && resCompetences.value.ok ? resCompetences.value : null
+      const questionsResponse =
+        resQuestions.status === 'fulfilled' && resQuestions.value.ok ? resQuestions.value : null
+
+      if (!competencesResponse && !questionsResponse) {
+        throw new Error('Chargement des compétences impossible')
+      }
+
+      const payloadCompetences = competencesResponse ? await competencesResponse.json() : []
+      const payloadQuestions = questionsResponse ? await questionsResponse.json() : []
       const rowsCompetences = Array.isArray(payloadCompetences?.data) ? payloadCompetences.data : (Array.isArray(payloadCompetences) ? payloadCompetences : [])
       const rowsQuestions = Array.isArray(payloadQuestions?.data) ? payloadQuestions.data : (Array.isArray(payloadQuestions) ? payloadQuestions : [])
 
@@ -146,7 +155,8 @@ export default function ManagerActivityRequests() {
           maxParticipants: form.maxParticipants,
           startDate: new Date(form.startDate).toISOString(),
           endDate: new Date(form.endDate).toISOString(),
-          location: form.location,
+          // Manager API expects a string location.
+          location: form.location.address,
           duration: form.duration,
         }),
       })
