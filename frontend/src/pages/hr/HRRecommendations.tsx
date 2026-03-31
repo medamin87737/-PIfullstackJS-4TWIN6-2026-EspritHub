@@ -2,11 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useData } from '../../context/DataContext'
 import StatusBadge from '../../components/shared/StatusBadge'
-<<<<<<< HEAD
-import { ArrowLeft, Sparkles, Send, Zap, Target, Medal, MessageSquare, TrendingUp, FileCheck, Mic, MicOff, Smartphone } from 'lucide-react'
-=======
-import { ArrowLeft, Sparkles, Send, Zap, Target, Medal, MessageSquare, TrendingUp, FileDown, FileSpreadsheet, Loader2 } from 'lucide-react'
->>>>>>> 6f1af563f52de84a919835234ee8a9cfa774a85a
+import { ArrowLeft, Sparkles, Send, Zap, Target, Medal, MessageSquare, TrendingUp, FileCheck, FileDown, FileSpreadsheet, Loader2, Mic, MicOff, Smartphone } from 'lucide-react'
 import { useToast } from '../../../hooks/use-toast'
 import { useSpellCheck } from '../../hooks/useSpellCheck'
 import { useSpeechRecognition } from '../../hooks/useSpeechRecognition'
@@ -224,11 +220,8 @@ export default function HRRecommendations() {
   const [minScoreFilter, setMinScoreFilter] = useState('')
   const [confirmSendOpen, setConfirmSendOpen] = useState(false)
   const [missingSeats, setMissingSeats] = useState(0)
-<<<<<<< HEAD
   const [smsSending, setSmsSending] = useState<Record<string, boolean>>({})
-=======
   const [exportLoading, setExportLoading] = useState<'pdf' | 'xlsx' | null>(null)
->>>>>>> 6f1af563f52de84a919835234ee8a9cfa774a85a
   const typingTimerRef = useRef<number | null>(null)
   const noticeTimerRef = useRef<number | null>(null)
   const previewHideTimerRef = useRef<number | null>(null)
