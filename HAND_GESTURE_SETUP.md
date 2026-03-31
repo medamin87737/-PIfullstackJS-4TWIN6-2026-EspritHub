@@ -133,9 +133,9 @@ npm run test:ui
 - `frontend/src/utils/gestureDetector.test.ts` - Tests unitaires
 
 ### Documentation
-- `.kiro/specs/hand-gesture-control/requirements.md` - Spécifications
-- `.kiro/specs/hand-gesture-control/design.md` - Design détaillé
-- `.kiro/specs/hand-gesture-control/tasks.md` - Liste des tâches
+- `specs/hand-gesture-control/requirements.md` - Spécifications
+- `specs/hand-gesture-control/design.md` - Design détaillé
+- `specs/hand-gesture-control/tasks.md` - Liste des tâches
 
 ## 🔧 Configuration avancée
 
