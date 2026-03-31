@@ -1,5 +1,6 @@
 import { HttpService } from '@nestjs/axios'
 import { HttpException, HttpStatus, Injectable } from '@nestjs/common'
+import * as XLSX from 'xlsx'
 import { InjectModel } from '@nestjs/mongoose'
 import { firstValueFrom } from 'rxjs'
 import { isValidObjectId, Model, Types } from 'mongoose'
@@ -1328,6 +1329,148 @@ export class RecommendationService {
         title: r.activityId?.title ?? r.activityId?.titre ?? 'Activité',
       },
     }))
+  }
+
+  // ─── Export (PDF / Excel) ────────────────────────────────────────────────
+
+  async exportRecommendations(
+    activityId: string,
+    format: 'pdf' | 'excel',
+  ): Promise<{ buffer: Buffer; filename: string; mimeType: string }> {
+    if (!isValidObjectId(activityId)) {
+      throw new HttpException('Invalid activity id', HttpStatus.BAD_REQUEST)
+    }
+
+    try {
+      const activity = await this.activityModel.findById(activityId).exec()
+      if (!activity) throw new HttpException('Activity not found', HttpStatus.NOT_FOUND)
+
+      const recs = await this.recommendationModel
+        .find({ activityId: new Types.ObjectId(activityId) })
+        .populate('userId', 'name email')
+        .sort({ score_total: -1, rank: 1 })
+        .exec()
+
+      const activityTitle: string = (activity as any).titre ?? (activity as any).title ?? 'Activite'
+      const safeTitle = activityTitle.replace(/[^a-z0-9]/gi, '_').slice(0, 40)
+      const headers = ['Employe', 'Score Global', 'Hard Skills']
+
+      const rows = recs.map((rec: any) => {
+        const employee: string = rec.userId?.name ?? rec.userId?.email ?? 'N/A'
+        const scoreGlobal: string = Number(rec.score_total ?? 0).toFixed(2)
+        const hardSkills: string = Array.isArray(rec.matched_skills)
+          ? rec.matched_skills
+              .map((s: any) => {
+                const name = String(s?.intitule ?? s?.skill_name ?? s?.name ?? '')
+                const lvl = s?.niveau ?? s?.level ?? s?.score
+                return lvl !== undefined ? `${name} (${lvl})` : name
+              })
+              .filter(Boolean)
+              .join(', ')
+          : ''
+        return [employee, scoreGlobal, hardSkills]
+      })
+
+      // ─── PDF ────────────────────────────────────────────────────────────────
+      if (format === 'pdf') {
+        let jsPDFModule: any
+        let autoTableModule: any
+        try {
+          // eslint-disable-next-line @typescript-eslint/no-require-imports
+          jsPDFModule = require('jspdf')
+          // eslint-disable-next-line @typescript-eslint/no-require-imports
+          autoTableModule = require('jspdf-autotable')
+        } catch (e: any) {
+          throw new HttpException(
+            `Librairie PDF indisponible: ${String(e?.message ?? e)}. Installez jspdf et jspdf-autotable.`,
+            HttpStatus.INTERNAL_SERVER_ERROR,
+          )
+        }
+
+        const jsPDFClass = jsPDFModule?.jsPDF ?? jsPDFModule?.default?.jsPDF ?? jsPDFModule?.default
+        if (!jsPDFClass) {
+          throw new HttpException('jsPDF class non trouvée dans le module importé.', HttpStatus.INTERNAL_SERVER_ERROR)
+        }
+
+        const autoTable = autoTableModule?.default ?? autoTableModule
+        const doc = new jsPDFClass({ orientation: 'landscape', unit: 'mm', format: 'a4' })
+        doc.setFontSize(14)
+        doc.text(`Recommandations - ${activityTitle}`, 14, 16)
+        doc.setFontSize(9)
+        doc.text(`Exporte le ${new Date().toLocaleDateString('fr-FR')}`, 14, 23)
+
+        if (typeof autoTable === 'function') {
+          autoTable(doc, {
+            head: [headers],
+            body: rows,
+            startY: 28,
+            styles: { fontSize: 8, cellPadding: 3, overflow: 'linebreak' },
+            headStyles: { fillColor: [37, 99, 235], textColor: 255, fontStyle: 'bold' },
+            columnStyles: {
+              0: { cellWidth: 55 },
+              1: { cellWidth: 30, halign: 'center' },
+              2: { cellWidth: 'auto' },
+            },
+            alternateRowStyles: { fillColor: [245, 247, 255] },
+            margin: { left: 14, right: 14 },
+          })
+        } else if (typeof (doc as any).autoTable === 'function') {
+          ;(doc as any).autoTable({
+            head: [headers],
+            body: rows,
+            startY: 28,
+            styles: { fontSize: 8, cellPadding: 3, overflow: 'linebreak' },
+            headStyles: { fillColor: [37, 99, 235], textColor: 255, fontStyle: 'bold' },
+            columnStyles: {
+              0: { cellWidth: 55 },
+              1: { cellWidth: 30, halign: 'center' },
+              2: { cellWidth: 'auto' },
+            },
+            alternateRowStyles: { fillColor: [245, 247, 255] },
+            margin: { left: 14, right: 14 },
+          })
+        }
+
+        const pdfOutput = doc.output('arraybuffer')
+        const buffer = Buffer.from(pdfOutput as ArrayBuffer)
+        return { buffer, filename: `recommandations_${safeTitle}.pdf`, mimeType: 'application/pdf' }
+
+      // ─── EXCEL ──────────────────────────────────────────────────────────────
+      } else {
+        let XLSX_LIB: typeof XLSX
+        try {
+          XLSX_LIB = XLSX
+          // Sanity check that the lib is loaded
+          if (typeof XLSX_LIB?.utils?.aoa_to_sheet !== 'function') {
+            // eslint-disable-next-line @typescript-eslint/no-require-imports
+            XLSX_LIB = require('xlsx')
+          }
+        } catch (e: any) {
+          throw new HttpException(
+            `Librairie xlsx indisponible: ${String(e?.message ?? e)}. Lancez: npm install xlsx`,
+            HttpStatus.INTERNAL_SERVER_ERROR,
+          )
+        }
+
+        const ws = XLSX_LIB.utils.aoa_to_sheet([headers, ...rows])
+        ws['!cols'] = [{ wch: 35 }, { wch: 15 }, { wch: 70 }]
+        const wb = XLSX_LIB.utils.book_new()
+        XLSX_LIB.utils.book_append_sheet(wb, ws, 'Recommandations')
+        const buffer = XLSX_LIB.write(wb, { type: 'buffer', bookType: 'xlsx' }) as Buffer
+        return {
+          buffer,
+          filename: `recommandations_${safeTitle}.xlsx`,
+          mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        }
+      }
+    } catch (err: any) {
+      // Re-throw HttpExceptions as-is, wrap other errors with details
+      if (err instanceof HttpException) throw err
+      throw new HttpException(
+        `Export echoue: ${String(err?.message ?? err)}`,
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      )
+    }
   }
 
   async retrainAi(actorUserId: string) {

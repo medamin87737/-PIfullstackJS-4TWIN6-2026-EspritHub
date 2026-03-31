@@ -4,7 +4,6 @@ import { useAuth } from '../context/AuthContext'
 import { Eye, EyeOff, LogIn, AlertCircle, Mail, Lock, UserRound, KeyRound } from 'lucide-react'
 import type { UserRole } from '../types'
 import { useAccessibility } from '../context/AccessibilityContext'
-import { useI18n } from '../hooks/useI18n'
 
 const roleRoutes: Record<UserRole, string> = {
   ADMIN: '/admin/dashboard',
@@ -20,10 +19,7 @@ export default function LoginPage() {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const { login, user } = useAuth()
-  const { language } = useAccessibility()
   const navigate = useNavigate()
-
-  const t = useI18n()
 
   useEffect(() => {
     if (loading) return
@@ -37,8 +33,8 @@ export default function LoginPage() {
     e.preventDefault()
     setError('')
 
-    if (!email) { setError(t('errorMissingEmail')); return }
-    if (!password) { setError(t('errorMissingPassword')); return }
+    if (!email) { setError('Veuillez entrer votre email'); return }
+    if (!password) { setError('Veuillez entrer votre mot de passe'); return }
 
     setLoading(true)
     const result = await login(email, password, rememberMe)
@@ -52,12 +48,12 @@ export default function LoginPage() {
         if (finalUser && finalUser.role) {
           navigate(roleRoutes[finalUser.role as UserRole] || '/login')
         } else {
-          setError(t('errorRole'))
+          setError('Rôle non reconnu')
         }
       }, 2000)
     } else {
       setLoading(false)
-      setError(result.message || t('errorLogin'))
+      setError(result.message || 'Erreur de connexion')
     }
   }
 
@@ -129,13 +125,13 @@ export default function LoginPage() {
           </div>
 
           <h2 className="mb-4 text-2xl font-semibold">
-            {t('login.heroTitle')}
+            Découvrez et développez vos compétences
           </h2>
           <p className="mb-6 text-sm leading-relaxed text-white/85">
-            {t('login.heroBody')}
+            Plateforme intelligente de recommandation d'activités et de gestion des compétences pour les entreprises.
           </p>
           <p className="text-xs font-medium uppercase tracking-[0.25em] text-white/60">
-            {t('login.heroPills')}
+            IA • Collaboration • Croissance
           </p>
         </div>
       </div>
@@ -189,12 +185,12 @@ export default function LoginPage() {
                   <span className="absolute inset-0 rounded-lg border border-primary/40" />
                   <Mail className="relative z-10 h-4 w-4 text-primary" />
                 </span>
-                <span className="text-sm font-semibold text-muted-foreground">{t('email')}</span>
+                <span className="text-sm font-semibold text-muted-foreground">Email</span>
               </label>
               <input
                 id="email"
                 type="email"
-                placeholder={t('emailPlaceholder')}
+                placeholder="votre@email.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 className="h-11 w-full rounded-lg border border-input bg-background px-4 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
@@ -207,13 +203,13 @@ export default function LoginPage() {
                   <span className="absolute inset-0 rounded-lg border border-primary/40" />
                   <Lock className="relative z-10 h-4 w-4 text-primary" />
                 </span>
-                <span className="text-sm font-semibold text-muted-foreground">{t('password')}</span>
+                <span className="text-sm font-semibold text-muted-foreground">Mot de passe</span>
               </label>
               <div className="relative">
                 <input
                   id="password"
                   type={showPassword ? 'text' : 'password'}
-                  placeholder={t('passwordPlaceholder')}
+                  placeholder="Votre mot de passe"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   className="h-11 w-full rounded-lg border border-input bg-background px-4 pr-10 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
@@ -265,7 +261,7 @@ export default function LoginPage() {
               ) : (
                 <>
                   <LogIn className="h-4 w-4" />
-                  {t('submit')}
+                  Se connecter
                 </>
               )}
             </button>

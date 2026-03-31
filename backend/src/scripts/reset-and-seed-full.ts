@@ -251,7 +251,7 @@ async function main() {
         desired_level: seededRange(`lvl:${i}:${s.intitule}`, 5, 8) >= 7 ? 'high' : 'medium',
       })),
       maxParticipants: seededRange(`seats:${i}`, 15, 40),
-      location: 'Tunis',
+      location: 'Tunis, Tunisia', // Toujours string dans la BD
       duration: `${seededRange(`dur:${i}`, 1, 5)} days`,
       startDate: new Date(Date.now() + seededRange(`start:${i}`, 5, 60) * 86400000),
       endDate: new Date(Date.now() + seededRange(`end:${i}`, 61, 120) * 86400000),

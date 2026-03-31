@@ -3,7 +3,6 @@ import { Users, Building2, ClipboardList, Brain, TrendingUp, Activity } from 'lu
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line } from 'recharts'
 import { useData } from '../../context/DataContext'
 import StatCard from '../../components/shared/StatCard'
-import { useI18n } from '../../hooks/useI18n'
 
 const COLORS = ['hsl(27, 92%, 54%)', 'hsl(222, 60%, 33%)', 'hsl(160, 60%, 45%)', 'hsl(43, 74%, 66%)', 'hsl(340, 75%, 55%)']
 const API_BASE_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:3000'
@@ -17,7 +16,6 @@ type ApiCompetence = {
 
 export default function AdminDashboard() {
   const { users, departments, activities, fetchWithAuth } = useData()
-  const t = useI18n()
   const [competences, setCompetences] = useState<ApiCompetence[]>([])
 
   useEffect(() => {
@@ -88,8 +86,8 @@ export default function AdminDashboard() {
   return (
     <div className="flex flex-col gap-6">
       <div className="reveal reveal-left animate-slide-up">
-        <h1 className="text-2xl font-bold text-foreground">{t('dashboard.admin.title')}</h1>
-        <p className="text-sm text-muted-foreground">{t('dashboard.admin.subtitle')}</p>
+        <h1 className="text-2xl font-bold text-foreground">Tableau de bord Admin</h1>
+        <p className="text-sm text-muted-foreground">Vue d'ensemble de la plateforme</p>
       </div>
 
       {/* Stats */}

@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useAccessibility } from '../../context/AccessibilityContext'
+import { Globe } from 'lucide-react'
 
 const TOAST_SOUND_ENABLED_KEY = 'accessibility_toast_sound_enabled'
 
@@ -7,8 +8,6 @@ export default function AccessibilityWidget() {
   const {
     zoom,
     setZoom,
-    language,
-    setLanguage,
     autoReadSelection,
     setAutoReadSelection,
     voiceCommandsActive,
@@ -77,35 +76,6 @@ export default function AccessibilityWidget() {
                 }`}
               >
                 A++
-              </button>
-            </div>
-          </div>
-
-          {/* Language */}
-          <div className="mb-3">
-            <p className="mb-1 text-xs font-medium text-muted-foreground">Langue de l&apos;interface</p>
-            <div className="inline-flex rounded-md border border-input bg-background p-0.5">
-              <button
-                type="button"
-                onClick={() => setLanguage('fr')}
-                className={`px-2 py-1 text-xs ${
-                  language === 'fr'
-                    ? 'rounded-md bg-primary text-primary-foreground'
-                    : 'text-foreground'
-                }`}
-              >
-                FR
-              </button>
-              <button
-                type="button"
-                onClick={() => setLanguage('en')}
-                className={`px-2 py-1 text-xs ${
-                  language === 'en'
-                    ? 'rounded-md bg-primary text-primary-foreground'
-                    : 'text-foreground'
-                }`}
-              >
-                EN
               </button>
             </div>
           </div>

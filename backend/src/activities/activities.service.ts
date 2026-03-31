@@ -4,6 +4,18 @@ import { Model, Types } from 'mongoose';
 import { Activity, ActivityDocument } from './schemas/activity.schema';
 import { CreateActivityDto } from './dto/create-activity.dto';
 import { UpdateActivityDto } from './dto/update-activity.dto';
+
+// Helper pour convertir LocationDto en string
+function locationToString(location: any): string | undefined {
+  if (!location) return undefined;
+  if (typeof location === 'string') return location;
+  if (location.address) return location.address;
+  if (location.lat && location.lng) {
+    return `${location.lat},${location.lng}`;
+  }
+  return String(location);
+}
+
 @Injectable()
 export class ActivitiesService {
   constructor(
@@ -11,7 +23,12 @@ export class ActivitiesService {
   ) {}
 
   async create(createActivityDto: CreateActivityDto) {
-    const activity = new this.activityModel(createActivityDto);
+    // Convertir location objet en string pour la BD
+    const dtoWithStringLocation = {
+      ...createActivityDto,
+      location: locationToString(createActivityDto.location),
+    };
+    const activity = new this.activityModel(dtoWithStringLocation);
     return activity.save();
   }
 
@@ -34,9 +51,15 @@ export class ActivitiesService {
       throw new BadRequestException('ID invalide');
     }
 
+    // Convertir location objet en string pour la BD si présent
+    const updateData: any = { ...updateActivityDto };
+    if (updateActivityDto.location !== undefined) {
+      updateData.location = locationToString(updateActivityDto.location);
+    }
+
     const activity = await this.activityModel.findByIdAndUpdate(
       id,
-      updateActivityDto,
+      updateData,
       { new: true },
     );
     if (!activity) throw new NotFoundException('Activité non trouvée');

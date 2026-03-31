@@ -26,8 +26,44 @@ export class UsersService {
   ) {}
 
   /**
-   * Créer un nouvel utilisateur (inscription)
+   * Récupérer toutes les compétences de tous les utilisateurs
+   * Structure: User → Fiche → Competence → Question_Competence
    */
+  async getAllUserCompetences(): Promise<any[]> {
+    // 1. Récupérer toutes les fiches avec leurs compétences
+    const fiches = await this.ficheModel.find().populate('user_id').lean();
+    
+    const userCompetences: any[] = [];
+    
+    for (const fiche of fiches) {
+      const userId = fiche.user_id?._id?.toString() || fiche.user_id?.toString();
+      if (!userId) continue;
+      
+      // 2. Récupérer les compétences liées à cette fiche
+      const competences = await this.competenceModel.find({
+        fiches_id: fiche._id,
+      }).lean();
+      
+      for (const competence of competences) {
+        userCompetences.push({
+          user_id: userId,
+          competence_id: competence._id.toString(),
+          fiche_id: fiche._id.toString(),
+          intitule: competence.intitule,
+          type: competence.type,
+          niveau: Math.max(
+            competence.auto_eval || 0,
+            competence.hierarchie_eval || 0
+          ),
+          auto_eval: competence.auto_eval,
+          hierarchie_eval: competence.hierarchie_eval,
+          etat: competence.etat,
+        });
+      }
+    }
+    
+    return userCompetences;
+  }
   async create(createUserDto: CreateUserDto): Promise<any> {
     try {
       // Vérifier si l'email existe déjà

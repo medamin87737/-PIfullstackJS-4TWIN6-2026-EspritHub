@@ -1,10 +1,12 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, lazy, Suspense } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useData } from '../../context/DataContext';
 import { useAuth } from '../../context/AuthContext';
-import { Plus, Trash2, ArrowLeft } from 'lucide-react';
+import { Plus, Trash2, ArrowLeft, MapPin } from 'lucide-react';
 import type { RequiredSkill } from '../../types';
 import { useToast } from '../../../hooks/use-toast';
+
+const LocationPicker = lazy(() => import('../../components/LocationPicker'));
 
 type SkillOption = { intitule: string; type?: string };
 
@@ -36,6 +38,11 @@ export default function CreateActivity() {
     startDate: '',
     endDate: '',
     type: 'training',
+    location: {
+      lat: 36.8065,
+      lng: 10.1815,
+      address: 'Tunis, Tunisie'
+    }
   });
 
   const [skills, setSkills] = useState<RequiredSkill[]>([
@@ -178,6 +185,7 @@ export default function CreateActivity() {
         departmentId: form.departmentId,
         startDate: new Date(form.startDate),
         endDate: new Date(form.endDate),
+        location: form.location,
         requiredSkills: skills
           .filter(s => s.skill_name)
           .map(s => ({
@@ -212,7 +220,7 @@ export default function CreateActivity() {
         seats: created?.maxParticipants ?? payload.maxParticipants,
         date: created?.startDate ? new Date(created.startDate).toISOString() : new Date(payload.startDate).toISOString(),
         duration: 'N/A',
-        location: 'N/A',
+        location: created?.location ?? payload.location,
         priority: 'consolidate_medium',
         status: 'open',
         created_by: user?.name ?? 'HR',
@@ -337,6 +345,40 @@ export default function CreateActivity() {
               />
               {errors.endDate && <span className="text-red-500 text-xs">{errors.endDate}</span>}
             </div>
+          </div>
+        </div>
+
+        {/* Localisation */}
+        <div className="rounded-xl border p-6 bg-card">
+          <div className="mb-4 flex items-center gap-2">
+            <MapPin className="h-4 w-4" />
+            <h3 className="text-sm font-semibold">Localisation</h3>
+          </div>
+          <div className="space-y-3">
+            <div className="flex flex-col gap-1.5">
+              <label>Adresse</label>
+              <input
+                value={form.location.address}
+                onChange={e => setForm({ ...form, location: { ...form.location, address: e.target.value } })}
+                className="h-10 rounded-lg border px-3"
+                placeholder="Adresse de l'activité"
+              />
+            </div>
+            <Suspense fallback={
+              <div className="h-64 bg-gray-100 rounded-lg flex items-center justify-center">
+                <div className="text-gray-500">Chargement de la carte...</div>
+              </div>
+            }>
+              <LocationPicker
+                onLocationSelect={(lat: number, lng: number, address: string) => {
+                  setForm({
+                    ...form,
+                    location: { lat, lng, address }
+                  });
+                }}
+                initialLocation={{ lat: form.location.lat, lng: form.location.lng }}
+              />
+            </Suspense>
           </div>
         </div>
 

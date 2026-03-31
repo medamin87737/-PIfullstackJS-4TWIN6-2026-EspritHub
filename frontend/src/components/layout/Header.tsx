@@ -2,9 +2,9 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import { useData } from '../../context/DataContext'
-import { Bell, Search, Sun, Moon } from 'lucide-react'
+import { Bell, Sun, Moon } from 'lucide-react'
 import { cn } from '../../../lib/utils'
-import { useI18n } from '../../hooks/useI18n'
+import WeatherWidget from '../WeatherWidget'
 
 export default function Header() {
   const { user } = useAuth()
@@ -12,8 +12,6 @@ export default function Header() {
   const navigate = useNavigate()
   const [darkMode, setDarkMode] = useState(false)
   const [showNotifications, setShowNotifications] = useState(false)
-  const [searchQuery, setSearchQuery] = useState('')
-  const t = useI18n()
 
   if (!user) return null
 
@@ -43,18 +41,13 @@ export default function Header() {
   }
 
   return (
-    <header className="reveal sticky top-0 z-30 flex h-16 items-center gap-4 border-b border-border/70 bg-card/85 px-6 backdrop-blur-xl">
-      <div className="relative flex-1 max-w-md">
-        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-        <input
-          type="text"
-          placeholder={t('header.searchPlaceholder')}
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          className="input-micro h-9 w-full rounded-lg border border-input bg-background/80 pl-9 pr-4 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-        />
+    <header className="reveal sticky top-0 z-30 flex h-16 items-center justify-between gap-4 border-b border-border/70 bg-card/85 px-4 sm:px-6 backdrop-blur-xl">
+      {/* Left: Weather Widget */}
+      <div className="flex items-center">
+        <WeatherWidget collapsed={false} />
       </div>
 
+      {/* Right: Actions */}
       <div className="flex items-center gap-2">
         <button
           onClick={toggleDarkMode}
@@ -90,13 +83,13 @@ export default function Header() {
               <div className="absolute right-0 top-full z-50 mt-2 w-80 rounded-xl border border-border bg-card shadow-lg animate-fade-in">
                 <div className="border-b border-border px-4 py-3">
                   <h3 className="text-sm font-semibold text-card-foreground">
-                    {t('header.notifications')}
+                    Notifications
                   </h3>
                 </div>
                 <div className="max-h-80 overflow-y-auto">
                   {userNotifications.length === 0 ? (
                     <p className="px-4 py-6 text-center text-sm text-muted-foreground">
-                      {t('header.noNotifications')}
+                      Aucune notification
                     </p>
                   ) : (
                     userNotifications.slice(0, 5).map((n) => (

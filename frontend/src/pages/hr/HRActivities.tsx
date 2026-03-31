@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 import { useData } from '../../context/DataContext'
 import StatusBadge from '../../components/shared/StatusBadge'
 import DataTable from '../../components/shared/DataTable'
-import { Plus, Search, Sparkles, Pencil, Trash2, X, Check } from 'lucide-react'
+import { Plus, Search, Sparkles, Pencil, Trash2, X, Check, Bot } from 'lucide-react'
 import type { Activity } from '../../types'
 import { useToast } from '../../../hooks/use-toast'
 
@@ -210,9 +210,14 @@ export default function HRActivities() {
           <h1 className="text-2xl font-bold text-foreground">Activités</h1>
           <p className="text-sm text-muted-foreground">{activities.length} activités au total</p>
         </div>
-        <Link to="/hr/create-activity" className="button-micro gradient-surface flex items-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium text-primary-foreground">
-          <Plus className="h-4 w-4" /> Créer
-        </Link>
+        <div className="flex items-center gap-2">
+          <Link to="/hr/create-activity-chat" className="flex items-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium bg-primary/10 text-primary hover:bg-primary/20 transition-colors">
+            <Bot className="h-4 w-4" /> Assistant IA
+          </Link>
+          <Link to="/hr/create-activity" className="button-micro gradient-surface flex items-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium text-primary-foreground">
+            <Plus className="h-4 w-4" /> Créer
+          </Link>
+        </div>
       </div>
 
       <div className="reveal reveal-right flex flex-wrap items-center gap-3">
