@@ -1,11 +1,16 @@
-import { Controller, Get, Post, Body, Param, Delete, Put } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, Delete, Put, Res } from '@nestjs/common';
+import type { Response } from 'express';
 import { ActivitiesService } from './activities.service';
 import { CreateActivityDto } from './dto/create-activity.dto';
 import { UpdateActivityDto } from './dto/update-activity.dto';
+import { PptxService } from './pptx.service';
 
 @Controller('activities')
 export class ActivitiesController {
-  constructor(private readonly activitiesService: ActivitiesService) {}
+  constructor(
+    private readonly activitiesService: ActivitiesService,
+    private readonly pptxService: PptxService,
+  ) {}
 
   @Post()
   async create(@Body() createActivityDto: CreateActivityDto) {
@@ -20,6 +25,30 @@ export class ActivitiesController {
   @Get(':id')
   async findOne(@Param('id') id: string) {
     return this.activitiesService.findOne(id);
+  }
+
+  @Get(':id/export-pptx')
+  async exportPptx(@Param('id') id: string, @Res() res: Response) {
+    const activity = await this.activitiesService.findOne(id)
+    const buffer = await this.pptxService.generateActivityPresentation({
+      id: (activity as any)._id?.toString() ?? id,
+      title: activity.title,
+      description: activity.description,
+      objectifs: (activity as any).objectifs,
+      type: activity.type,
+      location: activity.location,
+      duration: activity.duration,
+      startDate: activity.startDate,
+      endDate: activity.endDate,
+      maxParticipants: activity.maxParticipants,
+      status: activity.status,
+      requiredSkills: activity.requiredSkills ?? [],
+    })
+
+    const filename = `activite-${activity.title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.pptx`
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.presentationml.presentation')
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`)
+    res.send(buffer)
   }
 
   @Put(':id')

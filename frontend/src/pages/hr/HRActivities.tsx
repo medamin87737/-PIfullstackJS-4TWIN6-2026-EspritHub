@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 import { useData } from '../../context/DataContext'
 import StatusBadge from '../../components/shared/StatusBadge'
 import DataTable from '../../components/shared/DataTable'
-import { Plus, Search, Sparkles, Pencil, Trash2, X, Check, Bot } from 'lucide-react'
+import { Plus, Search, Sparkles, Pencil, Trash2, X, Check, Bot, Presentation } from 'lucide-react'
 import type { Activity } from '../../types'
 import { useToast } from '../../../hooks/use-toast'
 
@@ -182,6 +182,14 @@ export default function HRActivities() {
           >
             <Check className="h-3.5 w-3.5" /> Confirmer activité
           </Link>
+          <a
+            href={`http://localhost:3000/activities/${a.id}/export-pptx`}
+            download
+            title="Télécharger la présentation PPTX"
+            className="button-micro flex items-center gap-1 rounded-lg border border-violet-500 bg-violet-50 px-2 py-1 text-xs font-medium text-violet-700 hover:bg-violet-100 dark:bg-violet-950/30 dark:text-violet-400"
+          >
+            <Presentation className="h-3.5 w-3.5" /> PPTX
+          </a>
           <button
             type="button"
             onClick={() => openEdit(a)}
