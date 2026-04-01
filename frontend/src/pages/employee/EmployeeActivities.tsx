@@ -5,7 +5,9 @@ import StatusBadge from '../../components/shared/StatusBadge'
 import { Check, X, Calendar, MapPin, Target, Sparkles } from 'lucide-react'
 import { useToast } from '../../../hooks/use-toast'
 import { MiniHandGestureControl } from '../../components/MiniHandGestureControl'
+import { GoogleCalendarConnect } from '../../components/GoogleCalendarConnect'
 import { useRewrite } from '../../hooks/useRewrite'
+import { addActivityToCalendar, isGoogleConnected } from '../../services/googleCalendarService'
 
 const API_BASE_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:3000'
 
@@ -89,8 +91,33 @@ export default function EmployeeActivities() {
       toast({ title: 'Erreur', description: 'Confirmation impossible.', variant: 'destructive' })
       return
     }
+    
+    // Ajouter à Google Calendar si connecté
+    if (isGoogleConnected() && rec.start_date) {
+      const calendarSuccess = await addActivityToCalendar({
+        title: rec.activity_title,
+        description: rec.activity_description,
+        startDate: rec.start_date,
+        endDate: rec.end_date || undefined,
+        location: 'À définir',
+      })
+      
+      if (calendarSuccess) {
+        toast({ 
+          title: 'Présence confirmée', 
+          description: 'Activité ajoutée à votre calendrier Google ✓' 
+        })
+      } else {
+        toast({ 
+          title: 'Présence confirmée', 
+          description: 'Votre confirmation a été envoyée (calendrier non synchronisé)' 
+        })
+      }
+    } else {
+      toast({ title: 'Présence confirmée', description: 'Votre confirmation a été envoyée.' })
+    }
+    
     setMyRecs((prev) => prev.filter((r) => r.id !== rec.id))
-    toast({ title: 'Présence confirmée', description: 'Votre confirmation a été envoyée.' })
   }
 
   const declineActivity = (recId: string) => {
@@ -143,6 +170,11 @@ export default function EmployeeActivities() {
       <div className="reveal reveal-left animate-slide-up">
         <h1 className="text-2xl font-bold text-foreground">Mes activités</h1>
         <p className="text-sm text-muted-foreground">{myRecs.length} activité(s) proposée(s)</p>
+      </div>
+
+      {/* Connexion Google Calendar */}
+      <div className="reveal reveal-right animate-slide-up">
+        <GoogleCalendarConnect />
       </div>
 
       <div className="reveal-grid flex flex-col gap-4">
