@@ -176,7 +176,7 @@ export default function HRRecommendations() {
   const navigate = useNavigate()
   const { activities, updateActivity, fetchWithAuth } = useData()
   const { toast } = useToast()
-  const { correctText, checking: spellChecking } = useSpellCheck()
+  const { correctText, checking: spellChecking, analyzing: spellAnalyzing, suggestions: spellSuggestions, scheduleAnalysis, applySuggestion, dismissSuggestion, applyAllSuggestions } = useSpellCheck()
   const {
     isSupported: speechSupported,
     isListening,
@@ -996,32 +996,6 @@ export default function HRRecommendations() {
     }
   }
 
-  const handleSpellCheck = async () => {
-    if (!hrPrompt.trim()) {
-      showNotice('error', 'Saisissez un prompt avant de lancer la correction.')
-      return
-    }
-    const result = await correctText(hrPrompt)
-    if (!result) {
-      showNotice('error', 'Service de correction indisponible. Réessayez.')
-      return
-    }
-    if (result.corrections === 0) {
-      showNotice('success', 'Aucune faute détectée — le prompt est correct.')
-      return
-    }
-    setHrPrompt(result.correctedText)
-    showNotice(
-      'success',
-      `${result.corrections} correction(s) appliquée(s) [${result.detectedLanguage}]`,
-    )
-    toast({
-      title: 'Prompt corrigé',
-      description: `${result.corrections} correction(s) orthographique(s) appliquée(s).`,
-      variant: 'success',
-    })
-  }
-
   if (!activity) return <div className="p-8 text-center text-muted-foreground">Activite non trouvee</div>
 
   return (
@@ -1126,15 +1100,6 @@ export default function HRRecommendations() {
               </button>
             )}
             <button
-              onClick={() => void handleSpellCheck()}
-              disabled={spellChecking || !hrPrompt.trim()}
-              title="Corriger les fautes d'orthographe avec LanguageTool"
-              className="flex items-center gap-2 rounded-lg border border-amber-500 bg-amber-50 px-3 py-2 text-xs font-medium text-amber-700 hover:bg-amber-100 disabled:opacity-50 dark:bg-amber-950/30 dark:text-amber-400 dark:border-amber-600 dark:hover:bg-amber-900/40"
-            >
-              <FileCheck className="h-3.5 w-3.5" />
-              {spellChecking ? 'Correction...' : 'Corriger'}
-            </button>
-            <button
               onClick={generatePromptFromActivity}
               disabled={promptGenerating}
               className="flex items-center gap-2 rounded-lg border border-primary bg-primary/10 px-3 py-2 text-xs font-medium text-primary hover:bg-primary/20 disabled:opacity-50"
@@ -1149,7 +1114,11 @@ export default function HRRecommendations() {
         <div className="relative">
           <textarea
             value={hrPrompt}
-            onChange={(e) => setHrPrompt(e.target.value.replace(/\|$/, ''))}
+            onChange={(e) => {
+              const val = e.target.value.replace(/\|$/, '')
+              setHrPrompt(val)
+              scheduleAnalysis(val)
+            }}
             placeholder='Ex: Trouve 5 profils React niveau 5 et leadership niveau 3 pour une formation avancée frontend.'
             rows={4}
             className={`w-full rounded-lg border bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring ${
@@ -1164,6 +1133,53 @@ export default function HRRecommendations() {
           )}
         </div>
 
+        {/* Suggestions de correction inline (style autocorrect téléphone) */}
+        {spellSuggestions.length > 0 && !isListening && (
+          <div className="rounded-lg border border-amber-200 bg-amber-50 p-2 dark:bg-amber-950/20 dark:border-amber-700">
+            <div className="mb-1.5 flex items-center justify-between">
+              <p className="text-[11px] font-semibold uppercase tracking-wide text-amber-700 dark:text-amber-400">
+                ✏️ Corrections suggérées ({spellSuggestions.length})
+              </p>
+              <button
+                onClick={() => setHrPrompt(applyAllSuggestions(hrPrompt))}
+                className="text-[11px] font-medium text-amber-700 hover:underline dark:text-amber-400"
+              >
+                Tout accepter
+              </button>
+            </div>
+            <div className="flex flex-wrap gap-1.5">
+              {spellSuggestions.map((s) => (
+                <div key={s.id} className="flex items-center gap-1 rounded-full border border-amber-300 bg-white px-2 py-0.5 text-xs dark:bg-amber-950/40 dark:border-amber-600">
+                  <span className="text-red-500 line-through">{s.original}</span>
+                  <span className="text-muted-foreground">→</span>
+                  <button
+                    onClick={() => setHrPrompt(applySuggestion(hrPrompt, s))}
+                    className="font-medium text-emerald-600 hover:underline dark:text-emerald-400"
+                    title={s.message}
+                  >
+                    {s.suggestion}
+                  </button>
+                  <button
+                    onClick={() => dismissSuggestion(s.id)}
+                    className="ml-0.5 text-muted-foreground hover:text-foreground"
+                    title="Ignorer"
+                  >
+                    ×
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Indicateur analyse en cours */}
+        {(spellChecking || spellAnalyzing) && !isListening && (
+          <p className="flex items-center gap-1.5 text-[11px] text-amber-600 dark:text-amber-400">
+            <span className="inline-block h-1.5 w-1.5 animate-ping rounded-full bg-amber-500" />
+            {spellAnalyzing ? 'En attente d\'analyse...' : 'Analyse orthographique...'}
+          </p>
+        )}
+
         {/* Indicateurs d'état */}
         {isListening && (
           <p className="mt-2 flex items-center gap-1.5 text-xs text-red-500">
@@ -1174,10 +1190,8 @@ export default function HRRecommendations() {
         {speechError && !isListening && (
           <p className="mt-2 text-xs text-destructive">{speechError}</p>
         )}
-        {(promptTyping || spellChecking) && !isListening && (
-          <p className="mt-2 text-xs text-primary">
-            {spellChecking ? 'Correction orthographique en cours...' : 'Generation IA en cours...'}
-          </p>
+        {promptTyping && !isListening && (
+          <p className="mt-2 text-xs text-primary">Generation IA en cours...</p>
         )}
       </div>
       {skillPickerOpen && (
