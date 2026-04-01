@@ -2,8 +2,10 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useData } from '../../context/DataContext'
 import StatusBadge from '../../components/shared/StatusBadge'
-import { ArrowLeft, Sparkles, Send, Zap, Target, Medal, MessageSquare, TrendingUp, FileDown, FileSpreadsheet, Loader2 } from 'lucide-react'
+import { ArrowLeft, Sparkles, Send, Zap, Target, Medal, MessageSquare, TrendingUp, FileCheck, FileDown, FileSpreadsheet, Loader2, Mic, MicOff, Smartphone } from 'lucide-react'
 import { useToast } from '../../../hooks/use-toast'
+import { useSpellCheck } from '../../hooks/useSpellCheck'
+import { useSpeechRecognition } from '../../hooks/useSpeechRecognition'
 
 const API_BASE_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:3000'
 
@@ -58,6 +60,12 @@ type SimulationResult = {
 }
 type InlineNotice = { type: 'success' | 'error'; message: string } | null
 type SkillOption = { intitule: string; type?: string; source?: 'competence' | 'question' }
+type UserCompetence = {
+  user_id: string;
+  competence_id: string;
+  intitule: string;
+  niveau: number;
+}
 
 function normalizeParsedActivity(raw: any): ApiRecommendation['parsed_activity'] | null {
   if (!raw || typeof raw !== 'object') return null
@@ -168,6 +176,15 @@ export default function HRRecommendations() {
   const navigate = useNavigate()
   const { activities, updateActivity, fetchWithAuth } = useData()
   const { toast } = useToast()
+  const { correctText, checking: spellChecking } = useSpellCheck()
+  const {
+    isSupported: speechSupported,
+    isListening,
+    interimText,
+    errorMessage: speechError,
+    startListening,
+    stopListening,
+  } = useSpeechRecognition('fr-FR')
   const [aiRunning, setAiRunning] = useState(false)
   const [promptGenerating, setPromptGenerating] = useState(false)
   const [promptTyping, setPromptTyping] = useState(false)
@@ -187,6 +204,7 @@ export default function HRRecommendations() {
   const [selectedMissingSkill, setSelectedMissingSkill] = useState('')
   const [skillsLoading, setSkillsLoading] = useState(false)
   const [allSkills, setAllSkills] = useState<SkillOption[]>([])
+  const [userCompetences, setUserCompetences] = useState<UserCompetence[]>([])
   const [skillSearch, setSkillSearch] = useState('')
   const [selectedSkillLevel, setSelectedSkillLevel] = useState(3)
   const [newSkillName, setNewSkillName] = useState('')
@@ -202,6 +220,7 @@ export default function HRRecommendations() {
   const [minScoreFilter, setMinScoreFilter] = useState('')
   const [confirmSendOpen, setConfirmSendOpen] = useState(false)
   const [missingSeats, setMissingSeats] = useState(0)
+  const [smsSending, setSmsSending] = useState<Record<string, boolean>>({})
   const [exportLoading, setExportLoading] = useState<'pdf' | 'xlsx' | null>(null)
   const typingTimerRef = useRef<number | null>(null)
   const noticeTimerRef = useRef<number | null>(null)
@@ -419,6 +438,29 @@ export default function HRRecommendations() {
       setEmployees(mapped)
     }
     void loadEmployees()
+  }, [fetchWithAuth, token])
+
+  // Charger les compétences de tous les utilisateurs pour filtrage
+  useEffect(() => {
+    const loadUserCompetences = async () => {
+      if (!token) return
+      try {
+        const res = await fetchWithAuth(`${API_BASE_URL}/users/user-competences/all`)
+        if (!res.ok) return
+        const data = await res.json()
+        const rows = Array.isArray(data?.data) ? data.data : (Array.isArray(data) ? data : [])
+        const mapped = rows.map((c: any) => ({
+          user_id: String(c?.user_id ?? c?.userId ?? ''),
+          competence_id: String(c?.competence_id ?? c?.competenceId ?? ''),
+          intitule: String(c?.intitule ?? c?.competence?.intitule ?? ''),
+          niveau: Number(c?.niveau ?? c?.level ?? 0),
+        })) as UserCompetence[]
+        setUserCompetences(mapped)
+      } catch (e) {
+        console.error('Erreur chargement compétences utilisateurs:', e)
+      }
+    }
+    void loadUserCompetences()
   }, [fetchWithAuth, token])
 
   const runAI = async () => {
@@ -725,17 +767,42 @@ export default function HRRecommendations() {
   }
 
   const declinedRecs = sortedAiRecs.filter((r) => r.status === 'EMPLOYEE_DECLINED')
-  const filteredEmployees = employees
-    .filter((e) => {
-      const q = employeeQuery.trim().toLowerCase()
-      if (!q) return true
-      return (
-        e.name.toLowerCase().includes(q) ||
-        e.email.toLowerCase().includes(q) ||
-        e.matricule.toLowerCase().includes(q)
-      )
-    })
-    .slice(0, 30)
+  
+  // Filtrer les employés par compétences requises de l'activité
+  const filteredEmployees = useMemo(() => {
+    // Obtenir les compétences requises de l'activité
+    const requiredSkills = activity?.required_skills || []
+    const requiredSkillNames = requiredSkills.map((s: any) => 
+      normalizeSkillKey(String(s?.skill_name ?? s?.intitule ?? ''))
+    ).filter(Boolean)
+    
+    return employees
+      .filter((e) => {
+        // Filtre par recherche texte
+        const q = employeeQuery.trim().toLowerCase()
+        if (q && !(
+          e.name.toLowerCase().includes(q) ||
+          e.email.toLowerCase().includes(q) ||
+          e.matricule.toLowerCase().includes(q)
+        )) {
+          return false
+        }
+        
+        // Filtre par compétences - l'employé doit avoir au moins une compétence requise
+        if (requiredSkillNames.length > 0 && userCompetences.length > 0) {
+          const userSkills = userCompetences.filter(uc => uc.user_id === e.id)
+          const hasMatchingSkill = userSkills.some(uc => 
+            requiredSkillNames.some(reqSkill => 
+              normalizeSkillKey(uc.intitule) === reqSkill
+            )
+          )
+          return hasMatchingSkill
+        }
+        
+        return true
+      })
+      .slice(0, 30)
+  }, [employees, employeeQuery, activity?.required_skills, userCompetences])
   const filteredSkills = useMemo(() => {
     const q = skillSearch.trim().toLowerCase()
     const rows = Array.isArray(allSkills) ? allSkills : []
@@ -904,6 +971,57 @@ export default function HRRecommendations() {
     }
   }
 
+  const sendSmsToEmployee = async (recommendationId: string, employeeName: string) => {
+    setSmsSending((prev) => ({ ...prev, [recommendationId]: true }))
+    try {
+      const res = await fetchWithAuth(`${API_BASE_URL}/api/recommendations/send-sms-reminder`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ recommendationId }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data?.message ?? 'Envoi SMS impossible')
+      if (data?.sent) {
+        toast({ title: 'SMS envoyé', description: `Rappel envoyé à ${employeeName}`, variant: 'success' })
+        showNotice('success', `SMS envoyé à ${employeeName}`)
+      } else {
+        toast({ title: 'SMS non envoyé', description: data?.message ?? 'Numéro introuvable', variant: 'destructive' })
+        showNotice('error', data?.message ?? 'Numéro de téléphone introuvable')
+      }
+    } catch (err: any) {
+      toast({ title: 'Erreur SMS', description: err.message ?? 'Envoi impossible', variant: 'destructive' })
+      showNotice('error', String(err?.message ?? 'Envoi SMS impossible'))
+    } finally {
+      setSmsSending((prev) => ({ ...prev, [recommendationId]: false }))
+    }
+  }
+
+  const handleSpellCheck = async () => {
+    if (!hrPrompt.trim()) {
+      showNotice('error', 'Saisissez un prompt avant de lancer la correction.')
+      return
+    }
+    const result = await correctText(hrPrompt)
+    if (!result) {
+      showNotice('error', 'Service de correction indisponible. Réessayez.')
+      return
+    }
+    if (result.corrections === 0) {
+      showNotice('success', 'Aucune faute détectée — le prompt est correct.')
+      return
+    }
+    setHrPrompt(result.correctedText)
+    showNotice(
+      'success',
+      `${result.corrections} correction(s) appliquée(s) [${result.detectedLanguage}]`,
+    )
+    toast({
+      title: 'Prompt corrigé',
+      description: `${result.corrections} correction(s) orthographique(s) appliquée(s).`,
+      variant: 'success',
+    })
+  }
+
   if (!activity) return <div className="p-8 text-center text-muted-foreground">Activite non trouvee</div>
 
   return (
@@ -979,24 +1097,87 @@ export default function HRRecommendations() {
             <MessageSquare className="h-4 w-4 text-primary" />
             Prompt RH
           </label>
-          <button
-            onClick={generatePromptFromActivity}
-            disabled={promptGenerating}
-            className="flex items-center gap-2 rounded-lg border border-primary bg-primary/10 px-3 py-2 text-xs font-medium text-primary hover:bg-primary/20 disabled:opacity-50"
-          >
-            <Sparkles className="h-3.5 w-3.5" />
-            {promptGenerating ? 'Génération...' : 'Générer prompt auto'}
-          </button>
+          <div className="flex items-center gap-2">
+            {/* Bouton micro vocal */}
+            {speechSupported && (
+              <button
+                type="button"
+                onClick={() => {
+                  if (isListening) {
+                    stopListening()
+                  } else {
+                    startListening((finalText) => {
+                      setHrPrompt((prev) => {
+                        const base = prev.trim()
+                        return base ? `${base} ${finalText}` : finalText
+                      })
+                    })
+                  }
+                }}
+                title={isListening ? 'Arrêter la dictée' : 'Dicter le prompt (vocal)'}
+                className={`flex items-center gap-1.5 rounded-lg border px-3 py-2 text-xs font-medium transition-colors ${
+                  isListening
+                    ? 'border-red-500 bg-red-500 text-white animate-pulse hover:bg-red-600'
+                    : 'border-rose-400 bg-rose-50 text-rose-600 hover:bg-rose-100 dark:bg-rose-950/30 dark:text-rose-400 dark:border-rose-600'
+                }`}
+              >
+                {isListening ? <MicOff className="h-3.5 w-3.5" /> : <Mic className="h-3.5 w-3.5" />}
+                {isListening ? 'Arrêter' : 'Dicter'}
+              </button>
+            )}
+            <button
+              onClick={() => void handleSpellCheck()}
+              disabled={spellChecking || !hrPrompt.trim()}
+              title="Corriger les fautes d'orthographe avec LanguageTool"
+              className="flex items-center gap-2 rounded-lg border border-amber-500 bg-amber-50 px-3 py-2 text-xs font-medium text-amber-700 hover:bg-amber-100 disabled:opacity-50 dark:bg-amber-950/30 dark:text-amber-400 dark:border-amber-600 dark:hover:bg-amber-900/40"
+            >
+              <FileCheck className="h-3.5 w-3.5" />
+              {spellChecking ? 'Correction...' : 'Corriger'}
+            </button>
+            <button
+              onClick={generatePromptFromActivity}
+              disabled={promptGenerating}
+              className="flex items-center gap-2 rounded-lg border border-primary bg-primary/10 px-3 py-2 text-xs font-medium text-primary hover:bg-primary/20 disabled:opacity-50"
+            >
+              <Sparkles className="h-3.5 w-3.5" />
+              {promptGenerating ? 'Génération...' : 'Générer prompt auto'}
+            </button>
+          </div>
         </div>
-        <textarea
-          value={hrPrompt}
-          onChange={(e) => setHrPrompt(e.target.value.replace(/\|$/, ''))}
-          placeholder='Ex: Trouve 5 profils React niveau 5 et leadership niveau 3 pour une formation avancée frontend.'
-          rows={4}
-          className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-        />
-        {promptTyping && (
-          <p className="mt-2 text-xs text-primary">Generation IA en cours...</p>
+
+        {/* Textarea avec aperçu interim vocal */}
+        <div className="relative">
+          <textarea
+            value={hrPrompt}
+            onChange={(e) => setHrPrompt(e.target.value.replace(/\|$/, ''))}
+            placeholder='Ex: Trouve 5 profils React niveau 5 et leadership niveau 3 pour une formation avancée frontend.'
+            rows={4}
+            className={`w-full rounded-lg border bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring ${
+              isListening ? 'border-red-400 ring-2 ring-red-300/50' : 'border-input'
+            }`}
+          />
+          {/* Texte interim en cours de dictée */}
+          {isListening && interimText && (
+            <div className="absolute bottom-2 left-3 right-3 rounded bg-red-50 px-2 py-1 text-xs italic text-red-600 dark:bg-red-950/40 dark:text-red-400">
+              🎙 {interimText}
+            </div>
+          )}
+        </div>
+
+        {/* Indicateurs d'état */}
+        {isListening && (
+          <p className="mt-2 flex items-center gap-1.5 text-xs text-red-500">
+            <span className="inline-block h-2 w-2 animate-ping rounded-full bg-red-500" />
+            Dictée en cours — parlez maintenant...
+          </p>
+        )}
+        {speechError && !isListening && (
+          <p className="mt-2 text-xs text-destructive">{speechError}</p>
+        )}
+        {(promptTyping || spellChecking) && !isListening && (
+          <p className="mt-2 text-xs text-primary">
+            {spellChecking ? 'Correction orthographique en cours...' : 'Generation IA en cours...'}
+          </p>
         )}
       </div>
       {skillPickerOpen && (
@@ -1327,16 +1508,27 @@ export default function HRRecommendations() {
                         )}
                       </td>
                       <td className="px-4 py-3">
-                        {['PENDING', 'HR_APPROVED', 'HR_REJECTED'].includes(rec.status) ? (
+                        <div className="flex flex-col gap-1.5">
+                          {/* Bouton SMS reminder */}
                           <button
-                            onClick={() => removeRecommendation(rec._id)}
-                            className="rounded-lg border border-border px-3 py-1.5 text-xs font-medium hover:bg-accent"
+                            onClick={() => sendSmsToEmployee(rec._id, typeof rec.userId === 'string' ? rec.userId : rec.userId.name)}
+                            disabled={smsSending[rec._id]}
+                            title="Envoyer un SMS de rappel à cet employé"
+                            className="flex items-center gap-1.5 rounded-lg border border-violet-400 bg-violet-50 px-3 py-1.5 text-xs font-medium text-violet-700 hover:bg-violet-100 disabled:opacity-50 dark:bg-violet-950/30 dark:text-violet-400 dark:border-violet-600"
                           >
-                            Retirer de la liste
+                            <Smartphone className="h-3.5 w-3.5" />
+                            {smsSending[rec._id] ? 'Envoi...' : 'SMS rappel'}
                           </button>
-                        ) : (
-                          <span className="text-xs text-muted-foreground">-</span>
-                        )}
+                          {/* Bouton retirer */}
+                          {['PENDING', 'HR_APPROVED', 'HR_REJECTED'].includes(rec.status) && (
+                            <button
+                              onClick={() => removeRecommendation(rec._id)}
+                              className="rounded-lg border border-border px-3 py-1.5 text-xs font-medium hover:bg-accent"
+                            >
+                              Retirer
+                            </button>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   )

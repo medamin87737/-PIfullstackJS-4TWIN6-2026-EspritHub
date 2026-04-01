@@ -47,7 +47,7 @@ export class Activity {
   nb_seats?: number;
 
   @Prop()
-  location?: string;
+  location?: string; // Toujours string dans la BD
 
   @Prop()
   duration?: string;

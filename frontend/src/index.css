@@ -700,3 +700,100 @@
     }
   }
 }
+
+/* ============================================================
+   MODE DALTONIEN — Palette Wong (deutéranopie / protanopie)
+   Activé via la classe .colorblind sur <html>
+   N'affecte RIEN en dehors de ce bloc.
+   Couleurs sûres : bleu #0072B2, jaune #E69F00, orange #D55E00,
+   cyan #56B4E9, vert #009E73, violet #CC79A7, noir/blanc.
+   ============================================================ */
+html.colorblind {
+  /* Remplace primary (orange) → bleu sûr */
+  --primary: 201 100% 35%;          /* #0072B2 */
+  --primary-foreground: 0 0% 100%;
+
+  /* Remplace secondary (bleu foncé) → violet sûr */
+  --secondary: 320 40% 62%;         /* #CC79A7 */
+  --secondary-foreground: 0 0% 100%;
+
+  /* Destructive → orange foncé (visible sans rouge) */
+  --destructive: 18 72% 42%;        /* #D55E00 */
+  --destructive-foreground: 0 0% 100%;
+
+  /* Accent → jaune doux */
+  --accent: 38 100% 45%;            /* #E69F00 */
+  --accent-foreground: 0 0% 10%;
+
+  /* Ring → bleu sûr */
+  --ring: 201 100% 35%;
+
+  /* Sidebar */
+  --sidebar-primary: 201 100% 35%;
+  --sidebar-ring: 201 100% 35%;
+}
+
+/* Badges de statut — remplace vert/rouge par bleu/orange */
+html.colorblind .bg-emerald-100  { background-color: #cce5f6 !important; }
+html.colorblind .text-emerald-700 { color: #0072B2 !important; }
+html.colorblind .bg-emerald-600  { background-color: #0072B2 !important; }
+html.colorblind .hover\:bg-emerald-700:hover { background-color: #005a8e !important; }
+html.colorblind .border-emerald-600 { border-color: #0072B2 !important; }
+
+html.colorblind .bg-red-100  { background-color: #fde8d8 !important; }
+html.colorblind .text-red-700 { color: #D55E00 !important; }
+html.colorblind .bg-red-500,
+html.colorblind .bg-red-600  { background-color: #D55E00 !important; }
+
+html.colorblind .bg-amber-100  { background-color: #fff3cc !important; }
+html.colorblind .text-amber-700 { color: #b37700 !important; }
+
+html.colorblind .bg-violet-50  { background-color: #f0e6f6 !important; }
+html.colorblind .text-violet-700 { color: #7B2D8B !important; }
+html.colorblind .border-violet-500 { border-color: #7B2D8B !important; }
+
+/* Boutons primaires */
+html.colorblind .bg-primary { background-color: #0072B2 !important; }
+html.colorblind .text-primary { color: #0072B2 !important; }
+html.colorblind .border-primary { border-color: #0072B2 !important; }
+html.colorblind .bg-primary\/10 { background-color: rgba(0,114,178,0.10) !important; }
+html.colorblind .bg-primary\/20 { background-color: rgba(0,114,178,0.20) !important; }
+html.colorblind .hover\:bg-primary\/20:hover { background-color: rgba(0,114,178,0.20) !important; }
+html.colorblind .ring-primary\/40 { --tw-ring-color: rgba(0,114,178,0.40) !important; }
+
+/* Focus ring */
+html.colorblind *:focus-visible {
+  outline: 3px solid #E69F00 !important;
+  outline-offset: 2px !important;
+}
+
+/* Gradient surface (bouton Créer, etc.) */
+html.colorblind .gradient-surface { background: #0072B2 !important; }
+html.colorblind .gradient-badge {
+  background: linear-gradient(120deg, #0072B2, #56B4E9) !important;
+}
+
+/* Sidebar */
+html.colorblind [class*="sidebar"] .bg-primary,
+html.colorblind [class*="sidebar"] [class*="bg-primary"] {
+  background-color: #0072B2 !important;
+}
+
+/* Texte de lien actif */
+html.colorblind a[aria-current="page"],
+html.colorblind [data-active="true"] {
+  color: #E69F00 !important;
+  border-color: #E69F00 !important;
+}
+
+/* Score bars / progress */
+html.colorblind [class*="bg-emerald"],
+html.colorblind [class*="bg-green"] {
+  background-color: #0072B2 !important;
+}
+
+/* Icône micro active (rouge → orange) */
+html.colorblind .bg-red-500.animate-pulse { background-color: #D55E00 !important; }
+html.colorblind .border-red-500 { border-color: #D55E00 !important; }
+html.colorblind .text-red-500 { color: #D55E00 !important; }
+html.colorblind .ring-red-300\/50 { --tw-ring-color: rgba(213,94,0,0.30) !important; }

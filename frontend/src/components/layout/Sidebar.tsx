@@ -5,10 +5,9 @@ import {
   LayoutDashboard, Users, Building2, Brain, FileQuestion,
   ClipboardList, Sparkles, History, UserCircle, Bell,
   ChevronLeft, ChevronRight, LogOut, BarChart3,
-  FolderOpen
+  FolderOpen, FileText
 } from 'lucide-react'
 import { cn } from '../../../lib/utils'
-import { useI18n } from '../../hooks/useI18n'
 
 interface NavItem {
   label: string
@@ -28,6 +27,7 @@ const roleNavItems: Record<string, NavItem[]> = {
   HR: [
     { label: 'Dashboard', path: '/hr/dashboard', icon: <LayoutDashboard className="h-5 w-5" /> },
     { label: 'Activites', path: '/hr/activities', icon: <ClipboardList className="h-5 w-5" /> },
+    { label: 'Rapport', path: '/hr/reports', icon: <FileText className="h-5 w-5" /> },
     { label: 'Import CSV Employes', path: '/hr/import-employees', icon: <Users className="h-5 w-5" /> },
     { label: 'Demandes Managers', path: '/hr/activity-requests', icon: <ClipboardList className="h-5 w-5" /> },
     { label: 'Historique', path: '/hr/history', icon: <History className="h-5 w-5" /> },
@@ -58,45 +58,11 @@ interface SidebarProps {
 export default function Sidebar({ collapsed, setCollapsed }: SidebarProps) {
   const { user, logout } = useAuth()
   const location = useLocation()
-  const t = useI18n()
   const [isLoggingOut, setIsLoggingOut] = useState(false)
 
   if (!user) return null
 
-  const navItems = (roleNavItems[user.role] ?? []).map((item) => {
-    // Map labels to i18n keys when possible
-    if (user.role === 'ADMIN') {
-      if (item.path.endsWith('/dashboard')) return { ...item, label: t('sidebar.admin.dashboard') }
-      if (item.path.endsWith('/users')) return { ...item, label: t('sidebar.admin.users') }
-      if (item.path.endsWith('/departments')) return { ...item, label: t('sidebar.admin.departments') }
-      if (item.path.endsWith('/skills')) return { ...item, label: t('sidebar.admin.skills') }
-      if (item.path.endsWith('/questions')) return { ...item, label: t('sidebar.admin.questions') }
-      if (item.path.endsWith('/analytics')) return { ...item, label: t('sidebar.admin.analytics') }
-      if (item.path.endsWith('/prompt-rewriter')) return { ...item, label: t('sidebar.admin.promptRewriter') }
-    }
-    if (user.role === 'HR') {
-      if (item.path.endsWith('/dashboard')) return { ...item, label: t('sidebar.hr.dashboard') }
-      if (item.path.endsWith('/activities')) return { ...item, label: t('sidebar.hr.activities') }
-      if (item.path.endsWith('/create-activity')) return { ...item, label: t('sidebar.hr.createActivity') }
-      if (item.path.endsWith('/history')) return { ...item, label: t('sidebar.hr.history') }
-      if (item.path.endsWith('/analytics')) return { ...item, label: t('sidebar.hr.analytics') }
-      if (item.path.endsWith('/prompt-rewriter')) return { ...item, label: t('sidebar.hr.promptRewriter') }
-    }
-    if (user.role === 'MANAGER') {
-      if (item.path.endsWith('/dashboard')) return { ...item, label: t('sidebar.manager.dashboard') }
-      if (item.path.endsWith('/activities')) return { ...item, label: t('sidebar.manager.activities') }
-      if (item.path.endsWith('/validations')) return { ...item, label: t('sidebar.manager.validations') }
-      if (item.path.endsWith('/history')) return { ...item, label: t('sidebar.manager.history') }
-    }
-    if (user.role === 'EMPLOYEE') {
-      if (item.path.endsWith('/dashboard')) return { ...item, label: t('sidebar.employee.dashboard') }
-      if (item.path.endsWith('/activities')) return { ...item, label: t('sidebar.employee.activities') }
-      if (item.path.endsWith('/notifications')) return { ...item, label: t('sidebar.employee.notifications') }
-      if (item.path.endsWith('/history')) return { ...item, label: t('sidebar.employee.history') }
-      if (item.path.endsWith('/profile')) return { ...item, label: t('sidebar.employee.profile') }
-    }
-    return item
-  })
+  const navItems = roleNavItems[user.role] ?? []
 
   const handleLogout = () => {
     if (isLoggingOut) return
@@ -152,10 +118,10 @@ export default function Sidebar({ collapsed, setCollapsed }: SidebarProps) {
         {!collapsed && (
           <div className="flex flex-col overflow-hidden">
             <span className="truncate text-sm font-bold tracking-wide text-sidebar-primary">
-              {t('app.name')}
+              Maghrebia
             </span>
             <span className="truncate text-[10px] text-sidebar-foreground/60">
-              {t('sidebar.logoSubtitle')}
+              SkillUp Platform
             </span>
           </div>
         )}

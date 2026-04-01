@@ -1,19 +1,18 @@
 import { createContext, useContext, useEffect, useRef, useState, type ReactNode, useCallback } from 'react'
 
 type ZoomLevel = 'normal' | 'large' | 'xlarge'
-export type Language = 'fr' | 'en'
 
 interface AccessibilityContextType {
   zoom: ZoomLevel
   setZoom: (level: ZoomLevel) => void
-  language: Language
-  setLanguage: (lang: Language) => void
   autoReadSelection: boolean
   setAutoReadSelection: (value: boolean) => void
   stopSpeaking: () => void
   speak: (text: string) => void
   voiceCommandsActive: boolean
   toggleVoiceCommands: () => void
+  colorBlindMode: boolean
+  toggleColorBlindMode: () => void
 }
 
 const AccessibilityContext = createContext<AccessibilityContextType | undefined>(undefined)
@@ -21,11 +20,25 @@ const AccessibilityContext = createContext<AccessibilityContextType | undefined>
 export function AccessibilityProvider({ children }: { children: ReactNode }) {
   // Default startup size: standard-plus (A+) for better readability.
   const [zoom, setZoomState] = useState<ZoomLevel>('large')
-  const [language, setLanguageState] = useState<Language>('fr')
   const [autoReadSelection, setAutoReadSelectionState] = useState(false)
   const [voiceCommandsActive, setVoiceCommandsActive] = useState(false)
+  const [colorBlindMode, setColorBlindMode] = useState(() => {
+    if (typeof window === 'undefined') return false
+    return window.localStorage.getItem('accessibility_colorblind') === 'true'
+  })
 
   const recognitionRef = useRef<any>(null)
+
+  // Apply colorblind mode class on <html>
+  useEffect(() => {
+    if (typeof document === 'undefined') return
+    document.documentElement.classList.toggle('colorblind', colorBlindMode)
+    window.localStorage.setItem('accessibility_colorblind', String(colorBlindMode))
+  }, [colorBlindMode])
+
+  const toggleColorBlindMode = useCallback(() => {
+    setColorBlindMode((prev) => !prev)
+  }, [])
 
   // Apply zoom to root font-size
   useEffect(() => {
@@ -36,18 +49,8 @@ export function AccessibilityProvider({ children }: { children: ReactNode }) {
     root.style.fontSize = `${base * factor}px`
   }, [zoom])
 
-  // Apply language to <html lang="">
-  useEffect(() => {
-    if (typeof document === 'undefined') return
-    document.documentElement.lang = language === 'fr' ? 'fr' : 'en'
-  }, [language])
-
   const setZoom = useCallback((level: ZoomLevel) => {
     setZoomState(level)
-  }, [])
-
-  const setLanguage = useCallback((lang: Language) => {
-    setLanguageState(lang)
   }, [])
 
   const speak = useCallback(
@@ -60,10 +63,11 @@ export function AccessibilityProvider({ children }: { children: ReactNode }) {
       }
       synth.cancel()
       const utterance = new SpeechSynthesisUtterance(text)
-      utterance.lang = language === 'fr' ? 'fr-FR' : 'en-US'
+      // Utiliser la langue du navigateur ou fr par défaut
+      utterance.lang = document.documentElement.lang || 'fr-FR'
       synth.speak(utterance)
     },
-    [language],
+    []
   )
 
   const speakSelection = useCallback(() => {
@@ -110,10 +114,7 @@ export function AccessibilityProvider({ children }: { children: ReactNode }) {
 
       let detail: any = { raw, command: lower }
 
-      const unknownMessage =
-        language === 'fr'
-          ? "Je ne comprends pas votre commande vocale."
-          : "I don't understand your voice command."
+      const unknownMessage = "Je ne comprends pas votre commande vocale."
 
       const dispatchDetail = () => {
         if (typeof window !== 'undefined') {
@@ -173,7 +174,7 @@ export function AccessibilityProvider({ children }: { children: ReactNode }) {
       // Unknown command -> speak error
       speak(unknownMessage)
     },
-    [language, speak],
+    [speak],
   )
 
   const toggleVoiceCommands = useCallback(() => {
@@ -195,7 +196,7 @@ export function AccessibilityProvider({ children }: { children: ReactNode }) {
     }
 
     const recognition = new SpeechRecognition()
-    recognition.lang = language === 'fr' ? 'fr-FR' : 'en-US'
+    recognition.lang = document.documentElement.lang || 'fr-FR'
     recognition.continuous = true
     recognition.interimResults = false
 
@@ -220,7 +221,7 @@ export function AccessibilityProvider({ children }: { children: ReactNode }) {
     recognition.start()
     recognitionRef.current = recognition
     setVoiceCommandsActive(true)
-  }, [handleVoiceCommand, language, voiceCommandsActive])
+  }, [handleVoiceCommand, voiceCommandsActive])
 
   useEffect(
     () => () => {
@@ -234,14 +235,14 @@ export function AccessibilityProvider({ children }: { children: ReactNode }) {
       value={{
         zoom,
         setZoom,
-        language,
-        setLanguage,
         autoReadSelection,
         setAutoReadSelection: setAutoReadSelectionState,
         stopSpeaking,
         speak,
         voiceCommandsActive,
         toggleVoiceCommands,
+        colorBlindMode,
+        toggleColorBlindMode,
       }}
     >
       {children}

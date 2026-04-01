@@ -95,6 +95,12 @@ export class RecommendationController {
     return this.recommendationService.manualAddRecommendation(dto.activityId, dto.employeeId, this.reqUserId(req), dto.note)
   }
 
+  @Post('send-sms-reminder')
+  @Roles('HR', 'ADMIN')
+  async sendSmsReminder(@Body('recommendationId') recommendationId: string, @Req() req: any) {
+    return this.recommendationService.sendSmsReminder(recommendationId, this.reqUserId(req))
+  }
+
   @Delete(':recommendationId')
   @Roles('HR', 'MANAGER')
   async deleteRecommendation(@Param('recommendationId') recommendationId: string, @Req() req: any) {
