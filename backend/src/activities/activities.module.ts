@@ -11,5 +11,6 @@ import { Activity, ActivitySchema } from './schemas/activity.schema';
   ],
   controllers: [ActivitiesController],
   providers: [ActivitiesService, PptxService],
+  exports: [ActivitiesService], // Exporter pour que d'autres modules puissent l'utiliser
 })
 export class ActivitiesModule {}

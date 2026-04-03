@@ -94,3 +94,6 @@
 {"ts": "2026-04-01T13:19:51.911443", "activity_type": "technical", "context": "consolidate_medium", "skills_count": 1, "confidence_score": 0.8}
 {"ts": "2026-04-01T13:20:39.093911", "activity_type": "technical", "context": "consolidate_medium", "skills_count": 1, "confidence_score": 0.8}
 {"ts": "2026-04-01T13:21:16.238486", "activity_type": "technical", "context": "consolidate_medium", "skills_count": 1, "confidence_score": 0.8}
+{"ts": "2026-04-03T21:05:52.365247", "activity_type": "technical", "context": "consolidate_medium", "skills_count": 1, "confidence_score": 0.55}
+{"ts": "2026-04-03T21:07:48.847005", "activity_type": "technical", "context": "exploit_expert", "skills_count": 1, "confidence_score": 0.8}
+{"ts": "2026-04-03T21:20:30.998584", "activity_type": "technical", "context": "upskill_low", "skills_count": 1, "confidence_score": 0.55}

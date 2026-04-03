@@ -2,10 +2,11 @@ import { useEffect, useMemo, useState } from 'react'
 import { useLocation } from 'react-router-dom'
 import { useData } from '../../context/DataContext'
 import StatusBadge from '../../components/shared/StatusBadge'
-import { Check, X, Calendar, MapPin, Target, Sparkles } from 'lucide-react'
+import { Check, X, Calendar, MapPin, Target, Sparkles, MessageCircle } from 'lucide-react'
 import { useToast } from '../../../hooks/use-toast'
 import { MiniHandGestureControl } from '../../components/MiniHandGestureControl'
 import { GoogleCalendarConnect } from '../../components/GoogleCalendarConnect'
+import { Chatbot } from '../../components/Chatbot'
 import { useRewrite } from '../../hooks/useRewrite'
 import { addActivityToCalendar, isGoogleConnected } from '../../services/googleCalendarService'
 
@@ -33,6 +34,7 @@ export default function EmployeeActivities() {
   const [rewriteNotice, setRewriteNotice] = useState<string | null>(null)
   const [myRecs, setMyRecs] = useState<EmployeeRecommendation[]>([])
   const [activeGestureControl, setActiveGestureControl] = useState<string | null>(null)
+  const [activeChatbot, setActiveChatbot] = useState<string | null>(null)
 
   const token = useMemo(
     () => localStorage.getItem('auth_token') ?? sessionStorage.getItem('auth_token'),
@@ -153,6 +155,16 @@ export default function EmployeeActivities() {
     }
   }
 
+  // Gestionnaire pour ouvrir/fermer le chatbot d'une activité
+  const toggleChatbot = (activityId: string) => {
+    console.log('🤖 Toggle chatbot pour activité:', activityId);
+    if (activeChatbot === activityId) {
+      setActiveChatbot(null)
+    } else {
+      setActiveChatbot(activityId)
+    }
+  }
+
   // Handle AI rewrite
   const handleRewrite = async () => {
     if (!declineReason.trim()) return
@@ -250,19 +262,40 @@ export default function EmployeeActivities() {
               )}
 
               {rec.status === 'NOTIFIED' && (
-                <div className="mt-4 flex items-center justify-end gap-2 border-t border-border pt-3">
+                <div className="mt-4 flex items-center justify-between gap-2 border-t border-border pt-3">
                   <button
-                    onClick={() => acceptActivity(rec)}
-                    className="button-micro flex items-center gap-1.5 rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700"
+                    onClick={() => toggleChatbot(rec.activity_id)}
+                    className="button-micro flex items-center gap-1.5 rounded-lg border border-violet-500 bg-violet-50 px-3 py-2 text-sm font-medium text-violet-700 hover:bg-violet-100 dark:bg-violet-950/30 dark:text-violet-400 dark:border-violet-600 dark:hover:bg-violet-900/40"
+                    title="Poser des questions sur cette activité"
                   >
-                    <Check className="h-4 w-4" /> Accepter
+                    <MessageCircle className="h-4 w-4" />
+                    {activeChatbot === rec.activity_id ? 'Fermer le chatbot' : 'Chatbot'}
                   </button>
-                  <button
-                    onClick={() => setDeclineModal(rec.id)}
-                    className="button-micro flex items-center gap-1.5 rounded-lg border border-border px-4 py-2 text-sm font-medium text-card-foreground hover:bg-accent"
-                  >
-                    <X className="h-4 w-4" /> Refuser
-                  </button>
+                  
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => acceptActivity(rec)}
+                      className="button-micro flex items-center gap-1.5 rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700"
+                    >
+                      <Check className="h-4 w-4" /> Accepter
+                    </button>
+                    <button
+                      onClick={() => setDeclineModal(rec.id)}
+                      className="button-micro flex items-center gap-1.5 rounded-lg border border-border px-4 py-2 text-sm font-medium text-card-foreground hover:bg-accent"
+                    >
+                      <X className="h-4 w-4" /> Refuser
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Chatbot intégré */}
+              {activeChatbot === rec.activity_id && (
+                <div className="mt-4 animate-slide-up">
+                  <Chatbot
+                    activityId={rec.activity_id}
+                    onClose={() => setActiveChatbot(null)}
+                  />
                 </div>
               )}
             </div>
