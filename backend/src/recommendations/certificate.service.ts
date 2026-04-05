@@ -116,6 +116,38 @@ export class CertificateService {
     return { presence: rec.presence }
   }
 
+  async buildPortfolio(userId: string): Promise<{ buffer: Buffer; filename: string }> {
+    const certs = await this.certificateModel
+      .find({ userId: new Types.ObjectId(userId) })
+      .sort({ created_at: -1 })
+      .lean()
+
+    if (certs.length === 0) {
+      throw new HttpException('Aucun certificat disponible', HttpStatus.NOT_FOUND)
+    }
+
+    const { PDFDocument: MergeDoc } = await import('pdf-lib')
+    const merged = await MergeDoc.create()
+
+    for (const cert of certs) {
+      try {
+        // pdfData est un data URI "data:application/pdf;base64,..."
+        const base64 = cert.pdfData.replace(/^data:application\/pdf;base64,/, '')
+        const bytes = Buffer.from(base64, 'base64')
+        const srcDoc = await MergeDoc.load(bytes)
+        const pages = await merged.copyPages(srcDoc, srcDoc.getPageIndices())
+        pages.forEach(p => merged.addPage(p))
+      } catch {
+        // ignorer un certificat corrompu
+      }
+    }
+
+    const pdfBytes = await merged.save()
+    const buffer = Buffer.from(pdfBytes)
+    const filename = `portfolio_certificats_${Date.now()}.pdf`
+    return { buffer, filename }
+  }
+
   async getMyCertificates(userId: string): Promise<Omit<Certificate, 'pdfData'>[]> {
     const certs = await this.certificateModel
       .find({ userId: new Types.ObjectId(userId) })

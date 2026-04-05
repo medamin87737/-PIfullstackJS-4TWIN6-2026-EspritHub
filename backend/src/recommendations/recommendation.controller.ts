@@ -135,6 +135,18 @@ export class RecommendationController {
 
   // ── Certificats — routes spécifiques AVANT les routes :param génériques ──
 
+  @Get('certificates/portfolio')
+  @Roles('EMPLOYEE')
+  async downloadPortfolio(@Req() req: any, @Res() res: Response) {
+    const { buffer, filename } = await this.certificateService.buildPortfolio(this.reqUserId(req))
+    res.set({
+      'Content-Type': 'application/pdf',
+      'Content-Disposition': `attachment; filename="${filename}"`,
+      'Content-Length': buffer.length,
+    })
+    res.end(buffer)
+  }
+
   @Get('certificates/my')
   @Roles('EMPLOYEE')
   async myCertificates(@Req() req: any) {

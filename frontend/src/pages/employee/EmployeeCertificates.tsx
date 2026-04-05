@@ -1,7 +1,16 @@
 import { useEffect, useState, useCallback, useMemo } from 'react'
 import { useData } from '../../context/DataContext'
-import { Award, Download, RefreshCw, Search } from 'lucide-react'
+import { Award, Download, RefreshCw, Search, BookOpen, Loader2 } from 'lucide-react'
 import { cn } from '../../../lib/utils'
+
+// Icône LinkedIn SVG inline
+function LinkedInIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+      <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 0 1-2.063-2.065 2.064 2.064 0 1 1 2.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/>
+    </svg>
+  )
+}
 
 const API_BASE_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:3000'
 
@@ -20,6 +29,7 @@ export default function EmployeeCertificates() {
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [downloading, setDownloading] = useState<string | null>(null)
+  const [portfolioLoading, setPortfolioLoading] = useState(false)
 
   const token = useMemo(
     () => localStorage.getItem('auth_token') ?? sessionStorage.getItem('auth_token'),
@@ -43,6 +53,45 @@ export default function EmployeeCertificates() {
   }, [fetchWithAuth, token])
 
   useEffect(() => { void load() }, [load])
+
+  const shareOnLinkedIn = (cert: Certificate) => {
+    // LinkedIn Share URL — ouvre une fenêtre pré-remplie, pas d'OAuth requis
+    const title = encodeURIComponent(`Certificat de participation — ${cert.activityTitle}`)
+    const summary = encodeURIComponent(
+      `J'ai obtenu un certificat de participation pour "${cert.activityTitle}" sur la plateforme SkillUp de Maghrebia Assurances. Délivré le ${cert.issueDate}.`
+    )
+    const source = encodeURIComponent('Maghrebia SkillUp Platform')
+    const url = encodeURIComponent('https://www.maghrebia.com.tn')
+
+    const linkedInUrl = `https://www.linkedin.com/shareArticle?mini=true&url=${url}&title=${title}&summary=${summary}&source=${source}`
+    window.open(linkedInUrl, '_blank', 'width=600,height=600,noopener,noreferrer')
+  }
+
+  const downloadPortfolio = async () => {
+    setPortfolioLoading(true)
+    try {
+      const res = await fetchWithAuth(
+        `${API_BASE_URL}/api/recommendations/certificates/portfolio`,
+        { headers: { 'x-toast-silent': 'true' } },
+      )
+      if (!res.ok) { alert('Aucun certificat disponible'); return }
+      const blob = await res.blob()
+      const url = URL.createObjectURL(blob)
+      const disposition = res.headers.get('Content-Disposition') ?? ''
+      const match = disposition.match(/filename="?([^"]+)"?/)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = match?.[1] ?? 'portfolio_certificats.pdf'
+      document.body.appendChild(a)
+      a.click()
+      a.remove()
+      URL.revokeObjectURL(url)
+    } catch (e: any) {
+      alert(`Erreur : ${e?.message ?? 'inconnue'}`)
+    } finally {
+      setPortfolioLoading(false)
+    }
+  }
 
   const filtered = certificates.filter(c =>
     c.activityTitle.toLowerCase().includes(search.toLowerCase()),
@@ -85,13 +134,28 @@ export default function EmployeeCertificates() {
             {certificates.length} certificat{certificates.length !== 1 ? 's' : ''} obtenu{certificates.length !== 1 ? 's' : ''}
           </p>
         </div>
-        <button
-          onClick={() => void load()}
-          disabled={loading}
-          className="flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-medium hover:bg-accent disabled:opacity-50"
-        >
-          <RefreshCw className={cn('h-3.5 w-3.5', loading && 'animate-spin')} />
-        </button>
+        <div className="flex gap-2">
+          {certificates.length > 1 && (
+            <button
+              onClick={() => void downloadPortfolio()}
+              disabled={portfolioLoading}
+              className="flex items-center gap-1.5 rounded-lg border border-primary bg-primary/10 px-3 py-1.5 text-xs font-semibold text-primary hover:bg-primary/20 disabled:opacity-50 transition-colors"
+              title="Fusionner tous les certificats en un seul PDF"
+            >
+              {portfolioLoading
+                ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                : <BookOpen className="h-3.5 w-3.5" />}
+              {portfolioLoading ? 'Génération...' : 'Portfolio PDF'}
+            </button>
+          )}
+          <button
+            onClick={() => void load()}
+            disabled={loading}
+            className="flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-medium hover:bg-accent disabled:opacity-50"
+          >
+            <RefreshCw className={cn('h-3.5 w-3.5', loading && 'animate-spin')} />
+          </button>
+        </div>
       </div>
 
       {/* Barre de recherche */}
@@ -153,19 +217,26 @@ export default function EmployeeCertificates() {
                 </span>
               </div>
 
-              {/* Bouton télécharger */}
-              <button
-                onClick={() => download(cert._id, cert.activityTitle)}
-                disabled={downloading === cert._id}
-                className="mt-auto flex items-center justify-center gap-2 rounded-lg border border-amber-400 bg-amber-500/10 py-2 text-xs font-semibold text-amber-600 transition-colors hover:bg-amber-500/20 disabled:opacity-50"
-              >
-                {downloading === cert._id ? (
-                  <RefreshCw className="h-3.5 w-3.5 animate-spin" />
-                ) : (
-                  <Download className="h-3.5 w-3.5" />
-                )}
-                {downloading === cert._id ? 'Téléchargement...' : 'Télécharger PDF'}
-              </button>
+              {/* Boutons actions */}
+              <div className="mt-auto flex flex-col gap-2">
+                <button
+                  onClick={() => download(cert._id, cert.activityTitle)}
+                  disabled={downloading === cert._id}
+                  className="flex items-center justify-center gap-2 rounded-lg border border-amber-400 bg-amber-500/10 py-2 text-xs font-semibold text-amber-600 transition-colors hover:bg-amber-500/20 disabled:opacity-50"
+                >
+                  {downloading === cert._id
+                    ? <RefreshCw className="h-3.5 w-3.5 animate-spin" />
+                    : <Download className="h-3.5 w-3.5" />}
+                  {downloading === cert._id ? 'Téléchargement...' : 'Télécharger PDF'}
+                </button>
+                <button
+                  onClick={() => shareOnLinkedIn(cert)}
+                  className="flex items-center justify-center gap-2 rounded-lg border border-[#0A66C2]/40 bg-[#0A66C2]/10 py-2 text-xs font-semibold text-[#0A66C2] transition-colors hover:bg-[#0A66C2]/20"
+                >
+                  <LinkedInIcon className="h-3.5 w-3.5" />
+                  Partager sur LinkedIn
+                </button>
+              </div>
             </div>
           ))}
         </div>
