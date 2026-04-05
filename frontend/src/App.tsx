@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-route
 import { AuthProvider } from './context/AuthContext'
 import { DataProvider } from './context/DataContext'
 import { AccessibilityProvider } from './context/AccessibilityContext'
+import { TranslationProvider } from './context/TranslationContext'
 import AccessibilityWidget from './components/shared/AccessibilityWidget'
 import AppLoader from './components/shared/AppLoader'
 import RealtimeNotifications from './components/shared/RealtimeNotifications'
@@ -101,6 +102,7 @@ export default function App() {
   return (
     <BrowserRouter>
       <AccessibilityProvider>
+        <TranslationProvider>
         <AuthProvider>
           <DataProvider>
             <AnimationBootstrap />
@@ -192,6 +194,7 @@ export default function App() {
             <AccessibilityWidget />
           </DataProvider>
         </AuthProvider>
+        </TranslationProvider>
       </AccessibilityProvider>
     </BrowserRouter>
   )

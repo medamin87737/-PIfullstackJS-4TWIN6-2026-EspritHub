@@ -91,3 +91,5 @@
 {"ts": "2026-03-28T23:30:43.539031", "activity_type": "technical", "context": "consolidate_medium", "skills_count": 1, "confidence_score": 0.55}
 >>>>>>> 6f1af563f52de84a919835234ee8a9cfa774a85a
 {"ts": "2026-03-31T16:10:25.409938", "activity_type": "management", "context": "upskill_low", "skills_count": 1, "confidence_score": 0.8}
+{"ts": "2026-04-01T09:40:06.594573", "activity_type": "certification", "context": "upskill_low", "skills_count": 1, "confidence_score": 0.8}
+{"ts": "2026-04-01T09:41:00.279189", "activity_type": "certification", "context": "upskill_low", "skills_count": 1, "confidence_score": 0.8}

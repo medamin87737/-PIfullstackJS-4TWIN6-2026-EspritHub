@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Param, Post, Query, Req, Res, UseGuards, UsePipes, ValidationPipe } from '@nestjs/common'
+import { Body, Controller, Delete, Get, Param, Patch, Post, Query, Req, Res, UseGuards, UsePipes, ValidationPipe } from '@nestjs/common'
 import type { Response } from 'express'
 import { ApiTags } from '@nestjs/swagger'
 import { JwtAuthGuard } from '../auth/auth/jwt-auth/jwt-auth.guard'
@@ -145,6 +145,21 @@ export class RecommendationController {
   @Roles('EMPLOYEE', 'HR', 'MANAGER', 'ADMIN')
   async downloadCertificate(@Param('certificateId') certificateId: string, @Req() req: any) {
     return this.certificateService.downloadCertificate(certificateId, this.reqUserId(req))
+  }
+
+  @Patch(':activityId/mark-completed')
+  @Roles('HR')
+  async markActivityCompleted(@Param('activityId') activityId: string) {
+    return this.certificateService.markActivityCompleted(activityId)
+  }
+
+  @Patch(':activityId/recommendations/:recommendationId/presence')
+  @Roles('HR')
+  async setPresence(
+    @Param('recommendationId') recommendationId: string,
+    @Body('presence') presence: boolean,
+  ) {
+    return this.certificateService.setPresence(recommendationId, presence)
   }
 
   @Post(':activityId/generate-certificates')

@@ -63,6 +63,9 @@ export class Activity {
 
   @Prop({ default: 'draft' })
   status: string;
+
+  @Prop({ type: Boolean, default: false })
+  completed: boolean;
 }
 
 export const ActivitySchema = SchemaFactory.createForClass(Activity);
