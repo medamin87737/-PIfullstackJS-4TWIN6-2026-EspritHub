@@ -34,10 +34,10 @@ export default function AccessibilityWidget() {
       <div className="relative">
 
         {open && (
-          <div className="absolute bottom-14 right-0 w-80 rounded-xl border border-border bg-card p-4 text-sm shadow-2xl">
+          <div className="absolute bottom-14 right-0 w-80 rounded-xl border border-border bg-card p-4 text-sm shadow-2xl max-h-[85vh] overflow-y-auto">
             <h2 className="mb-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Accessibilite</h2>
 
-            {/* Taille du texte */}
+            {/* Taille du texte — EN PREMIER comme avant */}
             <div className="mb-3">
               <p className="mb-1 text-xs font-medium text-muted-foreground">Taille du texte</p>
               <div className="inline-flex rounded-md border border-input bg-background p-0.5">
