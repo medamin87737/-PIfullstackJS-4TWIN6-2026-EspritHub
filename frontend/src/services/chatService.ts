@@ -2,8 +2,8 @@ import { ChatMessageRequest, ChatMessageResponse } from '../types/chat.types';
 
 class ChatService {
   private readonly baseUrl = import.meta.env.VITE_API_URL 
-    ? `${import.meta.env.VITE_API_URL}/api/chat`
-    : 'http://localhost:3000/api/chat';
+    ? `${import.meta.env.VITE_API_URL}/chat`
+    : 'http://localhost:3000/chat';
 
   async sendMessage(message: string, activityId: string): Promise<string> {
     try {
