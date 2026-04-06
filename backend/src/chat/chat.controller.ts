@@ -2,13 +2,19 @@ import { Controller, Post, Body } from '@nestjs/common';
 import { ChatService } from './chat.service';
 import { ChatMessageDto } from './dto/chat-message.dto';
 import { ChatResponseDto } from './dto/chat-response.dto';
+import { RewritePromptDto } from './dto/rewrite-prompt.dto';
 
-@Controller('api/chat')
+@Controller('chat')
 export class ChatController {
   constructor(private readonly chatService: ChatService) {}
 
   @Post()
   async sendMessage(@Body() dto: ChatMessageDto): Promise<ChatResponseDto> {
     return await this.chatService.processMessage(dto);
+  }
+
+  @Post('rewrite')
+  async rewrite(@Body() dto: RewritePromptDto): Promise<{ rewritten: string; model: string }> {
+    return await this.chatService.rewritePrompt(dto);
   }
 }
