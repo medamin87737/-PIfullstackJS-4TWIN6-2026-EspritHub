@@ -227,6 +227,8 @@ export default function HRRecommendations() {
   const [exportLoading, setExportLoading] = useState<'pdf' | 'xlsx' | null>(null)
   const [certLoading, setCertLoading] = useState(false)
   const [activityCompleted, setActivityCompleted] = useState(false)
+  const [postUpdateLoading, setPostUpdateLoading] = useState(false)
+  const [postUpdateNotice, setPostUpdateNotice] = useState<string>('')
   const [presenceMap, setPresenceMap] = useState<Record<string, boolean>>({})
   const typingTimerRef = useRef<number | null>(null)
   const noticeTimerRef = useRef<number | null>(null)
@@ -331,6 +333,49 @@ export default function HRRecommendations() {
       toast({ title: '❌ Génération échouée', description: msg, variant: 'destructive' })
     } finally {
       setCertLoading(false)
+    }
+  }
+
+  const runPostActivityUpdate = async () => {
+    if (!activityId) return
+    if (!activityCompleted) {
+      toast({ title: 'Activité non terminée', description: "Marquez d'abord l'activité terminée.", variant: 'destructive' })
+      return
+    }
+    setPostUpdateNotice('')
+    setPostUpdateLoading(true)
+    try {
+      const res = await fetchWithAuth(`${API_BASE_URL}/api/recommendations/post-activity/run/${activityId}`, {
+        method: 'POST',
+        headers: { 'x-toast-silent': 'true' },
+      })
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}))
+        const message = typeof data?.message === 'string' ? data.message : 'Post-activity update impossible.'
+        toast({ title: 'Erreur', description: message, variant: 'destructive' })
+        return
+      }
+      const data = await res.json()
+      const summary = `${Number(data?.processedEmployees ?? 0)} employé(s), ${Number(data?.updatedSkillsCount ?? 0)} compétence(s) mises à jour.`
+      setPostUpdateNotice(`✓ ${summary}`)
+      const d = data?.diagnostics
+      const diagText = d
+        ? ` | candidats: ${Number(d?.eligibleRecommendations ?? 0)}, évals: ${Number(d?.withEvaluationDoc ?? 0)}, complètes: ${Number(d?.withCompleteEvaluation ?? 0)}, déjà appliquées: ${Number(d?.alreadyAppliedCount ?? 0)}`
+        : ''
+      toast({
+        title: 'Post-activity update terminé',
+        description: `${summary}${diagText}`,
+        variant: 'success',
+      })
+    } catch {
+      setPostUpdateNotice("Échec de l'appel post-activity update.")
+      toast({
+        title: 'Erreur',
+        description: "L'appel post-activity update a échoué. Vérifiez le backend.",
+        variant: 'destructive',
+      })
+    } finally {
+      setPostUpdateLoading(false)
     }
   }
 
@@ -1191,16 +1236,17 @@ export default function HRRecommendations() {
           </button>
           {/* ─── Activité terminée + Générer Certificats ── */}
           <button
+            id="btn-close-activity"
             onClick={() => void toggleActivityCompleted()}
-            title={activityCompleted ? 'Marquer comme en cours' : 'Marquer l\'activité comme terminée'}
+            title={activityCompleted ? 'Rouvrir activité' : 'Clôturer activité'}
             className={`flex items-center gap-2 rounded-lg border px-3 py-2 text-xs font-semibold transition-all ${
               activityCompleted
                 ? 'border-emerald-500 bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/20'
-                : 'border-border bg-muted/50 text-muted-foreground hover:bg-accent'
+                : 'border-indigo-500 bg-indigo-500/10 text-indigo-700 hover:bg-indigo-500/20'
             }`}
           >
             <FileCheck className="h-3.5 w-3.5" />
-            {activityCompleted ? 'Activité terminée ✓' : 'Marquer terminée'}
+            {activityCompleted ? 'Activité clôturée ✓' : 'Clôturer activité'}
           </button>
           <button
             id="btn-generate-certificates"
@@ -1220,6 +1266,18 @@ export default function HRRecommendations() {
               : <Award className="h-3.5 w-3.5" />}
             {certLoading ? 'Génération...' : 'Générer certificats'}
           </button>
+          <button
+            onClick={() => void runPostActivityUpdate()}
+            disabled={postUpdateLoading || !activityCompleted}
+            title={!activityCompleted ? "Clôturez d'abord l'activité" : 'Lancer le post-activity update'}
+            className="flex items-center gap-2 rounded-lg border border-violet-500 bg-violet-500/10 px-3 py-2 text-xs font-semibold text-violet-700 hover:bg-violet-500/20 disabled:cursor-not-allowed disabled:opacity-50 transition-all"
+          >
+            {postUpdateLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <TrendingUp className="h-3.5 w-3.5" />}
+            {postUpdateLoading ? 'Mise à jour...' : 'Post-activity update'}
+          </button>
+          {!!postUpdateNotice && (
+            <span className="self-center text-xs font-medium text-emerald-600">{postUpdateNotice}</span>
+          )}
           <button onClick={runAI} disabled={aiRunning}
             className="flex items-center gap-2 rounded-lg border border-primary bg-primary/10 px-4 py-2 text-sm font-medium text-primary hover:bg-primary/20 disabled:opacity-50">
             {aiRunning ? <Zap className="h-4 w-4 animate-pulse" /> : <Zap className="h-4 w-4" />}

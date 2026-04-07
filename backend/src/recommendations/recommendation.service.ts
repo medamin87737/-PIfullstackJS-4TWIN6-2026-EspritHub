@@ -13,6 +13,7 @@ import { Department, DepartmentDocument } from '../users/schemas/department.sche
 import { QuestionCompetence, QuestionCompetenceDocument } from '../users/schemas/question-competence.schema'
 import { Recommendation, RecommendationDocument } from './schemas/recommendation.schema'
 import { ActivityHistory, ActivityHistoryDocument } from './schemas/activity-history.schema'
+import { PostActivityEvaluation, PostActivityEvaluationDocument } from './schemas/post-activity-evaluation.schema'
 import { NotificationsService } from '../notifications/notifications.service'
 import { MailService } from '../mail/mail.service'
 import { NotificationType } from '../notifications/schemas/notification.schema'
@@ -20,6 +21,8 @@ import { AuditService } from '../audit/audit.service'
 import { SearchRecommendationsDto } from './dto/search-recommendations.dto'
 import { SmsService } from '../sms/sms.service'
 import { TransportEstimateDto } from './dto/transport-estimate.dto'
+import { PostActivitySelfEvalDto } from './dto/post-activity-self-eval.dto'
+import { PostActivityManagerEvalDto } from './dto/post-activity-manager-eval.dto'
 
 type EligibleEmployee = {
   id: string
@@ -45,6 +48,7 @@ export class RecommendationService {
     @InjectModel(Department.name) private readonly departmentModel: Model<DepartmentDocument>,
     @InjectModel(Recommendation.name) private readonly recommendationModel: Model<RecommendationDocument>,
     @InjectModel(ActivityHistory.name) private readonly activityHistoryModel: Model<ActivityHistoryDocument>,
+    @InjectModel(PostActivityEvaluation.name) private readonly postActivityEvaluationModel: Model<PostActivityEvaluationDocument>,
     private readonly notificationService: NotificationsService,
     private readonly mailService: MailService,
     private readonly auditService: AuditService,
@@ -1454,7 +1458,7 @@ export class RecommendationService {
   async getMyRecommendations(employeeId: string) {
     return this.recommendationModel
       .find({ userId: new Types.ObjectId(employeeId) })
-      .populate('activityId', 'titre title date location description')
+      .populate('activityId', 'titre title date startDate endDate location description completed requiredSkills')
       .sort({ created_at: -1 })
       .exec()
   }
@@ -1673,6 +1677,394 @@ export class RecommendationService {
         `Export echoue: ${String(err?.message ?? err)}`,
         HttpStatus.INTERNAL_SERVER_ERROR,
       )
+    }
+  }
+
+  private normalizeSkillLabel(value: unknown): string {
+    return String(value ?? '')
+      .trim()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase()
+  }
+
+  private recommendationRequiredSkills(rec: any): string[] {
+    const fromParsed = Array.isArray(rec?.parsed_activity?.required_skills)
+      ? rec.parsed_activity.required_skills.map((s: any) => String(s?.intitule ?? '')).filter(Boolean)
+      : []
+    const fromActivity = Array.isArray(rec?.activityId?.requiredSkills)
+      ? rec.activityId.requiredSkills.map((s: any) => String(s?.skill_name ?? '')).filter(Boolean)
+      : []
+    return Array.from(new Set([...fromParsed, ...fromActivity]))
+  }
+
+  async submitPostActivitySelfEval(dto: PostActivitySelfEvalDto, employeeUserId: string) {
+    const rec = await this.recommendationModel
+      .findById(new Types.ObjectId(dto.recommendationId))
+      .populate('activityId', 'completed requiredSkills')
+      .exec()
+    if (!rec) throw new HttpException('Recommendation not found', HttpStatus.NOT_FOUND)
+    if (String(rec.userId) !== String(this.resolveUserId(employeeUserId))) {
+      throw new HttpException('Forbidden recommendation access', HttpStatus.FORBIDDEN)
+    }
+    if (!['EMPLOYEE_CONFIRMED', 'ACCEPTED'].includes(String(rec.status))) {
+      throw new HttpException('Self evaluation is allowed only for confirmed employees', HttpStatus.BAD_REQUEST)
+    }
+    if (!(rec as any).activityId?.completed) {
+      throw new HttpException('Activity must be marked completed before self-evaluation', HttpStatus.BAD_REQUEST)
+    }
+
+    const allowed = new Set(this.recommendationRequiredSkills(rec).map((x) => this.normalizeSkillLabel(x)))
+    const incoming = dto.skills
+      .map((s) => ({ intitule: String(s.intitule ?? '').trim(), auto_eval: Number(s.auto_eval) }))
+      .filter((s) => s.intitule.length > 0)
+      .filter((s) => allowed.size === 0 || allowed.has(this.normalizeSkillLabel(s.intitule)))
+    if (incoming.length === 0) {
+      throw new HttpException('No valid skill provided for self evaluation', HttpStatus.BAD_REQUEST)
+    }
+
+    const recActivityIdRaw = (rec.activityId as any)?._id ?? rec.activityId
+    const recUserIdRaw = (rec.userId as any)?._id ?? rec.userId
+    const recActivityId = new Types.ObjectId(String(recActivityIdRaw))
+    const recUserId = new Types.ObjectId(String(recUserIdRaw))
+
+    const existing = await this.postActivityEvaluationModel
+      .findOne({ activityId: recActivityId, userId: recUserId })
+      .exec()
+    const mergedMap = new Map<string, { intitule: string; auto_eval?: number; hierarchie_eval?: number }>()
+    for (const s of existing?.skills ?? []) mergedMap.set(this.normalizeSkillLabel(s.intitule), { ...s })
+    for (const s of incoming) {
+      const key = this.normalizeSkillLabel(s.intitule)
+      const prev = mergedMap.get(key)
+      mergedMap.set(key, { intitule: s.intitule, auto_eval: s.auto_eval, hierarchie_eval: prev?.hierarchie_eval })
+    }
+
+    const saved = await this.postActivityEvaluationModel
+      .findOneAndUpdate(
+        { activityId: recActivityId, userId: recUserId },
+        {
+          $set: {
+            recommendationId: rec._id as any,
+            skills: Array.from(mergedMap.values()),
+            employee_submitted_at: new Date(),
+          },
+        },
+        { upsert: true, new: true },
+      )
+      .exec()
+
+    return { message: 'Self evaluation saved', skills: saved?.skills ?? [] }
+  }
+
+  async submitPostActivityManagerEval(dto: PostActivityManagerEvalDto, managerUserId: string) {
+    const manager = await this.userModel.findById(this.resolveUserId(managerUserId)).select('_id role department_id').exec()
+    if (!manager || !['MANAGER', 'manager'].includes(String(manager.role))) {
+      throw new HttpException('Only manager can submit hierarchy evaluation', HttpStatus.FORBIDDEN)
+    }
+
+    const rec = await this.recommendationModel
+      .findById(new Types.ObjectId(dto.recommendationId))
+      .populate('activityId', 'completed departmentId departement_id requiredSkills')
+      .exec()
+    if (!rec) throw new HttpException('Recommendation not found', HttpStatus.NOT_FOUND)
+    if (!['EMPLOYEE_CONFIRMED', 'ACCEPTED'].includes(String(rec.status))) {
+      throw new HttpException('Hierarchy evaluation requires confirmed employee', HttpStatus.BAD_REQUEST)
+    }
+    if (!(rec as any).activityId?.completed) {
+      throw new HttpException('Activity must be marked completed before hierarchy evaluation', HttpStatus.BAD_REQUEST)
+    }
+
+    const depRaw = String((rec as any).activityId?.departmentId ?? (rec as any).activityId?.departement_id ?? '')
+    if (String(manager.department_id ?? '') !== depRaw) {
+      throw new HttpException('Manager is not allowed for this activity department', HttpStatus.FORBIDDEN)
+    }
+
+    const allowed = new Set(this.recommendationRequiredSkills(rec).map((x) => this.normalizeSkillLabel(x)))
+    const incoming = dto.skills
+      .map((s) => ({ intitule: String(s.intitule ?? '').trim(), hierarchie_eval: Number(s.hierarchie_eval) }))
+      .filter((s) => s.intitule.length > 0)
+      .filter((s) => allowed.size === 0 || allowed.has(this.normalizeSkillLabel(s.intitule)))
+    if (incoming.length === 0) {
+      throw new HttpException('No valid skill provided for hierarchy evaluation', HttpStatus.BAD_REQUEST)
+    }
+
+    const recActivityIdRaw = (rec.activityId as any)?._id ?? rec.activityId
+    const recUserIdRaw = (rec.userId as any)?._id ?? rec.userId
+    const recActivityId = new Types.ObjectId(String(recActivityIdRaw))
+    const recUserId = new Types.ObjectId(String(recUserIdRaw))
+
+    const existing = await this.postActivityEvaluationModel
+      .findOne({ activityId: recActivityId, userId: recUserId })
+      .exec()
+    const mergedMap = new Map<string, { intitule: string; auto_eval?: number; hierarchie_eval?: number }>()
+    for (const s of existing?.skills ?? []) mergedMap.set(this.normalizeSkillLabel(s.intitule), { ...s })
+    for (const s of incoming) {
+      const key = this.normalizeSkillLabel(s.intitule)
+      const prev = mergedMap.get(key)
+      mergedMap.set(key, { intitule: s.intitule, auto_eval: prev?.auto_eval, hierarchie_eval: s.hierarchie_eval })
+    }
+
+    const saved = await this.postActivityEvaluationModel
+      .findOneAndUpdate(
+        { activityId: recActivityId, userId: recUserId },
+        {
+          $set: {
+            recommendationId: rec._id as any,
+            skills: Array.from(mergedMap.values()),
+            manager_submitted_at: new Date(),
+          },
+        },
+        { upsert: true, new: true },
+      )
+      .exec()
+    return { message: 'Hierarchy evaluation saved', skills: saved?.skills ?? [] }
+  }
+
+  async getPostActivityStatus(activityId: string) {
+    if (!isValidObjectId(activityId)) throw new HttpException('Invalid activity id', HttpStatus.BAD_REQUEST)
+    const rows = await this.postActivityEvaluationModel
+      .find({ activityId: new Types.ObjectId(activityId) })
+      .populate('userId', 'name email matricule')
+      .sort({ updatedAt: -1 })
+      .exec()
+    return rows.map((r: any) => ({
+      recommendationId: r?.recommendationId?.toString?.() ?? '',
+      user: r?.userId ?? null,
+      skills: Array.isArray(r?.skills) ? r.skills : [],
+      employee_submitted_at: r?.employee_submitted_at ?? null,
+      manager_submitted_at: r?.manager_submitted_at ?? null,
+      update_applied_at: r?.update_applied_at ?? null,
+    }))
+  }
+
+  async runPostActivityUpdate(activityId: string, hrUserId: string) {
+    const hr = await this.userModel.findById(this.resolveUserId(hrUserId)).select('_id role').exec()
+    if (!hr || !['HR', 'hr'].includes(String(hr.role))) {
+      throw new HttpException('Only HR can run post-activity update', HttpStatus.FORBIDDEN)
+    }
+    if (!isValidObjectId(activityId)) throw new HttpException('Invalid activity id', HttpStatus.BAD_REQUEST)
+
+    const activity = await this.activityModel
+      .findById(new Types.ObjectId(activityId))
+      .select('completed title post_activity_updated')
+      .exec()
+    if (!activity) throw new HttpException('Activity not found', HttpStatus.NOT_FOUND)
+    if (!activity.completed) {
+      throw new HttpException('Activity must be completed before post-activity update', HttpStatus.BAD_REQUEST)
+    }
+    if ((activity as any).post_activity_updated) {
+      return {
+        message: 'Post-activity update already applied',
+        processedEmployees: 0,
+        updatedSkillsCount: 0,
+        post_activity_updated: true,
+        diagnostics: {
+          eligibleRecommendations: 0,
+          withEvaluationDoc: 0,
+          withCompleteEvaluation: 0,
+          alreadyAppliedCount: 0,
+          withoutFicheCount: 0,
+        },
+        details: [],
+      }
+    }
+
+    const recs = await this.recommendationModel
+      .find({
+        activityId: new Types.ObjectId(activityId),
+      })
+      .populate('userId', 'name')
+      .exec()
+    const evalDocs = await this.postActivityEvaluationModel
+      .find({ activityId: new Types.ObjectId(activityId) })
+      .exec()
+
+    let processedEmployees = 0
+    let updatedSkillsCount = 0
+    let withEvaluationDoc = 0
+    let withCompleteEvaluation = 0
+    let alreadyAppliedCount = 0
+    let withoutFicheCount = 0
+    let createdMissingSkillsCount = 0
+    const details: Array<{ userId: string; userName: string; updated_skills: number }> = []
+    const recByUserId = new Map<string, any>()
+    for (const rec of recs) {
+      const uid = String((rec.userId as any)?._id ?? rec.userId ?? '')
+      if (uid) recByUserId.set(uid, rec)
+    }
+
+    for (const evalDoc of evalDocs) {
+      const evalUserIdRaw = (evalDoc.userId as any)?._id ?? evalDoc.userId
+      const evalUserId = isValidObjectId(String(evalUserIdRaw))
+        ? new Types.ObjectId(String(evalUserIdRaw))
+        : null
+      if (!evalUserId) continue
+      withEvaluationDoc += 1
+      if (evalDoc.update_applied_at) {
+        alreadyAppliedCount += 1
+        continue
+      }
+
+      const latestFiche = await this.ficheModel.findOne({ user_id: evalUserId }).sort({ createdAt: -1 }).select('_id').exec()
+      if (!latestFiche) {
+        withoutFicheCount += 1
+        continue
+      }
+
+      const dbSkills = await this.competenceModel
+        .find({ fiches_id: latestFiche._id })
+        .select('_id intitule auto_eval hierarchie_eval etat')
+        .exec()
+      const dbMap = new Map<string, any>()
+      for (const s of dbSkills) dbMap.set(this.normalizeSkillLabel(s.intitule), s)
+      const fuzzyFindDbSkill = (label: string) => {
+        const normalized = this.normalizeSkillLabel(label)
+        if (!normalized) return null
+        const exact = dbMap.get(normalized)
+        if (exact) return exact
+        const found = dbSkills.find((x: any) => {
+          const key = this.normalizeSkillLabel(x?.intitule)
+          if (!key) return false
+          if (key.includes(normalized) || normalized.includes(key)) return true
+          return this.tokenJaccard(key, normalized) >= 0.72
+        })
+        if (found) dbMap.set(normalized, found)
+        return found ?? null
+      }
+
+      const skillUpdates: any[] = []
+      for (const s of evalDoc.skills ?? []) {
+        const autoEvalRaw = Number(s?.auto_eval)
+        const hierEvalRaw = Number(s?.hierarchie_eval)
+        const hasAuto = Number.isFinite(autoEvalRaw)
+        const hasHier = Number.isFinite(hierEvalRaw)
+        if (!hasAuto && !hasHier) continue
+        const skillLabel = String(s?.intitule ?? '').trim()
+        if (!skillLabel) continue
+        let existing = fuzzyFindDbSkill(skillLabel)
+        // If the evaluated skill does not exist in employee fiche yet, create it
+        // so post-activity update can still enrich the profile.
+        if (!existing) {
+          const escaped = skillLabel.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+          let question = await this.questionCompetenceModel
+            .findOne({
+              intitule: { $regex: `^${escaped}$`, $options: 'i' },
+            })
+            .select('_id intitule type')
+            .exec()
+          if (!question) {
+            question = await this.questionCompetenceModel.create({
+              intitule: skillLabel,
+              details: 'Créée automatiquement via post-activity update',
+              status: 'active',
+              type: 'knowledge',
+            })
+          }
+          existing = await this.competenceModel.create({
+            fiches_id: latestFiche._id,
+            question_competence_id: (question as any)._id,
+            type: String((question as any)?.type ?? 'knowledge'),
+            intitule: skillLabel,
+            auto_eval: 0,
+            hierarchie_eval: 0,
+            etat: 'validated',
+          })
+          dbSkills.push(existing as any)
+          dbMap.set(this.normalizeSkillLabel(skillLabel), existing)
+          createdMissingSkillsCount += 1
+        }
+
+        const beforeAuto = Number(existing.auto_eval ?? 0)
+        const beforeHier = Number(existing.hierarchie_eval ?? 0)
+        const autoEval = hasAuto ? autoEvalRaw : beforeAuto
+        const hierEval = hasHier ? hierEvalRaw : autoEval
+        const blended = 0.4 * autoEval + 0.6 * hierEval
+        const newAuto = Math.max(0, Math.min(10, Number((0.7 * beforeAuto + 0.3 * autoEval).toFixed(2))))
+        const newHier = Math.max(0, Math.min(10, Number((0.7 * beforeHier + 0.3 * blended).toFixed(2))))
+
+        existing.auto_eval = newAuto
+        existing.hierarchie_eval = newHier
+        existing.etat = 'validated'
+        await existing.save()
+
+        const delta = Number((((newAuto + newHier) / 2 - (beforeAuto + beforeHier) / 2).toFixed(2)))
+        skillUpdates.push({
+          intitule: s.intitule,
+          before_auto_eval: beforeAuto,
+          before_hierarchie_eval: beforeHier,
+          after_auto_eval: newAuto,
+          after_hierarchie_eval: newHier,
+          delta,
+          source: 'post_activity',
+          updated_at: new Date(),
+        })
+      }
+      if (skillUpdates.length === 0) continue
+      withCompleteEvaluation += 1
+
+      updatedSkillsCount += skillUpdates.length
+      processedEmployees += 1
+      const rec = recByUserId.get(String(evalUserId))
+      const userName =
+        String((rec?.userId as any)?.name ?? '') ||
+        String((await this.userModel.findById(evalUserId).select('name').lean().exec())?.name ?? 'N/A')
+      details.push({
+        userId: String(evalUserId),
+        userName,
+        updated_skills: skillUpdates.length,
+      })
+
+      await this.activityHistoryModel.findOneAndUpdate(
+        { userId: evalUserId, activityId: new Types.ObjectId(activityId) },
+        {
+          $set: {
+            activity_title: String(activity.title ?? 'Activité'),
+            status: 'COMPLETED',
+            completed_at: new Date(),
+            feedback: 'Post-activity update applied',
+          },
+          $push: { skill_updates: { $each: skillUpdates } },
+        },
+        { upsert: true, new: true },
+      )
+
+      evalDoc.update_applied_at = new Date()
+      await evalDoc.save()
+    }
+
+    await this.auditService.logAction({
+      domain: 'recommendations',
+      action: 'post_activity_update',
+      actorId: hrUserId,
+      actorRole: String(hr.role),
+      entityType: 'Activity',
+      entityId: activityId,
+      after: { processedEmployees, updatedSkillsCount },
+    })
+
+    // Mark as applied only when at least one employee update is effectively written.
+    // This keeps HR able to retry after missing self/manager evaluations are submitted.
+    const applied = processedEmployees > 0
+    if (applied) {
+      ;(activity as any).post_activity_updated = true
+      await activity.save()
+    }
+
+    return {
+      message: applied ? 'Post-activity update completed' : 'No eligible completed evaluations to apply yet',
+      processedEmployees,
+      updatedSkillsCount,
+      post_activity_updated: applied,
+      diagnostics: {
+        eligibleRecommendations: recs.length,
+        evaluationDocsForActivity: evalDocs.length,
+        withEvaluationDoc,
+        withCompleteEvaluation,
+        alreadyAppliedCount,
+        withoutFicheCount,
+        createdMissingSkillsCount,
+      },
+      details,
     }
   }
 

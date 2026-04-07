@@ -18,11 +18,13 @@ type EmployeeRecommendation = {
   activity_title: string
   activity_description: string
   activity_location?: string
+  activity_completed?: boolean
   start_date: string | null
   end_date: string | null
   score_total: number
   rank: number
-  status: 'MANAGER_APPROVED' | 'NOTIFIED' | 'ACCEPTED' | 'DECLINED'
+  status: 'MANAGER_APPROVED' | 'NOTIFIED' | 'ACCEPTED' | 'DECLINED' | 'EMPLOYEE_CONFIRMED'
+  required_skills?: string[]
 }
 
 export default function EmployeeActivities() {
@@ -34,6 +36,7 @@ export default function EmployeeActivities() {
   const [declineReason, setDeclineReason] = useState('')
   const [rewriteNotice, setRewriteNotice] = useState<string | null>(null)
   const [myRecs, setMyRecs] = useState<EmployeeRecommendation[]>([])
+  const [postRecs, setPostRecs] = useState<EmployeeRecommendation[]>([])
   const [activeGestureControl, setActiveGestureControl] = useState<string | null>(null)
   const [activeChatbot, setActiveChatbot] = useState<string | null>(null)
   const [transportOpenFor, setTransportOpenFor] = useState<string | null>(null)
@@ -41,6 +44,9 @@ export default function EmployeeActivities() {
   const [transportError, setTransportError] = useState<Record<string, string>>({})
   const [transportResults, setTransportResults] = useState<Record<string, any[]>>({})
   const [transportSource, setTransportSource] = useState<Record<string, string>>({})
+  const [selfEvalInputs, setSelfEvalInputs] = useState<Record<string, Record<string, number>>>({})
+  const [selfEvalLoading, setSelfEvalLoading] = useState<Record<string, boolean>>({})
+  const [selfEvalDone, setSelfEvalDone] = useState<Record<string, boolean>>({})
 
   const token = useMemo(
     () => localStorage.getItem('auth_token') ?? sessionStorage.getItem('auth_token'),
@@ -67,14 +73,20 @@ export default function EmployeeActivities() {
         activity_title: String(r?.activityId?.title ?? r?.activityId?.titre ?? 'Activite'),
         activity_description: String(r?.activityId?.description ?? ''),
         activity_location: String(r?.activityId?.location ?? ''),
+        activity_completed: !!r?.activityId?.completed,
         start_date: r?.activityId?.date ? String(r.activityId.date) : null,
         end_date: null,
         score_total: Number(r?.score_total ?? 0),
         rank: Number(r?.rank ?? 0),
         status: String(r?.status ?? '') as EmployeeRecommendation['status'],
+        required_skills: Array.isArray(r?.parsed_activity?.required_skills)
+          ? r.parsed_activity.required_skills.map((s: any) => String(s?.intitule ?? '')).filter(Boolean)
+          : [],
       }))
-      .filter((r) => r.status === 'NOTIFIED' || r.status === 'MANAGER_APPROVED')
-    setMyRecs(mapped)
+    setMyRecs(mapped.filter((r) => r.status === 'NOTIFIED' || r.status === 'MANAGER_APPROVED'))
+    setPostRecs(
+      mapped.filter((r) => (r.status === 'EMPLOYEE_CONFIRMED' || r.status === 'ACCEPTED') && !!r.activity_completed),
+    )
   }
 
   useEffect(() => {
@@ -245,6 +257,50 @@ export default function EmployeeActivities() {
       setTransportError((prev) => ({ ...prev, [recId]: 'Service transport indisponible. Reessayez dans quelques secondes.' }))
     } finally {
       setTransportLoading((prev) => ({ ...prev, [recId]: false }))
+    }
+  }
+
+  const setSelfEvalValue = (recId: string, skill: string, value: number) => {
+    setSelfEvalInputs((prev) => ({
+      ...prev,
+      [recId]: {
+        ...(prev[recId] ?? {}),
+        [skill]: value,
+      },
+    }))
+  }
+
+  const submitSelfEval = async (rec: EmployeeRecommendation) => {
+    const skills = (rec.required_skills ?? []).map((name) => ({
+      intitule: name,
+      auto_eval: Number(selfEvalInputs?.[rec.id]?.[name] ?? 0),
+    }))
+    if (skills.length === 0 || skills.some((s) => !Number.isFinite(s.auto_eval) || s.auto_eval < 0 || s.auto_eval > 10)) {
+      toast({
+        title: 'Auto-évaluation invalide',
+        description: 'Veuillez renseigner une note 0-10 pour chaque compétence.',
+        variant: 'destructive',
+      })
+      return
+    }
+
+    setSelfEvalLoading((prev) => ({ ...prev, [rec.id]: true }))
+    try {
+      const res = await fetchWithAuth(`${API_BASE_URL}/api/recommendations/post-activity/self-eval`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ recommendationId: rec.id, skills }),
+      })
+      if (!res.ok) {
+        const raw = await res.json().catch(() => ({}))
+        const message = typeof raw?.message === 'string' ? raw.message : 'Impossible d’enregistrer l’auto-évaluation.'
+        toast({ title: 'Erreur', description: message, variant: 'destructive' })
+        return
+      }
+      setSelfEvalDone((prev) => ({ ...prev, [rec.id]: true }))
+      toast({ title: 'Auto-évaluation enregistrée', description: 'Merci, vos notes ont bien été envoyées.', variant: 'success' })
+    } finally {
+      setSelfEvalLoading((prev) => ({ ...prev, [rec.id]: false }))
     }
   }
 
@@ -425,6 +481,52 @@ export default function EmployeeActivities() {
               )}
             </div>
           ))
+        )}
+      </div>
+
+      <div className="rounded-xl border border-border bg-card p-5">
+        <h3 className="text-sm font-semibold text-card-foreground">Post-activité: votre auto-évaluation</h3>
+        <p className="mt-1 text-xs text-muted-foreground">
+          Remplissez vos notes (0-10) pour les activités terminées que vous avez confirmées.
+        </p>
+        {postRecs.length === 0 ? (
+          <p className="mt-3 text-sm text-muted-foreground">Aucune auto-évaluation en attente.</p>
+        ) : (
+          <div className="mt-3 space-y-3">
+            {postRecs.map((rec) => (
+              <div key={`self-${rec.id}`} className="rounded-lg border border-border bg-background p-3">
+                <p className="text-sm font-medium text-card-foreground">{rec.activity_title}</p>
+                <div className="mt-2 grid grid-cols-1 gap-2 md:grid-cols-2">
+                  {(rec.required_skills ?? []).map((skill) => (
+                    <label key={`${rec.id}-${skill}`} className="flex items-center justify-between gap-2 rounded-md border border-border px-2 py-1.5 text-xs">
+                      <span className="text-foreground">{skill}</span>
+                      <input
+                        type="number"
+                        min={0}
+                        max={10}
+                        value={selfEvalInputs?.[rec.id]?.[skill] ?? ''}
+                        onChange={(e) => setSelfEvalValue(rec.id, skill, Number(e.target.value))}
+                        className="w-16 rounded-md border border-input bg-card px-2 py-1 text-xs"
+                      />
+                    </label>
+                  ))}
+                </div>
+                <div className="mt-2 flex justify-end">
+                  {selfEvalDone[rec.id] && (
+                    <p className="mr-3 self-center text-xs font-medium text-emerald-600">Envoyé ✓</p>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => void submitSelfEval(rec)}
+                    disabled={!!selfEvalLoading[rec.id]}
+                    className="rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground disabled:opacity-60"
+                  >
+                    {selfEvalLoading[rec.id] ? 'Envoi...' : 'Envoyer auto-évaluation'}
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
         )}
       </div>
 

@@ -17,6 +17,7 @@ import { AuthModule } from '../auth/auth.module'
 import { NotificationsModule } from '../notifications/notifications.module'
 import { MailModule } from '../mail/mail.module'
 import { ActivityHistory, ActivityHistorySchema } from './schemas/activity-history.schema'
+import { PostActivityEvaluation, PostActivityEvaluationSchema } from './schemas/post-activity-evaluation.schema'
 import { AuditModule } from '../audit/audit.module'
 import { SmsModule } from '../sms/sms.module'
 
@@ -37,6 +38,7 @@ import { SmsModule } from '../sms/sms.module'
       { name: Activity.name, schema: ActivitySchema },
       { name: Department.name, schema: DepartmentSchema },
       { name: ActivityHistory.name, schema: ActivityHistorySchema },
+      { name: PostActivityEvaluation.name, schema: PostActivityEvaluationSchema },
       { name: Certificate.name, schema: CertificateSchema },
     ]),
   ],

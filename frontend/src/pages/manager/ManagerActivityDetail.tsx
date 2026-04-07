@@ -58,6 +58,9 @@ export default function ManagerActivityDetail() {
   const [profileModal, setProfileModal] = useState<{ open: boolean; data?: any }>({ open: false })
   const [searchQuery, setSearchQuery] = useState('')
   const [statusFilter, setStatusFilter] = useState<'ALL' | ApiRecommendation['status']>('ALL')
+  const [managerEvalInputs, setManagerEvalInputs] = useState<Record<string, Record<string, number>>>({})
+  const [managerEvalLoading, setManagerEvalLoading] = useState<Record<string, boolean>>({})
+  const [managerEvalDone, setManagerEvalDone] = useState<Record<string, boolean>>({})
 
   const activity = activities.find((a) => a.id === id)
   const actionableRecs = useMemo(
@@ -198,6 +201,49 @@ export default function ManagerActivityDetail() {
     }
   }
 
+  const setManagerEvalValue = (recommendationId: string, skill: string, value: number) => {
+    setManagerEvalInputs((prev) => ({
+      ...prev,
+      [recommendationId]: {
+        ...(prev[recommendationId] ?? {}),
+        [skill]: value,
+      },
+    }))
+  }
+
+  const submitManagerEval = async (rec: ApiRecommendation) => {
+    const skills = (rec.parsed_activity?.required_skills ?? []).map((s) => ({
+      intitule: String(s.intitule ?? ''),
+      hierarchie_eval: Number(managerEvalInputs?.[rec._id]?.[String(s.intitule ?? '')] ?? 0),
+    }))
+    if (skills.length === 0 || skills.some((s) => !Number.isFinite(s.hierarchie_eval) || s.hierarchie_eval < 0 || s.hierarchie_eval > 10)) {
+      toast({
+        title: 'Evaluation invalide',
+        description: 'Renseignez une note 0-10 pour chaque compétence.',
+        variant: 'destructive',
+      })
+      return
+    }
+
+    setManagerEvalLoading((prev) => ({ ...prev, [rec._id]: true }))
+    try {
+      const res = await fetchWithAuth(`${API_BASE_URL}/api/recommendations/post-activity/manager-eval`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ recommendationId: rec._id, skills }),
+      })
+      if (!res.ok) {
+        const message = await extractErrorMessage(res, 'Impossible d’enregistrer l’évaluation hiérarchique')
+        toast({ title: 'Erreur', description: message, variant: 'destructive' })
+        return
+      }
+      setManagerEvalDone((prev) => ({ ...prev, [rec._id]: true }))
+      toast({ title: 'Évaluation enregistrée', description: 'Les notes post-activité ont été sauvegardées.', variant: 'success' })
+    } finally {
+      setManagerEvalLoading((prev) => ({ ...prev, [rec._id]: false }))
+    }
+  }
+
   return (
     <div className="flex flex-col gap-6">
       <div className="reveal reveal-left flex items-center gap-3">
@@ -311,6 +357,7 @@ export default function ManagerActivityDetail() {
                         }
                       : rec.userId
                   const canDecide = ['PENDING', 'HR_APPROVED', 'SENT_TO_MANAGER'].includes(String(rec.status))
+                  const canPostEval = ['EMPLOYEE_CONFIRMED', 'ACCEPTED'].includes(String(rec.status))
                   return (
                     <tr key={rec._id} className="hover:bg-muted/30">
                       <td className="px-4 py-3"><div className="flex items-center gap-2"><Medal className="h-4 w-4 text-primary" /><span className="text-sm font-semibold">{rec.rank}</span></div></td>
@@ -376,7 +423,39 @@ export default function ManagerActivityDetail() {
                               ? 'Email envoyé ✓' 
                               : 'Envoyer Email'}
                           </button>
+                          {canPostEval && (
+                            <button
+                              onClick={() => void submitManagerEval(rec)}
+                              disabled={!!managerEvalLoading[rec._id]}
+                              className="rounded-lg border border-violet-400 bg-violet-50 px-3 py-1.5 text-xs font-medium text-violet-700 hover:bg-violet-100 disabled:opacity-50"
+                              title="Enregistrer l'évaluation hiérarchique post-activité"
+                            >
+                              {managerEvalLoading[rec._id] ? 'Envoi...' : 'Eval post-activité'}
+                            </button>
+                          )}
+                          {managerEvalDone[rec._id] && (
+                            <span className="rounded-md border border-emerald-300 bg-emerald-50 px-2 py-1 text-[11px] font-medium text-emerald-700">
+                              Envoyé ✓
+                            </span>
+                          )}
                         </div>
+                        {canPostEval && (rec.parsed_activity?.required_skills?.length ?? 0) > 0 && (
+                          <div className="mt-2 grid grid-cols-1 gap-1.5 md:grid-cols-2">
+                            {(rec.parsed_activity?.required_skills ?? []).map((s) => (
+                              <label key={`${rec._id}-${s.intitule}`} className="flex items-center justify-between gap-2 rounded-md border border-border px-2 py-1 text-[11px]">
+                                <span>{s.intitule}</span>
+                                <input
+                                  type="number"
+                                  min={0}
+                                  max={10}
+                                  value={managerEvalInputs?.[rec._id]?.[s.intitule] ?? ''}
+                                  onChange={(e) => setManagerEvalValue(rec._id, s.intitule, Number(e.target.value))}
+                                  className="w-14 rounded border border-input bg-background px-1.5 py-0.5 text-[11px]"
+                                />
+                              </label>
+                            ))}
+                          </div>
+                        )}
                       </td>
                     </tr>
                   )
