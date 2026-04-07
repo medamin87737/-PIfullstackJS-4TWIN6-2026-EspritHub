@@ -193,58 +193,107 @@ export interface ActivityEvent {
 export async function addActivityToCalendar(activity: ActivityEvent): Promise<boolean> {
   try {
     if (!GOOGLE_CONFIGURED) {
+      console.warn('⚠️ Google Calendar non configuré');
       return false
     }
     // Vérifier que l'API est initialisée
     if (!gapiLoaded) {
+      console.log('⏳ Initialisation de Google Calendar...');
       await initGoogleCalendar();
     }
 
     // Vérifier l'authentification
     if (!isGoogleConnected()) {
+      console.log('🔐 Demande d\'autorisation Google...');
       const authorized = await requestGoogleAuth();
       if (!authorized) {
         throw new Error('Autorisation Google refusée');
       }
     }
 
+    // Récupérer le token
+    const token = localStorage.getItem('google_access_token');
+    if (!token) {
+      throw new Error('Token Google non trouvé');
+    }
+
+    // Configurer le token pour gapi
+    (window as any).gapi.client.setToken({
+      access_token: token,
+    });
+
+    console.log('📋 Données de l\'activité reçues:', activity);
+
+    // Vérifier que startDate existe
+    if (!activity.startDate) {
+      throw new Error('Date de début manquante dans l\'activité');
+    }
+
     // Préparer l'événement
     const startDateTime = new Date(activity.startDate);
-    const endDateTime = activity.endDate 
-      ? new Date(activity.endDate)
-      : new Date(startDateTime.getTime() + 2 * 60 * 60 * 1000); // +2 heures par défaut
+    
+    // Calculer la date de fin (si non fournie, ajouter 2 heures)
+    let endDateTime: Date;
+    if (activity.endDate) {
+      endDateTime = new Date(activity.endDate);
+    } else {
+      endDateTime = new Date(startDateTime.getTime() + 2 * 60 * 60 * 1000); // +2 heures
+    }
+
+    // Vérifier que les dates sont valides
+    if (isNaN(startDateTime.getTime())) {
+      throw new Error(`Date de début invalide: ${activity.startDate}`);
+    }
+    if (isNaN(endDateTime.getTime())) {
+      throw new Error(`Date de fin invalide: ${activity.endDate}`);
+    }
+
+    console.log('📅 Dates de l\'événement:', {
+      start: startDateTime.toISOString(),
+      end: endDateTime.toISOString(),
+    });
 
     const event = {
       summary: activity.title,
-      description: activity.description,
-      location: activity.location || '',
+      description: activity.description || 'Aucune description',
+      location: activity.location || 'À définir',
       start: {
         dateTime: startDateTime.toISOString(),
-        timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+        timeZone: 'Europe/Paris',
       },
       end: {
         dateTime: endDateTime.toISOString(),
-        timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-      },
-      reminders: {
-        useDefault: false,
-        overrides: [
-          { method: 'email', minutes: 24 * 60 }, // 1 jour avant
-          { method: 'popup', minutes: 30 },      // 30 minutes avant
-        ],
+        timeZone: 'Europe/Paris',
       },
     };
 
-    // Créer l'événement dans le calendrier
-    const response = await (window as any).gapi.client.calendar.events.insert({
-      calendarId: 'primary',
-      resource: event,
+    console.log('📤 Événement à envoyer à Google Calendar:', JSON.stringify(event, null, 2));
+
+    console.log('📅 Création de l\'événement dans Google Calendar...');
+
+    // Créer l'événement dans le calendrier en utilisant gapi.client.request
+    const response = await (window as any).gapi.client.request({
+      path: '/calendar/v3/calendars/primary/events',
+      method: 'POST',
+      body: event,
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
     });
 
     console.log('✅ Événement créé dans Google Calendar:', response.result);
     return true;
-  } catch (error) {
+  } catch (error: any) {
     console.error('❌ Erreur lors de l\'ajout au calendrier:', error);
+    
+    // Si erreur 401, le token est expiré
+    if (error?.status === 401 || error?.result?.error?.code === 401) {
+      console.warn('⚠️ Token expiré, nettoyage...');
+      localStorage.removeItem('google_access_token');
+      localStorage.removeItem('google_token_expiry');
+    }
+    
     return false;
   }
 }

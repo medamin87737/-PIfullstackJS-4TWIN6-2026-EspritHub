@@ -27,22 +27,25 @@ export class ChatService {
     private readonly activitiesService: ActivitiesService,
   ) {}
 
-  async processMessage(dto: ChatMessageDto): Promise<ChatResponseDto> {
+  async processMessage(dto: ChatMessageDto, userLanguage: string = 'fr'): Promise<ChatResponseDto> {
     try {
-      // 1. Récupérer les données de l'activité
+      // 1. Use message as-is (translation removed)
+      const messageInFrench = dto.message;
+
+      // 2. Récupérer les données de l'activité
       const activity = await this.getActivityData(dto.activityId);
       
       this.logger.log(`Activity retrieved: ${JSON.stringify(activity)}`);
 
-      // 2. Enrichir le contexte
+      // 3. Enrichir le contexte
       const enrichedContext = this.enrichContext(activity);
       
       this.logger.log(`Enriched context: ${JSON.stringify(enrichedContext)}`);
 
-      // 3. Envoyer à Rasa
-      const rasaResponse = await this.sendToRasa(dto.message, enrichedContext);
+      // 4. Envoyer à Rasa (en français)
+      const rasaResponse = await this.sendToRasa(messageInFrench, enrichedContext);
 
-      // 4. Retourner la réponse
+      // 5. Retourner la réponse (translation removed)
       return {
         message: rasaResponse,
         timestamp: new Date(),
