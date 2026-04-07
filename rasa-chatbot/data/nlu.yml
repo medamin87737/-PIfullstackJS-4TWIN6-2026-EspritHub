@@ -1,0 +1,143 @@
+version: "3.1"
+
+nlu:
+  - intent: greet
+    examples: |
+      - bonjour
+      - salut
+      - hello
+      - coucou
+      - bonsoir
+      - hey
+      - salutations
+      - bonjour à vous
+      - bonjour monsieur
+      - bonjour madame
+
+  - intent: goodbye
+    examples: |
+      - au revoir
+      - bye
+      - à bientôt
+      - salut
+      - ciao
+      - à plus tard
+      - bonne journée
+      - merci au revoir
+      - à la prochaine
+      - adieu
+
+  - intent: explain_activity
+    examples: |
+      - Explique cette activité
+      - C'est quoi cette activité ?
+      - Peux-tu me décrire cette activité ?
+      - Qu'est-ce que c'est ?
+      - Dis-moi ce que c'est
+      - Donne-moi des détails sur cette activité
+      - Parle-moi de cette activité
+      - Décris-moi l'activité
+      - Je veux en savoir plus sur cette activité
+      - Qu'est-ce que cette activité propose ?
+      - C'est quoi exactement ?
+      - Explique-moi
+      - Détails de l'activité
+      - Informations sur l'activité
+      - Pouvez-vous m'expliquer cette activité
+      - Pourriez-vous me décrire l'activité
+      - De quoi s'agit-il
+      - Qu'est-ce que ça implique
+      - En quoi consiste cette activité
+      - Dites-moi en plus
+
+  - intent: why_recommended
+    examples: |
+      - Pourquoi je suis recommandé ?
+      - Pourquoi cette activité ?
+      - Pourquoi me suggères-tu ça ?
+      - Pourquoi moi ?
+      - Quelle est la raison de cette recommandation ?
+      - Pourquoi cette activité m'est proposée ?
+      - Pourquoi tu me recommandes ça ?
+      - Pourquoi est-ce que je devrais faire ça ?
+      - Qu'est-ce qui justifie cette recommandation ?
+      - Sur quoi se base cette recommandation ?
+      - Pourquoi c'est pertinent pour moi ?
+      - En quoi ça me concerne ?
+      - Raison de la recommandation
+      - Pourquoi me proposez-vous cela
+      - Quelle est la pertinence pour moi
+      - Comment avez-vous choisi cette activité
+      - Pourquoi suis-je ciblé
+      - Qu'est-ce qui fait que c'est pour moi
+      - Sur quels critères
+      - Pourquoi spécifiquement moi
+      - Pourquoi vous me recommandez cette activité
+      - Pour quelle raison cette recommandation
+      - Pourquoi avoir choisi cette activité pour moi
+      - Qu'est-ce qui vous fait penser que c'est pour moi
+      - En quoi cette activité me correspond
+      - Pourquoi pensez-vous que ça me convient
+
+  - intent: skills_gained
+    examples: |
+      - Quelles compétences vais-je développer ?
+      - Qu'est-ce que je vais apprendre ?
+      - Quelles sont les compétences ?
+      - Qu'est-ce que ça va m'apporter ?
+      - Quelles compétences je vais acquérir ?
+      - Que vais-je apprendre ?
+      - Compétences développées
+      - Qu'est-ce que je vais gagner ?
+      - Quels sont les bénéfices ?
+      - Qu'est-ce que ça va m'apprendre ?
+      - Quelles compétences ça développe ?
+      - Apprentissages de cette activité
+      - Compétences acquises
+      - Quelles compétences vais-je obtenir
+      - Qu'est-ce que je vais améliorer
+      - Quels apprentissages
+      - Que vais-je développer
+      - Quelles capacités vais-je acquérir
+      - Qu'est-ce que cela m'apportera
+      - Quels savoirs
+      - Pouvez-vous me dire quelles compétences je développerai
+      - Dites-moi ce que je vais apprendre
+      - Quelles compétences seront développées
+      - Qu'apprendrai-je avec cette activité
+      - Quelles sont les compétences visées
+      - Que puis-je apprendre ici
+      - Quels skills je vais gagner
+      - Qu'est-ce que cette formation m'apportera
+      - Quelles nouvelles compétences
+      - Que vais-je en retirer
+
+  - intent: ask_duration
+    examples: |
+      - Quelle est la durée ?
+      - Combien de temps dure cette activité ?
+      - C'est combien de jours ?
+      - Ça dure combien de temps ?
+      - Quelle est la durée de la formation ?
+      - Combien de jours ça prend ?
+      - C'est sur combien de jours ?
+
+  - intent: ask_location
+    examples: |
+      - Où se déroule l'activité ?
+      - C'est où ?
+      - Quel est le lieu ?
+      - Où ça se passe ?
+      - Quelle est l'adresse ?
+      - C'est dans quel endroit ?
+      - Où est-ce que ça a lieu ?
+
+  - intent: ask_date
+    examples: |
+      - Quand commence l'activité ?
+      - C'est quand ?
+      - Quelles sont les dates ?
+      - Ça commence quand ?
+      - Quelle est la date de début ?
+      - Quand est-ce que ça se passe ?
+      - Quelles sont les dates de la formation ?

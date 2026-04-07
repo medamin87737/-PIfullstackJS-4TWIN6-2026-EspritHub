@@ -1,0 +1,127 @@
+version: "3.1"
+
+stories:
+  - story: greet and explain activity path
+    steps:
+      - intent: greet
+      - action: utter_greet
+      - intent: explain_activity
+      - action: action_explain_activity
+
+  - story: greet and why recommended path
+    steps:
+      - intent: greet
+      - action: utter_greet
+      - intent: why_recommended
+      - action: action_why_recommended
+
+  - story: greet and skills gained path
+    steps:
+      - intent: greet
+      - action: utter_greet
+      - intent: skills_gained
+      - action: action_skills_gained
+
+  - story: direct explain activity without greeting
+    steps:
+      - intent: explain_activity
+      - action: action_explain_activity
+
+  - story: direct why recommended without greeting
+    steps:
+      - intent: why_recommended
+      - action: action_why_recommended
+
+  - story: direct skills gained without greeting
+    steps:
+      - intent: skills_gained
+      - action: action_skills_gained
+
+  - story: ask duration
+    steps:
+      - intent: ask_duration
+      - action: action_ask_duration
+
+  - story: ask location
+    steps:
+      - intent: ask_location
+      - action: action_ask_location
+
+  - story: ask date
+    steps:
+      - intent: ask_date
+      - action: action_ask_date
+
+  - story: multiple questions flow
+    steps:
+      - intent: explain_activity
+      - action: action_explain_activity
+      - intent: skills_gained
+      - action: action_skills_gained
+      - intent: why_recommended
+      - action: action_why_recommended
+      - intent: goodbye
+      - action: utter_goodbye
+
+  - story: complete conversation with greeting
+    steps:
+      - intent: greet
+      - action: utter_greet
+      - intent: explain_activity
+      - action: action_explain_activity
+      - intent: why_recommended
+      - action: action_why_recommended
+      - intent: skills_gained
+      - action: action_skills_gained
+      - intent: goodbye
+      - action: utter_goodbye
+
+  - story: quick question and goodbye
+    steps:
+      - intent: skills_gained
+      - action: action_skills_gained
+      - intent: goodbye
+      - action: utter_goodbye
+
+  - story: why recommended then skills gained
+    steps:
+      - intent: why_recommended
+      - action: action_why_recommended
+      - intent: skills_gained
+      - action: action_skills_gained
+
+  - story: skills gained then explain activity
+    steps:
+      - intent: skills_gained
+      - action: action_skills_gained
+      - intent: explain_activity
+      - action: action_explain_activity
+
+  - story: explain then why then goodbye
+    steps:
+      - intent: explain_activity
+      - action: action_explain_activity
+      - intent: why_recommended
+      - action: action_why_recommended
+      - intent: goodbye
+      - action: utter_goodbye
+
+  - story: all questions in different order
+    steps:
+      - intent: skills_gained
+      - action: action_skills_gained
+      - intent: explain_activity
+      - action: action_explain_activity
+      - intent: why_recommended
+      - action: action_why_recommended
+
+  - story: ask all details
+    steps:
+      - intent: explain_activity
+      - action: action_explain_activity
+      - intent: ask_duration
+      - action: action_ask_duration
+      - intent: ask_location
+      - action: action_ask_location
+      - intent: ask_date
+      - action: action_ask_date
