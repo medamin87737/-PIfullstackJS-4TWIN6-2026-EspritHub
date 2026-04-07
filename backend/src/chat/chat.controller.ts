@@ -1,4 +1,4 @@
-import { Controller, Post, Body } from '@nestjs/common';
+import { Controller, Post, Body, Query } from '@nestjs/common';
 import { ChatService } from './chat.service';
 import { ChatMessageDto } from './dto/chat-message.dto';
 import { ChatResponseDto } from './dto/chat-response.dto';
@@ -9,8 +9,11 @@ export class ChatController {
   constructor(private readonly chatService: ChatService) {}
 
   @Post()
-  async sendMessage(@Body() dto: ChatMessageDto): Promise<ChatResponseDto> {
-    return await this.chatService.processMessage(dto);
+  async sendMessage(
+    @Body() dto: ChatMessageDto,
+    @Query('lang') userLanguage?: string,
+  ): Promise<ChatResponseDto> {
+    return await this.chatService.processMessage(dto, userLanguage || 'fr');
   }
 
   @Post('rewrite')
