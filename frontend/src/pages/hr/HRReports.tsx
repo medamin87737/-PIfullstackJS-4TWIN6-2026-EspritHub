@@ -69,65 +69,76 @@ export default function HRReports() {
   const handleClear = () => {
     if (!editorRef.current) return
     editorRef.current.innerHTML = ''
+    toast({ title: 'Editeur vide', description: 'Le contenu du rapport a ete supprime.', variant: 'success' })
   }
 
   const handleExportDoc = () => {
-    const content = editorRef.current?.innerHTML?.trim() ?? ''
-    const safeTitle = sanitizeFilename(title)
-    const html = `<!doctype html><html><head><meta charset="utf-8"><title>${title}</title></head><body><h1>${title}</h1>${content}</body></html>`
-    const blob = new Blob([html], { type: 'application/msword;charset=utf-8' })
-    const url = URL.createObjectURL(blob)
-    const link = document.createElement('a')
-    link.href = url
-    link.download = `${safeTitle}.doc`
-    document.body.appendChild(link)
-    link.click()
-    document.body.removeChild(link)
-    URL.revokeObjectURL(url)
+    try {
+      const content = editorRef.current?.innerHTML?.trim() ?? ''
+      const safeTitle = sanitizeFilename(title)
+      const html = `<!doctype html><html><head><meta charset="utf-8"><title>${title}</title></head><body><h1>${title}</h1>${content}</body></html>`
+      const blob = new Blob([html], { type: 'application/msword;charset=utf-8' })
+      const url = URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = `${safeTitle}.doc`
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      URL.revokeObjectURL(url)
+      toast({ title: 'Export DOCS', description: 'Le document a ete telecharge avec succes.', variant: 'success' })
+    } catch {
+      toast({ title: 'Erreur export DOCS', description: "Impossible d'exporter le document.", variant: 'destructive' })
+    }
   }
 
   const handleExportPdf = () => {
-    const safeTitle = sanitizeFilename(title)
-    const text = editorRef.current?.innerText?.trim() ?? ''
-    const lines = text
-      .split(/\r?\n/)
-      .map((l) => l.trim())
-      .filter(Boolean)
-    const doc = new jsPDF({ orientation: 'p', unit: 'mm', format: 'a4' })
-    doc.setFontSize(16)
-    doc.setTextColor(22, 101, 52)
-    doc.text(title || 'Rapport RH', 14, 16)
+    try {
+      const safeTitle = sanitizeFilename(title)
+      const text = editorRef.current?.innerText?.trim() ?? ''
+      const lines = text
+        .split(/\r?\n/)
+        .map((l) => l.trim())
+        .filter(Boolean)
+      const doc = new jsPDF({ orientation: 'p', unit: 'mm', format: 'a4' })
+      doc.setFontSize(16)
+      doc.setTextColor(22, 101, 52)
+      doc.text(title || 'Rapport RH', 14, 16)
 
-    let y = 28
-    const left = 14
-    const right = 194
-    const lineHeight = 6
-    const pageBottom = 282
-    const renderLines = lines.length > 0 ? lines : ['Aucun contenu.']
+      let y = 28
+      const left = 14
+      const right = 194
+      const lineHeight = 6
+      const pageBottom = 282
+      const renderLines = lines.length > 0 ? lines : ['Aucun contenu.']
 
-    for (let i = 0; i < renderLines.length; i += 1) {
-      const line = renderLines[i]
-      const wrapped = doc.splitTextToSize(line, right - left)
-      const color = i % 2 === 0 ? [22, 101, 52] : [17, 24, 39]
-      const isEdgeLine = i === 0 || i === renderLines.length - 1
-      doc.setTextColor(color[0], color[1], color[2])
-      doc.setFont('helvetica', isEdgeLine ? 'bold' : 'normal')
-      for (const segment of wrapped) {
-        if (y > pageBottom) {
-          doc.addPage()
-          y = 18
+      for (let i = 0; i < renderLines.length; i += 1) {
+        const line = renderLines[i]
+        const wrapped = doc.splitTextToSize(line, right - left)
+        const color = i % 2 === 0 ? [22, 101, 52] : [17, 24, 39]
+        const isEdgeLine = i === 0 || i === renderLines.length - 1
+        doc.setTextColor(color[0], color[1], color[2])
+        doc.setFont('helvetica', isEdgeLine ? 'bold' : 'normal')
+        for (const segment of wrapped) {
+          if (y > pageBottom) {
+            doc.addPage()
+            y = 18
+          }
+          doc.text(segment, left, y)
+          y += lineHeight
         }
-        doc.text(segment, left, y)
-        y += lineHeight
+        y += 2
       }
-      y += 2
-    }
 
-    doc.setTextColor(100, 116, 139)
-    doc.setFont('helvetica', 'normal')
-    doc.setFontSize(9)
-    doc.text(`Exporte le ${new Date().toLocaleString('fr-FR')}`, 14, 290)
-    doc.save(`${safeTitle}.pdf`)
+      doc.setTextColor(100, 116, 139)
+      doc.setFont('helvetica', 'normal')
+      doc.setFontSize(9)
+      doc.text(`Exporte le ${new Date().toLocaleString('fr-FR')}`, 14, 290)
+      doc.save(`${safeTitle}.pdf`)
+      toast({ title: 'Export PDF', description: 'Le PDF a ete telecharge avec succes.', variant: 'success' })
+    } catch {
+      toast({ title: 'Erreur export PDF', description: "Impossible d'exporter le PDF.", variant: 'destructive' })
+    }
   }
 
   const animateWordsInEditor = async (finalText: string) => {
@@ -188,6 +199,9 @@ export default function HRReports() {
     if (editorRef.current && savedContent !== null) {
       editorRef.current.innerHTML = savedContent
       setRewriteInput(editorRef.current.innerText ?? '')
+      toast({ title: 'Sauvegarde chargee', description: 'Le dernier brouillon a ete restaure.', variant: 'success' })
+    } else {
+      toast({ title: 'Aucune sauvegarde', description: 'Aucun brouillon local disponible.', variant: 'destructive' })
     }
   }
 
