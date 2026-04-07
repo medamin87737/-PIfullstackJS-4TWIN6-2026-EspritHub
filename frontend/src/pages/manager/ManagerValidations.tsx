@@ -268,14 +268,14 @@ export default function ManagerValidations() {
           disabled={pendingRecs.length === 0 || isBulkSubmitting || Array.from(remainingByActivity.values()).every((v) => v <= 0)}
           className="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-50"
         >
-          Confirmer tous
+          <Check className="h-4 w-4" />
         </button>
         <button
           onClick={() => bulkDecide('REJECTED')}
           disabled={pendingRecs.length === 0 || isBulkSubmitting}
           className="rounded-lg border border-border px-4 py-2 text-sm font-medium text-card-foreground hover:bg-accent disabled:cursor-not-allowed disabled:opacity-50"
         >
-          Refuser tous
+          <X className="h-4 w-4" />
         </button>
       </div>
       <div className="rounded-xl border border-border bg-card p-4">
@@ -378,11 +378,11 @@ export default function ManagerValidations() {
                   <button onClick={() => decide(rec, 'APPROVED')}
                     disabled={Number(rec.seats_remaining ?? 0) <= 0}
                     className="flex items-center gap-1.5 rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-50">
-                    <Check className="h-4 w-4" /> Confirmer
+                    <Check className="h-4 w-4" />
                   </button>
                   <button onClick={() => decide(rec, 'REJECTED')}
                     className="flex items-center gap-1.5 rounded-lg border border-border px-4 py-2 text-sm font-medium text-card-foreground hover:bg-accent">
-                    <X className="h-4 w-4" /> Refuser
+                    <X className="h-4 w-4" />
                   </button>
                   <button onClick={() => removeManual(rec.id)}
                     className="flex items-center gap-1.5 rounded-lg border border-border px-4 py-2 text-sm font-medium text-card-foreground hover:bg-accent">

@@ -190,14 +190,14 @@ export default function ManagerActivityDetail() {
             disabled={processingAll || actionableRecs.length === 0}
             className="flex items-center gap-1.5 rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700 disabled:opacity-50"
           >
-            <Check className="h-4 w-4" /> Accepter tous
+            <Check className="h-4 w-4" />
           </button>
           <button
             onClick={() => void bulkDecide('reject')}
             disabled={processingAll || actionableRecs.length === 0}
             className="flex items-center gap-1.5 rounded-lg border border-border px-4 py-2 text-sm font-medium hover:bg-accent disabled:opacity-50"
           >
-            <X className="h-4 w-4" /> Rejeter tous
+            <X className="h-4 w-4" />
           </button>
         </div>
       </div>
@@ -319,8 +319,8 @@ export default function ManagerActivityDetail() {
                           </button>
                           {canDecide && (
                             <>
-                              <button onClick={() => void decide(rec._id, 'approve')} className="flex items-center gap-1 rounded-lg bg-emerald-100 px-3 py-1.5 text-xs font-medium text-emerald-700 hover:bg-emerald-200"><Check className="h-3.5 w-3.5" /> Accepter</button>
-                              <button onClick={() => void decide(rec._id, 'reject')} className="flex items-center gap-1 rounded-lg bg-red-100 px-3 py-1.5 text-xs font-medium text-red-700 hover:bg-red-200"><X className="h-3.5 w-3.5" /> Rejeter</button>
+                              <button onClick={() => void decide(rec._id, 'approve')} className="flex items-center gap-1 rounded-lg bg-emerald-100 px-3 py-1.5 text-xs font-medium text-emerald-700 hover:bg-emerald-200"><Check className="h-3.5 w-3.5" /></button>
+                              <button onClick={() => void decide(rec._id, 'reject')} className="flex items-center gap-1 rounded-lg bg-red-100 px-3 py-1.5 text-xs font-medium text-red-700 hover:bg-red-200"><X className="h-3.5 w-3.5" /></button>
                             </>
                           )}
                           <button
