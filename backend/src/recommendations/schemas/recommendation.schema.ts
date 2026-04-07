@@ -65,6 +65,9 @@ export class Recommendation {
   @Prop()
   employee_responded_at?: Date
 
+  @Prop({ type: Boolean, default: false })
+  presence: boolean
+
   @Prop({ required: true, default: Date.now })
   created_at: Date
 

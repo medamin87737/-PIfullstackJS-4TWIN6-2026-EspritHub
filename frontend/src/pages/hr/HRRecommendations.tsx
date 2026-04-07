@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useData } from '../../context/DataContext'
 import StatusBadge from '../../components/shared/StatusBadge'
-import { ArrowLeft, Sparkles, Send, Zap, Target, Medal, MessageSquare, TrendingUp, FileCheck, FileDown, FileSpreadsheet, Loader2, Mic, MicOff, Smartphone } from 'lucide-react'
+import { ArrowLeft, Sparkles, Send, Zap, Target, Medal, MessageSquare, TrendingUp, FileCheck, FileDown, FileSpreadsheet, Loader2, Mic, MicOff, Smartphone, Award } from 'lucide-react'
 import { useToast } from '../../../hooks/use-toast'
 import { useSpellCheck } from '../../hooks/useSpellCheck'
 import { useSpeechRecognition } from '../../hooks/useSpeechRecognition'
@@ -222,6 +222,9 @@ export default function HRRecommendations() {
   const [missingSeats, setMissingSeats] = useState(0)
   const [smsSending, setSmsSending] = useState<Record<string, boolean>>({})
   const [exportLoading, setExportLoading] = useState<'pdf' | 'xlsx' | null>(null)
+  const [certLoading, setCertLoading] = useState(false)
+  const [activityCompleted, setActivityCompleted] = useState(false)
+  const [presenceMap, setPresenceMap] = useState<Record<string, boolean>>({})
   const typingTimerRef = useRef<number | null>(null)
   const noticeTimerRef = useRef<number | null>(null)
   const previewHideTimerRef = useRef<number | null>(null)
@@ -277,6 +280,94 @@ export default function HRRecommendations() {
     }
   }
 
+
+  // ─── Générer les certificats pour tous les employés classés ─────────────
+  const handleGenerateCertificates = async () => {
+    if (!activityId) return
+
+    if (aiRecs.length === 0) {
+      showNotice('error', '⚠️ Aucune recommandation — Lancez d\'abord l\'analyse IA.')
+      toast({ title: '⚠️ Aucune recommandation', description: 'Lancez d\'abord l\'analyse IA.', variant: 'destructive' })
+      return
+    }
+
+    if (!activityCompleted) {
+      showNotice('error', '⚠️ Activité non terminée — Cliquez sur "Marquer terminée" avant de générer les certificats.')
+      toast({ title: '⚠️ Activité non terminée', description: 'Marquez l\'activité comme terminée d\'abord.', variant: 'destructive' })
+      return
+    }
+
+    const presentCount = Object.values(presenceMap).filter(Boolean).length
+    if (presentCount === 0) {
+      showNotice('error', '⚠️ Aucune présence — Cochez la présence d\'au moins un employé dans le tableau.')
+      toast({ title: '⚠️ Aucune présence enregistrée', description: 'Cochez la présence d\'au moins un employé.', variant: 'destructive' })
+      return
+    }
+
+    setCertLoading(true)
+    try {
+      const res = await fetchWithAuth(`${API_BASE_URL}/api/recommendations/${activityId}/generate-certificates`, {
+        method: 'POST',
+        headers: { 'x-toast-silent': 'true' },
+      })
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ message: 'Génération impossible' }))
+        throw new Error(String(err?.message ?? 'Génération impossible'))
+      }
+      const body = await res.json()
+      const count = body?.count ?? 0
+      showNotice('success', `🎓 ${count} certificat(s) générés et envoyés aux employés présents !`)
+      toast({
+        title: '🎓 Certificats générés !',
+        description: `${count} certificat(s) envoyés dans les notifications.`,
+        variant: 'success',
+      })
+    } catch (err: any) {
+      const msg = String(err?.message ?? 'Génération impossible.')
+      showNotice('error', `❌ ${msg}`)
+      toast({ title: '❌ Génération échouée', description: msg, variant: 'destructive' })
+    } finally {
+      setCertLoading(false)
+    }
+  }
+
+  const toggleActivityCompleted = async () => {
+    if (!activityId) return
+    try {
+      const res = await fetchWithAuth(`${API_BASE_URL}/api/recommendations/${activityId}/mark-completed`, {
+        method: 'PATCH',
+        headers: { 'x-toast-silent': 'true' },
+      })
+      if (res.ok) {
+        const { completed } = await res.json()
+        setActivityCompleted(completed)
+        toast({
+          title: completed ? '✅ Activité marquée terminée' : 'Activité rouverte',
+          description: completed
+            ? 'Vous pouvez maintenant générer les certificats.'
+            : 'L\'activité est de nouveau en cours.',
+          variant: completed ? 'success' : 'default',
+        })
+      }
+    } catch { /* ignore */ }
+  }
+
+  const togglePresence = async (recId: string, current: boolean) => {
+    try {
+      const res = await fetchWithAuth(
+        `${API_BASE_URL}/api/recommendations/${activityId}/recommendations/${recId}/presence`,
+        {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json', 'x-toast-silent': 'true' },
+          body: JSON.stringify({ presence: !current }),
+        },
+      )
+      if (res.ok) {
+        const { presence } = await res.json()
+        setPresenceMap(prev => ({ ...prev, [recId]: presence }))
+      }
+    } catch { /* ignore */ }
+  }
 
   const appendSkillToPrompt = (skill: string, level = 3) => {
     const clean = String(skill ?? '').trim()
@@ -404,10 +495,26 @@ export default function HRRecommendations() {
       if (data[0]?.parsed_activity) {
         setParsedActivity(normalizeParsedActivity(data[0].parsed_activity))
       }
+      // Restaurer la map de présence depuis la DB
+      const map: Record<string, boolean> = {}
+      for (const r of data) map[r._id] = !!(r as any).presence
+      setPresenceMap(map)
     } catch {
       // ignore silent refresh for first mount
     }
   }
+
+  // Charger le statut completed de l'activité
+  useEffect(() => {
+    if (!activityId || !token) return
+    fetchWithAuth(`${API_BASE_URL}/activities/${activityId}`, {
+      headers: { 'x-toast-silent': 'true' },
+    })
+      .then(r => r.ok ? r.json() : null)
+      .then(data => { if (data?.completed !== undefined) setActivityCompleted(!!data.completed) })
+      .catch(() => {})
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activityId])
 
   useEffect(() => {
     loadRecommendations()
@@ -1048,7 +1155,37 @@ export default function HRRecommendations() {
               : <FileSpreadsheet className="h-3.5 w-3.5" />}
             {exportLoading === 'xlsx' ? 'Export...' : 'Excel'}
           </button>
-          {/* ─── Boutons existants ──────────────── */}
+          {/* ─── Activité terminée + Générer Certificats ── */}
+          <button
+            onClick={() => void toggleActivityCompleted()}
+            title={activityCompleted ? 'Marquer comme en cours' : 'Marquer l\'activité comme terminée'}
+            className={`flex items-center gap-2 rounded-lg border px-3 py-2 text-xs font-semibold transition-all ${
+              activityCompleted
+                ? 'border-emerald-500 bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/20'
+                : 'border-border bg-muted/50 text-muted-foreground hover:bg-accent'
+            }`}
+          >
+            <FileCheck className="h-3.5 w-3.5" />
+            {activityCompleted ? 'Activité terminée ✓' : 'Marquer terminée'}
+          </button>
+          <button
+            id="btn-generate-certificates"
+            onClick={() => void handleGenerateCertificates()}
+            disabled={certLoading}
+            title={
+              !activityCompleted
+                ? 'Marquez d\'abord l\'activité comme terminée'
+                : Object.values(presenceMap).filter(Boolean).length === 0
+                  ? 'Cochez la présence d\'au moins un employé'
+                  : 'Générer et envoyer les certificats aux employés présents'
+            }
+            className="flex items-center gap-2 rounded-lg border border-amber-500 bg-amber-500/10 px-3 py-2 text-xs font-semibold text-amber-600 hover:bg-amber-500/20 disabled:cursor-not-allowed disabled:opacity-50 transition-all"
+          >
+            {certLoading
+              ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              : <Award className="h-3.5 w-3.5" />}
+            {certLoading ? 'Génération...' : 'Générer certificats'}
+          </button>
           <button onClick={runAI} disabled={aiRunning}
             className="flex items-center gap-2 rounded-lg border border-primary bg-primary/10 px-4 py-2 text-sm font-medium text-primary hover:bg-primary/20 disabled:opacity-50">
             {aiRunning ? <Zap className="h-4 w-4 animate-pulse" /> : <Zap className="h-4 w-4" />}
@@ -1465,6 +1602,7 @@ export default function HRRecommendations() {
                   <th className="px-4 py-3 text-left text-xs font-semibold uppercase text-muted-foreground">Score NLP</th>
                   <th className="px-4 py-3 text-left text-xs font-semibold uppercase text-muted-foreground">Score Compétences</th>
                   <th className="px-4 py-3 text-left text-xs font-semibold uppercase text-muted-foreground">Statut</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase text-muted-foreground">Présence</th>
                   <th className="px-4 py-3 text-left text-xs font-semibold uppercase text-muted-foreground">Action</th>
                 </tr>
               </thead>
@@ -1521,6 +1659,19 @@ export default function HRRecommendations() {
                         {rec.absence_reason && (
                           <p className="mt-1 text-[11px] text-destructive">Motif: {rec.absence_reason}</p>
                         )}
+                      </td>
+                      <td className="px-4 py-3">
+                        <label className="flex cursor-pointer items-center gap-2">
+                          <input
+                            type="checkbox"
+                            checked={presenceMap[rec._id] ?? false}
+                            onChange={() => void togglePresence(rec._id, presenceMap[rec._id] ?? false)}
+                            className="h-4 w-4 cursor-pointer accent-emerald-500"
+                          />
+                          <span className={`text-xs font-medium ${presenceMap[rec._id] ? 'text-emerald-600' : 'text-muted-foreground'}`}>
+                            {presenceMap[rec._id] ? 'Présent' : 'Absent'}
+                          </span>
+                        </label>
                       </td>
                       <td className="px-4 py-3">
                         <div className="flex flex-col gap-1.5">

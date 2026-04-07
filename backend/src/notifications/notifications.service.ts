@@ -47,6 +47,7 @@ export class NotificationsService {
       .find({ userId: new Types.ObjectId(userId) })
       .sort({ created_at: -1 })
       .limit(200)
+      .lean()
       .exec()
   }
 
@@ -66,6 +67,13 @@ export class NotificationsService {
 
   async getUnreadCount(userId: string): Promise<number> {
     return this.notificationModel.countDocuments({ userId: new Types.ObjectId(userId), read: false })
+  }
+
+  async deleteForUser(notificationId: string, userId: string): Promise<void> {
+    await this.notificationModel.deleteOne({
+      _id: new Types.ObjectId(notificationId),
+      userId: new Types.ObjectId(userId),
+    })
   }
 
   async notifyHRRecommendationReady(hrUserId: string, activityId: string, activityTitle: string, count: number) {

@@ -49,7 +49,11 @@
     "passport": "^0.7.0",
     "passport-google-oauth20": "^2.0.0",
     "passport-jwt": "^4.0.1",
+<<<<<<< HEAD
+    "pdf-lib": "^1.17.1",
+=======
     "pdf-parse": "^2.4.5",
+>>>>>>> ecbd17b5c38ec91f49d480bf6942ee5221653649
     "pptxgenjs": "^4.0.1",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.1",

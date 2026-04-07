@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-route
 import { AuthProvider } from './context/AuthContext'
 import { DataProvider } from './context/DataContext'
 import { AccessibilityProvider } from './context/AccessibilityContext'
+import { TranslationProvider } from './context/TranslationContext'
 import AccessibilityWidget from './components/shared/AccessibilityWidget'
 import AppLoader from './components/shared/AppLoader'
 import RealtimeNotifications from './components/shared/RealtimeNotifications'
@@ -48,6 +49,7 @@ import EmployeeNotifications from './pages/employee/EmployeeNotifications'
 import EmployeeHistory from './pages/employee/EmployeeHistory'
 import EmployeeProfile from './pages/employee/EmployeeProfile'
 import EmployeeSkillUpdates from './pages/employee/EmployeeSkillUpdates'
+import EmployeeCertificates from './pages/employee/EmployeeCertificates'
 import { initGlobalAnimations } from './initAnimations'
 
 function RouteTransition({ children }: { children: React.ReactNode }) {
@@ -100,6 +102,7 @@ export default function App() {
   return (
     <BrowserRouter>
       <AccessibilityProvider>
+        <TranslationProvider>
         <AuthProvider>
           <DataProvider>
             <AnimationBootstrap />
@@ -177,6 +180,7 @@ export default function App() {
                     <Route path="/employee/dashboard" element={<EmployeeDashboard />} />
                     <Route path="/employee/activities" element={<EmployeeActivities />} />
                     <Route path="/employee/notifications" element={<EmployeeNotifications />} />
+                    <Route path="/employee/certificates" element={<EmployeeCertificates />} />
                     <Route path="/employee/history" element={<EmployeeHistory />} />
                     <Route path="/employee/skill-updates" element={<EmployeeSkillUpdates />} />
                     <Route path="/employee/profile" element={<EmployeeProfile />} />
@@ -190,6 +194,7 @@ export default function App() {
             <AccessibilityWidget />
           </DataProvider>
         </AuthProvider>
+        </TranslationProvider>
       </AccessibilityProvider>
     </BrowserRouter>
   )
