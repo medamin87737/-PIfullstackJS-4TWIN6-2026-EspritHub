@@ -1059,8 +1059,9 @@ export default function HRRecommendations() {
             <Send className="h-3.5 w-3.5" /> Envoyer au manager
           </button>
           <button onClick={() => void sendToManager()}
-            className="flex items-center gap-1.5 rounded-lg border border-emerald-600 bg-emerald-600 px-3 py-2 text-xs font-semibold text-white hover:bg-emerald-700">
-            <Send className="h-3.5 w-3.5" /> Confirmer activité
+            className="flex items-center justify-center rounded-lg bg-emerald-600 p-2.5 text-white hover:bg-emerald-700"
+            title="Confirmer l'activité">
+            <Check className="h-5 w-5" />
           </button>
         </div>
       </div>

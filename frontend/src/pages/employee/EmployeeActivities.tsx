@@ -275,15 +275,17 @@ export default function EmployeeActivities() {
                   <div className="flex items-center gap-2">
                     <button
                       onClick={() => acceptActivity(rec)}
-                      className="button-micro flex items-center gap-1.5 rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700"
+                      className="flex items-center justify-center rounded-lg bg-emerald-600 p-3 text-white hover:bg-emerald-700"
+                      title="Accepter"
                     >
-                      <Check className="h-4 w-4" /> Accepter
+                      <Check className="h-5 w-5" />
                     </button>
                     <button
                       onClick={() => setDeclineModal(rec.id)}
-                      className="button-micro flex items-center gap-1.5 rounded-lg border border-border px-4 py-2 text-sm font-medium text-card-foreground hover:bg-accent"
+                      className="flex items-center justify-center rounded-lg bg-red-600 p-3 text-white hover:bg-red-700"
+                      title="Refuser"
                     >
-                      <X className="h-4 w-4" /> Refuser
+                      <X className="h-5 w-5" />
                     </button>
                   </div>
                 </div>

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useData } from '../../context/DataContext'
 import { useToast } from '../../../hooks/use-toast'
+import { Check, X } from 'lucide-react'
 
 const API_BASE_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:3000'
 
@@ -93,16 +94,18 @@ export default function HRActivityRequests() {
                         <button
                           onClick={() => review(r._id, 'APPROVED')}
                           disabled={loadingId === r._id}
-                          className="rounded-lg bg-emerald-600 px-3 py-2 text-xs font-medium text-white hover:bg-emerald-700 disabled:opacity-50"
+                          className="flex items-center justify-center rounded-lg bg-emerald-600 p-2 text-white hover:bg-emerald-700 disabled:opacity-50"
+                          title="Accepter et créer activité"
                         >
-                          Accepter et créer activité
+                          <Check className="h-5 w-5" />
                         </button>
                         <button
                           onClick={() => review(r._id, 'REJECTED')}
                           disabled={loadingId === r._id}
-                          className="rounded-lg bg-destructive px-3 py-2 text-xs font-medium text-destructive-foreground hover:opacity-90 disabled:opacity-50"
+                          className="flex items-center justify-center rounded-lg bg-destructive p-2 text-destructive-foreground hover:opacity-90 disabled:opacity-50"
+                          title="Refuser"
                         >
-                          Refuser
+                          <X className="h-5 w-5" />
                         </button>
                       </div>
                     </div>
@@ -116,3 +119,4 @@ export default function HRActivityRequests() {
     </div>
   )
 }
+

@@ -846,7 +846,7 @@ export class RecommendationService {
         const approvableCount = await this.recommendationModel.countDocuments({
           _id: { $in: requestedApproveIds.map((id) => new Types.ObjectId(id)) },
           activityId: new Types.ObjectId(activityId),
-          status: 'HR_APPROVED',
+          status: { $in: ['HR_APPROVED', 'PENDING', 'SENT_TO_MANAGER'] },
         })
 
         if (alreadyTaken + approvableCount > seatsTotal) {
@@ -862,7 +862,7 @@ export class RecommendationService {
     for (const decision of decisions) {
       const rec = await this.recommendationModel.findById(decision.recommendationId).exec()
       if (!rec || rec.activityId.toString() !== activityId) continue
-      if (rec.status !== 'HR_APPROVED') continue
+      if (!['HR_APPROVED', 'PENDING', 'SENT_TO_MANAGER'].includes(rec.status)) continue
 
       rec.status = decision.action === 'approve' ? 'MANAGER_APPROVED' : 'MANAGER_REJECTED'
       rec.manager_note = decision.note
@@ -901,6 +901,10 @@ export class RecommendationService {
       .find({ activityId: new Types.ObjectId(activityId), status: 'MANAGER_APPROVED' })
       .exec()
 
+    // Note: L'envoi d'email est maintenant manuel via le bouton "Envoyer Email" du manager
+    // Le statut reste MANAGER_APPROVED jusqu'à ce que le manager envoie l'email
+    const notifiedCount = 0 // Pas d'envoi automatique
+    /*
     let notifiedCount = 0
     for (const rec of approved) {
       rec.status = 'NOTIFIED'
@@ -945,6 +949,7 @@ export class RecommendationService {
         },
       )
     }
+    */
 
     ;(activity as any).status = 'validated'
     await activity.save()
