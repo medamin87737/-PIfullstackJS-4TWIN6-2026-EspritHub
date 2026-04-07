@@ -99,6 +99,8 @@ export function useHandGesture(options: UseHandGestureOptions): UseHandGestureRe
     // Mettre à jour le FPS
     updateFPS();
 
+    console.log('🎥 Frame reçue de MediaPipe, mains détectées:', results.multiHandLandmarks?.length || 0);
+
     // Vérifier si une main est détectée
     if (!results.multiHandLandmarks || results.multiHandLandmarks.length === 0) {
       // Aucune main détectée
@@ -181,24 +183,34 @@ export function useHandGesture(options: UseHandGestureOptions): UseHandGestureRe
    */
   const initializeMediaPipe = useCallback(async (): Promise<void> => {
     try {
+      console.log('🔄 Initialisation de MediaPipe Hands...');
+      
       const hands = new Hands({
         locateFile: (file) => {
-          return `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`;
+          // Utiliser le CDN officiel de Google avec tous les fichiers
+          const baseUrl = 'https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4.1646424915';
+          console.log(`📦 Chargement du fichier: ${file} depuis ${baseUrl}/${file}`);
+          return `${baseUrl}/${file}`;
         },
       });
 
+      console.log('⚙️ Configuration de MediaPipe...');
+      
+      // Configuration plus permissive pour améliorer la détection
       hands.setOptions({
-        maxNumHands: 2,
-        modelComplexity: 1,
-        minDetectionConfidence: minConfidence,
-        minTrackingConfidence: minConfidence,
+        maxNumHands: 1, // Réduire à 1 main pour de meilleures performances
+        modelComplexity: 1, // Modèle moyen (0=lite, 1=full)
+        minDetectionConfidence: 0.5, // Réduire le seuil pour faciliter la détection
+        minTrackingConfidence: 0.5,
+        selfieMode: true, // Mode selfie (miroir) pour webcam
       });
 
       hands.onResults(onResults);
 
       handsRef.current = hands;
+      console.log('✅ MediaPipe Hands initialisé avec succès');
     } catch (err) {
-      console.error('Erreur d\'initialisation MediaPipe:', err);
+      console.error('❌ Erreur d\'initialisation MediaPipe:', err);
       throw new Error('Échec d\'initialisation de MediaPipe. Vérifiez votre connexion internet.');
     }
   }, [minConfidence, onResults]);
