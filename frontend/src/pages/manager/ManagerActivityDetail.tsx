@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useData } from '../../context/DataContext'
 import StatusBadge from '../../components/shared/StatusBadge'
-import { ArrowLeft, Check, Medal, Target, TrendingUp, User, X } from 'lucide-react'
+import { ArrowLeft, Check, Mail, Medal, Target, TrendingUp, User, X } from 'lucide-react'
 import { useToast } from '../../../hooks/use-toast'
 
 type ApiRecommendation = {
@@ -39,6 +39,7 @@ export default function ManagerActivityDetail() {
   const [recs, setRecs] = useState<ApiRecommendation[]>([])
   const [loadingRecs, setLoadingRecs] = useState(true)
   const [processingAll, setProcessingAll] = useState(false)
+  const [sendingEmail, setSendingEmail] = useState<Record<string, boolean>>({})
   const [profileModal, setProfileModal] = useState<{ open: boolean; data?: any }>({ open: false })
   const [searchQuery, setSearchQuery] = useState('')
   const [statusFilter, setStatusFilter] = useState<'ALL' | ApiRecommendation['status']>('ALL')
@@ -84,6 +85,7 @@ export default function ManagerActivityDetail() {
       const res = await fetchWithAuth(`${API_BASE_URL}/api/recommendations/activity/${id}`)
       if (!res.ok) throw new Error(`HTTP ${res.status}`)
       const rows = (await res.json()) as ApiRecommendation[]
+      console.log('Loaded recommendations:', rows)
       setRecs((Array.isArray(rows) ? rows : []).sort((a, b) => Number(a.rank ?? 0) - Number(b.rank ?? 0)))
     } catch (err) {
       console.error('Erreur chargement recommandations activité:', err)
@@ -148,6 +150,27 @@ export default function ManagerActivityDetail() {
       toast({ title: action === 'approve' ? 'Accepter tous terminé' : 'Rejeter tous terminé' })
     } finally {
       setProcessingAll(false)
+    }
+  }
+
+  const sendInvitationEmail = async (employeeId: string) => {
+    if (!id || sendingEmail[employeeId]) return
+    setSendingEmail((prev) => ({ ...prev, [employeeId]: true }))
+    try {
+      const res = await fetchWithAuth(`${API_BASE_URL}/manager/activities/${id}/send-invitation/${employeeId}`, {
+        method: 'POST',
+      })
+      if (!res.ok) {
+        const message = await extractErrorMessage(res, 'Impossible d\'envoyer l\'email')
+        toast({ title: 'Erreur', description: message, variant: 'destructive' })
+        return
+      }
+      const data = await res.json()
+      toast({ title: 'Email envoyé', description: data.message || 'L\'invitation a été envoyée avec succès' })
+      // Recharger les recommandations pour mettre à jour le statut
+      await loadRecommendations()
+    } finally {
+      setSendingEmail((prev) => ({ ...prev, [employeeId]: false }))
     }
   }
 
@@ -300,6 +323,24 @@ export default function ManagerActivityDetail() {
                               <button onClick={() => void decide(rec._id, 'reject')} className="flex items-center gap-1 rounded-lg bg-red-100 px-3 py-1.5 text-xs font-medium text-red-700 hover:bg-red-200"><X className="h-3.5 w-3.5" /> Rejeter</button>
                             </>
                           )}
+                          <button
+                            onClick={() => void sendInvitationEmail(String(userInfo._id))}
+                            disabled={rec.status !== 'MANAGER_APPROVED' || sendingEmail[String(userInfo._id)] || !userInfo._id}
+                            className={`flex items-center gap-1 rounded-lg px-3 py-1.5 text-xs font-medium ${
+                              rec.status === 'MANAGER_APPROVED' && !sendingEmail[String(userInfo._id)]
+                                ? 'bg-blue-100 text-blue-700 hover:bg-blue-200'
+                                : rec.status === 'NOTIFIED'
+                                ? 'bg-green-100 text-green-700 cursor-default'
+                                : 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                            } disabled:opacity-50`}
+                          >
+                            <Mail className="h-3.5 w-3.5" /> 
+                            {sendingEmail[String(userInfo._id)] 
+                              ? 'Envoi...' 
+                              : rec.status === 'NOTIFIED' 
+                              ? 'Email envoyé ✓' 
+                              : 'Envoyer Email'}
+                          </button>
                         </div>
                       </td>
                     </tr>

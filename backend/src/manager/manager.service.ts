@@ -24,6 +24,8 @@ import { CreateActivityRequestDto } from './dto/create-activity-request.dto';
 import { ReviewActivityRequestDto } from './dto/review-activity-request.dto';
 import { NotificationsService } from '../notifications/notifications.service';
 import { NotificationType } from '../notifications/schemas/notification.schema';
+import { MailService } from '../mail/mail.service';
+import { Recommendation, RecommendationDocument } from '../recommendations/schemas/recommendation.schema';
 
 @Injectable()
 export class ManagerService {
@@ -34,7 +36,9 @@ export class ManagerService {
     @InjectModel(ActivityRequest.name) private activityRequestModel: Model<ActivityRequestDocument>,
     @InjectModel(Fiche.name) private ficheModel: Model<FicheDocument>,
     @InjectModel(Competence.name) private competenceModel: Model<CompetenceDocument>,
+    @InjectModel(Recommendation.name) private recommendationModel: Model<RecommendationDocument>,
     private readonly notificationsService: NotificationsService,
+    private readonly mailService: MailService,
   ) {}
 
   async createActivityRequest(managerId: string, dto: CreateActivityRequestDto) {
@@ -533,6 +537,72 @@ return {
         totalEmployees: employeeCount,
         totalActivities: activityCount,
         pendingEvaluations,
+      },
+    };
+  }
+
+  // ══════════════════════════════════════════
+  // 11. ENVOYER EMAIL D'INVITATION
+  //     Envoyer un email à un employé accepté
+  // ══════════════════════════════════════════
+  async sendActivityInvitation(activityId: string, employeeId: string, managerId: string) {
+    if (!Types.ObjectId.isValid(activityId) || !Types.ObjectId.isValid(employeeId)) {
+      throw new BadRequestException('ID invalide');
+    }
+
+    const activity = await this.activityModel.findById(activityId);
+    if (!activity) throw new NotFoundException('Activité introuvable');
+
+    const employee = await this.userModel.findById(employeeId).select('name email');
+    if (!employee) throw new NotFoundException('Employé introuvable');
+
+    if (!employee.email) {
+      throw new BadRequestException('L\'employé n\'a pas d\'adresse email');
+    }
+
+    // Vérifier que l'employé a été accepté (MANAGER_APPROVED ou NOTIFIED)
+    const recommendation = await this.recommendationModel.findOne({
+      activityId: new Types.ObjectId(activityId),
+      userId: new Types.ObjectId(employeeId),
+      status: { $in: ['MANAGER_APPROVED', 'NOTIFIED'] },
+    });
+
+    if (!recommendation) {
+      throw new BadRequestException('L\'employé doit être accepté avant d\'envoyer l\'invitation');
+    }
+
+    // Construire les URLs d'acceptation/refus
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+    const acceptUrl = `${frontendUrl}/employee/recommendations?recommendationId=${recommendation._id.toString()}&response=ACCEPTED`;
+    const declineUrl = `${frontendUrl}/employee/recommendations?recommendationId=${recommendation._id.toString()}&response=DECLINED`;
+
+    // Envoyer l'email
+    await this.mailService.sendEmployeeInvitation(
+      employee.email,
+      employee.name,
+      activity.title || activity.titre || 'Activité',
+      activity.startDate || activity.date,
+      activity.location || 'À définir',
+      activity.description || '',
+      acceptUrl,
+      declineUrl,
+    );
+
+    // Mettre à jour le statut en NOTIFIED après l'envoi
+    recommendation.status = 'NOTIFIED';
+    recommendation.updated_at = new Date();
+    await recommendation.save();
+
+    return {
+      message: `Email d'invitation envoyé à ${employee.name}`,
+      employee: {
+        id: employee._id,
+        name: employee.name,
+        email: employee.email,
+      },
+      activity: {
+        id: activity._id,
+        title: activity.title || activity.titre,
       },
     };
   }
