@@ -739,7 +739,18 @@ export class RecommendationService {
 
     const recs = await this.recommendationModel
       .find({
-        status: { $in: ['HR_APPROVED', 'MANAGER_APPROVED', 'MANAGER_REJECTED', 'NOTIFIED', 'ACCEPTED', 'DECLINED'] },
+        status: {
+          $in: [
+            'HR_APPROVED',
+            'MANAGER_APPROVED',
+            'MANAGER_REJECTED',
+            'NOTIFIED',
+            'ACCEPTED',
+            'DECLINED',
+            'EMPLOYEE_CONFIRMED',
+            'EMPLOYEE_DECLINED',
+          ],
+        },
       })
       .populate('userId', 'name email matricule')
       .populate('activityId')
@@ -869,6 +880,28 @@ export class RecommendationService {
       rec.manager_validated_at = new Date()
       rec.updated_at = new Date()
       await rec.save()
+
+      if (decision.action === 'approve') {
+        const employee = await this.userModel.findById(rec.userId).select('_id').exec()
+        if (employee) {
+          const activityTitle = await this.getActivityTitle(activity)
+          const date = (activity as any).date ?? (activity as any).startDate ?? new Date()
+          const description = (activity as any).description ?? ''
+          await this.notificationService.notifyEmployeeInvitation(
+            employee._id.toString(),
+            activityId,
+            activityTitle,
+            date,
+            {
+              description,
+              objectifs: (activity as any).objectifs ?? '',
+              location: (activity as any).location ?? '',
+              duration: (activity as any).duration ?? '',
+              type: (activity as any).type ?? '',
+            },
+          )
+        }
+      }
 
       if (decision.action === 'reject') {
         rejectedCount++
@@ -1183,8 +1216,8 @@ export class RecommendationService {
     if (rec.userId.toString() !== employeeId) {
       throw new HttpException('Employee can only respond to own recommendations', HttpStatus.FORBIDDEN)
     }
-    if (rec.status !== 'NOTIFIED') {
-      throw new HttpException('Recommendation is not in NOTIFIED state', HttpStatus.BAD_REQUEST)
+    if (!['NOTIFIED', 'MANAGER_APPROVED'].includes(String(rec.status))) {
+      throw new HttpException('Recommendation is not in a confirmable state', HttpStatus.BAD_REQUEST)
     }
     if (response === 'DECLINED' && !justification?.trim()) {
       throw new HttpException('Justification is required when employee declines', HttpStatus.BAD_REQUEST)

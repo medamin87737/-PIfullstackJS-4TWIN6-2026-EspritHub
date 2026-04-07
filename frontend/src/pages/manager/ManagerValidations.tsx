@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { useLocation } from 'react-router-dom'
 import StatusBadge from '../../components/shared/StatusBadge'
 import { Check, X, Target, TrendingUp, User } from 'lucide-react'
 import { useToast } from '../../../hooks/use-toast'
@@ -64,6 +65,7 @@ type EmployeeOption = { _id: string; name: string; email?: string; matricule?: s
 
 
 export default function ManagerValidations() {
+  const location = useLocation()
   const { toast } = useToast()
   const { fetchWithAuth } = useData()
   const token = useMemo(
@@ -78,6 +80,7 @@ export default function ManagerValidations() {
   const [employeeResults, setEmployeeResults] = useState<EmployeeOption[]>([])
   const [selectedEmployeeId, setSelectedEmployeeId] = useState('')
   const [selectedActivityId, setSelectedActivityId] = useState('')
+  const [focusEmployeeId, setFocusEmployeeId] = useState<string | null>(null)
   const remainingByActivity = useMemo(() => {
     const m = new Map<string, number>()
     for (const rec of pendingRecs) {
@@ -109,6 +112,17 @@ export default function ManagerValidations() {
     loadPending()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
+
+  useEffect(() => {
+    const params = new URLSearchParams(location.search)
+    if (params.get('focus') !== 'declined') return
+    const employeeId = params.get('employeeId')
+    if (employeeId) {
+      setFocusEmployeeId(employeeId)
+      void loadPending()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.search])
 
   const decide = async (rec: ManagerRecommendation, status: 'APPROVED' | 'REJECTED') => {
     if (!token) return
@@ -403,7 +417,12 @@ export default function ManagerValidations() {
           </div>
           <div className="divide-y divide-border">
             {processedRecs.map(rec => (
-              <div key={rec.id} className="flex items-center justify-between px-5 py-3">
+              <div
+                key={rec.id}
+                className={`flex items-center justify-between px-5 py-3 ${
+                  focusEmployeeId && rec.employee_id === focusEmployeeId ? 'bg-destructive/5 ring-1 ring-destructive/30' : ''
+                }`}
+              >
                 <div className="flex items-center gap-3">
                   <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-xs font-semibold text-primary">
                     {rec.employee_name.split(' ').map(n => n[0]).join('').slice(0, 2)}
@@ -411,7 +430,7 @@ export default function ManagerValidations() {
                   <div className="flex flex-col">
                     <span className="text-sm font-medium text-card-foreground">{rec.employee_name}</span>
                     <span className="text-xs text-muted-foreground">{rec.activity_title}</span>
-                    {rec.absence_reason && (
+                    {(String(rec.status) === 'DECLINED' || String(rec.status) === 'EMPLOYEE_DECLINED') && rec.absence_reason && (
                       <span className="text-xs text-destructive">Motif absence: {rec.absence_reason}</span>
                     )}
                   </div>
@@ -420,7 +439,7 @@ export default function ManagerValidations() {
                   <span className="text-sm font-medium">{formatScorePercent(rec.score_total)}</span>
                   <StatusBadge status={rec.status.toLowerCase()} />
                 </div>
-                {rec.absence_reason && (
+                {(String(rec.status) === 'DECLINED' || String(rec.status) === 'EMPLOYEE_DECLINED') && rec.absence_reason && (
                   <span className="text-xs text-destructive">Motif absence: {rec.absence_reason}</span>
                 )}
               </div>

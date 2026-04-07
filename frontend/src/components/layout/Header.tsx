@@ -23,7 +23,7 @@ export default function Header() {
     document.documentElement.classList.toggle('dark')
   }
 
-  const goToNotificationTarget = (n: { rawType?: string; activity_id?: string }) => {
+  const goToNotificationTarget = (n: { rawType?: string; activity_id?: string; data?: Record<string, any> }) => {
     if (n.rawType === 'CERTIFICATE_ISSUED') {
       navigate('/employee/notifications')
       return
@@ -33,10 +33,24 @@ export default function Header() {
       return
     }
     if (user.role === 'MANAGER') {
+      const employeeId = n.data?.employeeId ? String(n.data.employeeId) : ''
+      if (n.rawType === 'EMPLOYEE_DECLINED') {
+        const params = new URLSearchParams()
+        if (n.activity_id) params.set('activityId', n.activity_id)
+        if (employeeId) params.set('employeeId', employeeId)
+        params.set('focus', 'declined')
+        navigate(`/manager/validations?${params.toString()}`)
+        return
+      }
       navigate('/manager/activities')
       return
     }
     if (user.role === 'HR') {
+      const employeeId = n.data?.employeeId ? String(n.data.employeeId) : ''
+      if (n.activity_id && n.rawType === 'EMPLOYEE_DECLINED' && employeeId) {
+        navigate(`/hr/recommendations/${n.activity_id}?focus=declined&employeeId=${encodeURIComponent(employeeId)}`)
+        return
+      }
       navigate(n.activity_id ? `/hr/recommendations/${n.activity_id}` : '/hr/activities')
       return
     }

@@ -21,7 +21,7 @@ type EmployeeRecommendation = {
   end_date: string | null
   score_total: number
   rank: number
-  status: 'NOTIFIED' | 'ACCEPTED' | 'DECLINED'
+  status: 'MANAGER_APPROVED' | 'NOTIFIED' | 'ACCEPTED' | 'DECLINED'
 }
 
 export default function EmployeeActivities() {
@@ -66,7 +66,7 @@ export default function EmployeeActivities() {
         rank: Number(r?.rank ?? 0),
         status: String(r?.status ?? '') as EmployeeRecommendation['status'],
       }))
-      .filter((r) => r.status === 'NOTIFIED')
+      .filter((r) => r.status === 'NOTIFIED' || r.status === 'MANAGER_APPROVED')
     setMyRecs(mapped)
   }
 
@@ -230,7 +230,7 @@ export default function EmployeeActivities() {
                 </div>
               </div>
 
-              {rec.status === 'NOTIFIED' && (
+              {(rec.status === 'NOTIFIED' || rec.status === 'MANAGER_APPROVED') && (
                 <div className="mt-4">
                   <MiniHandGestureControl
                     recommendationId={rec.id}
@@ -261,7 +261,7 @@ export default function EmployeeActivities() {
                 </div>
               )}
 
-              {rec.status === 'NOTIFIED' && (
+              {(rec.status === 'NOTIFIED' || rec.status === 'MANAGER_APPROVED') && (
                 <div className="mt-4 flex items-center justify-between gap-2 border-t border-border pt-3">
                   <button
                     onClick={() => toggleChatbot(rec.activity_id)}

@@ -8,6 +8,7 @@
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || '';
 const GOOGLE_API_KEY = import.meta.env.VITE_GOOGLE_API_KEY || '';
 const SCOPES = 'https://www.googleapis.com/auth/calendar.events';
+const GOOGLE_CONFIGURED = Boolean(GOOGLE_CLIENT_ID && GOOGLE_API_KEY);
 
 // Vérifier que les clés sont définies
 if (!GOOGLE_CLIENT_ID || !GOOGLE_API_KEY) {
@@ -28,6 +29,9 @@ let tokenClient: any = null;
  * Initialise l'API Google Calendar
  */
 export async function initGoogleCalendar(): Promise<void> {
+  if (!GOOGLE_CONFIGURED) {
+    throw new Error('Google Calendar is not configured');
+  }
   return new Promise((resolve, reject) => {
     // Charger gapi (Google API)
     if (!gapiLoaded) {
@@ -81,6 +85,7 @@ export async function initGoogleCalendar(): Promise<void> {
  * Vérifie si l'utilisateur est connecté à Google
  */
 export function isGoogleConnected(): boolean {
+  if (!GOOGLE_CONFIGURED) return false
   const token = localStorage.getItem('google_access_token');
   const expiry = localStorage.getItem('google_token_expiry');
   
@@ -95,6 +100,9 @@ export function isGoogleConnected(): boolean {
  */
 export async function requestGoogleAuth(): Promise<boolean> {
   try {
+    if (!GOOGLE_CONFIGURED) {
+      return false
+    }
     // S'assurer que l'API est initialisée
     if (!gapiLoaded || !gisLoaded) {
       console.log('⏳ Initialisation de Google Calendar API...');
@@ -184,6 +192,9 @@ export interface ActivityEvent {
  */
 export async function addActivityToCalendar(activity: ActivityEvent): Promise<boolean> {
   try {
+    if (!GOOGLE_CONFIGURED) {
+      return false
+    }
     // Vérifier que l'API est initialisée
     if (!gapiLoaded) {
       await initGoogleCalendar();

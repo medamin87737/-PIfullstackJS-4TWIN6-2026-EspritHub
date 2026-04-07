@@ -12,7 +12,18 @@ type ApiRecommendation = {
   score_nlp: number
   score_competences: number
   rank: number
-  status: 'PENDING' | 'HR_APPROVED' | 'SENT_TO_MANAGER' | 'HR_REJECTED' | 'MANAGER_APPROVED' | 'MANAGER_REJECTED' | 'NOTIFIED' | 'ACCEPTED' | 'DECLINED'
+  status:
+    | 'PENDING'
+    | 'HR_APPROVED'
+    | 'SENT_TO_MANAGER'
+    | 'HR_REJECTED'
+    | 'MANAGER_APPROVED'
+    | 'MANAGER_REJECTED'
+    | 'NOTIFIED'
+    | 'ACCEPTED'
+    | 'DECLINED'
+    | 'EMPLOYEE_CONFIRMED'
+    | 'EMPLOYEE_DECLINED'
   absence_reason?: string | null
   parsed_activity?: { description?: string; required_skills?: { intitule: string; niveau_requis: number; poids: number }[] }
 }
@@ -84,9 +95,14 @@ export default function ManagerActivityDetail() {
     try {
       const res = await fetchWithAuth(`${API_BASE_URL}/api/recommendations/activity/${id}`)
       if (!res.ok) throw new Error(`HTTP ${res.status}`)
-      const rows = (await res.json()) as ApiRecommendation[]
-      console.log('Loaded recommendations:', rows)
-      setRecs((Array.isArray(rows) ? rows : []).sort((a, b) => Number(a.rank ?? 0) - Number(b.rank ?? 0)))
+      const rows = (await res.json()) as any[]
+      const normalized = (Array.isArray(rows) ? rows : []).map((r: any) => ({
+        ...r,
+        // Backend stores employee decline reason in employee_response.
+        absence_reason: r?.absence_reason ?? r?.employee_response ?? null,
+      })) as ApiRecommendation[]
+      console.log('Loaded recommendations:', normalized)
+      setRecs(normalized.sort((a, b) => Number(a.rank ?? 0) - Number(b.rank ?? 0)))
     } catch (err) {
       console.error('Erreur chargement recommandations activité:', err)
       setRecs([])

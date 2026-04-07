@@ -55,7 +55,7 @@ export default function EmployeeNotifications() {
         const raw = (await recRes.json()) as any[]
         setPendingRecs(
           raw
-            .filter((r: any) => String(r?.status ?? '') === 'NOTIFIED')
+            .filter((r: any) => ['NOTIFIED', 'MANAGER_APPROVED'].includes(String(r?.status ?? '')))
             .map((r: any) => ({
               id: String(r?._id ?? ''),
               activity_id: String(r?.activityId?._id ?? r?.activityId ?? ''),

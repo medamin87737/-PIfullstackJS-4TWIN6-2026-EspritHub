@@ -1,9 +1,9 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useData } from '../../context/DataContext'
 import { useAuth } from '../../context/AuthContext'
 import StatusBadge from '../../components/shared/StatusBadge'
-import { Calendar, MapPin, Users, ArrowRight, Presentation, Upload, X } from 'lucide-react'
+import { Calendar, MapPin, Users, ArrowRight, Presentation, Upload, X, ArrowUpDown } from 'lucide-react'
 import type { Activity } from '../../types'
 
 const API_BASE_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:3000'
@@ -13,10 +13,23 @@ export default function ManagerActivities() {
   const { user } = useAuth()
   const [myActivities, setMyActivities] = useState<Activity[]>([])
   const [loading, setLoading] = useState(true)
+  const [sortDesc, setSortDesc] = useState(true)
   const [pptxModal, setPptxModal] = useState<string | null>(null)
   const [pptxFile, setPptxFile] = useState<File | null>(null)
   const [pptxLoading, setPptxLoading] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
+
+  const sortedActivities = useMemo(() => {
+    const parseDate = (a: Activity) => {
+      const raw = a.created_at ?? a.date
+      const t = new Date(raw).getTime()
+      return Number.isFinite(t) ? t : 0
+    }
+    return [...myActivities].sort((a, b) => {
+      const diff = parseDate(b) - parseDate(a)
+      return sortDesc ? diff : -diff
+    })
+  }, [myActivities, sortDesc])
 
   const handleExportPptx = async (activityId: string) => {
     setPptxLoading(true)
@@ -99,8 +112,19 @@ export default function ManagerActivities() {
   return (
     <div className="flex flex-col gap-6">
       <div className="reveal reveal-left animate-slide-up">
-        <h1 className="text-2xl font-bold text-foreground">Mes activites</h1>
-        <p className="text-sm text-muted-foreground">{myActivities.length} activites assignees</p>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h1 className="text-2xl font-bold text-foreground">Mes activites</h1>
+            <p className="text-sm text-muted-foreground">{myActivities.length} activites assignees</p>
+          </div>
+          <button
+            onClick={() => setSortDesc((p) => !p)}
+            className="flex items-center gap-1.5 h-9 rounded-lg border border-input bg-background px-3 text-sm text-foreground hover:bg-accent"
+          >
+            <ArrowUpDown className="h-3.5 w-3.5" />
+            {sortDesc ? 'Plus récentes' : 'Plus anciennes'}
+          </button>
+        </div>
       </div>
 
       <div className="reveal-grid grid grid-cols-1 gap-4 lg:grid-cols-2">
@@ -113,7 +137,7 @@ export default function ManagerActivities() {
             <p className="text-sm text-muted-foreground">Aucune activite assignee</p>
           </div>
         ) : (
-          myActivities.map(a => (
+          sortedActivities.map(a => (
             <div key={a.id} className="rounded-xl border border-border bg-card p-5 card-animated">
               <div className="flex items-start justify-between">
                 <div className="flex flex-col gap-1">

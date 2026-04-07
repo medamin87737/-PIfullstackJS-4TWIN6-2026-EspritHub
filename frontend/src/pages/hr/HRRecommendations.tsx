@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
+import { useParams, useNavigate, useLocation } from 'react-router-dom'
 import { useData } from '../../context/DataContext'
 import StatusBadge from '../../components/shared/StatusBadge'
 import { ArrowLeft, Sparkles, Send, Zap, Target, Medal, MessageSquare, TrendingUp, FileCheck, FileDown, FileSpreadsheet, Loader2, Mic, MicOff, Smartphone, Award, Check } from 'lucide-react'
@@ -173,6 +173,7 @@ function extractPromptSkillCandidates(prompt: string): string[] {
 
 export default function HRRecommendations() {
   const { activityId } = useParams()
+  const location = useLocation()
   const navigate = useNavigate()
   const { activities, updateActivity, fetchWithAuth } = useData()
   const { toast } = useToast()
@@ -490,14 +491,20 @@ export default function HRRecommendations() {
     try {
       const res = await fetchWithAuth(`${API_BASE_URL}/api/recommendations/activity/${activityId}`)
       if (!res.ok) return
-      const data = (await res.json()) as ApiRecommendation[]
-      setAiRecs(data)
-      if (data[0]?.parsed_activity) {
-        setParsedActivity(normalizeParsedActivity(data[0].parsed_activity))
+      const data = (await res.json()) as any[]
+      const normalized = (Array.isArray(data) ? data : []).map((r: any) => ({
+        ...r,
+        // Backend stores employee decline reason as employee_response.
+        // Keep legacy absence_reason key used by this page.
+        absence_reason: r?.absence_reason ?? r?.employee_response ?? null,
+      })) as ApiRecommendation[]
+      setAiRecs(normalized)
+      if (normalized[0]?.parsed_activity) {
+        setParsedActivity(normalizeParsedActivity(normalized[0].parsed_activity))
       }
       // Restaurer la map de présence depuis la DB
       const map: Record<string, boolean> = {}
-      for (const r of data) map[r._id] = !!(r as any).presence
+      for (const r of normalized) map[r._id] = !!(r as any).presence
       setPresenceMap(map)
     } catch {
       // ignore silent refresh for first mount
@@ -520,6 +527,22 @@ export default function HRRecommendations() {
     loadRecommendations()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activityId])
+
+  // If user opens from HR notification (employee declined), auto-expand that declined row.
+  useEffect(() => {
+    const params = new URLSearchParams(location.search)
+    const focus = params.get('focus')
+    const employeeId = params.get('employeeId')
+    if (focus !== 'declined' || !employeeId) return
+    const target = aiRecs.find((rec) => {
+      if (rec.status !== 'EMPLOYEE_DECLINED') return false
+      if (typeof rec.userId === 'string') return false
+      return String(rec.userId._id) === employeeId
+    })
+    if (target) {
+      setExpandedDeclinedId(target._id)
+    }
+  }, [aiRecs, location.search])
 
   useEffect(() => {
     // Preload skills so prompt normalization can map to DB labels before IA call.
