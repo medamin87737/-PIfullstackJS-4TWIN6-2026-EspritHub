@@ -192,4 +192,19 @@ async getDashboard(@Request() req) {
     const managerId = req.user.sub ?? req.user.userId;
     return this.managerService.evaluateCompetence(dto, managerId);
   }
+
+  /**
+   * POST /manager/activities/:activityId/send-invitation/:employeeId
+   * Envoyer un email d'invitation à un employé accepté pour une activité
+   */
+  @Post('activities/:activityId/send-invitation/:employeeId')
+  @HttpCode(HttpStatus.OK)
+  async sendActivityInvitation(
+    @Param('activityId') activityId: string,
+    @Param('employeeId') employeeId: string,
+    @Request() req,
+  ) {
+    const managerId = req.user.sub ?? req.user.userId;
+    return this.managerService.sendActivityInvitation(activityId, employeeId, managerId);
+  }
 }
