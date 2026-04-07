@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useAccessibility } from '../../context/AccessibilityContext'
 import { Globe } from 'lucide-react'
 
@@ -23,6 +23,7 @@ export default function AccessibilityWidget() {
 
   const [open, setOpen] = useState(false)
   const panelRef = useRef<HTMLDivElement | null>(null)
+  const widgetRef = useRef<HTMLDivElement | null>(null)
   const zoomRef = useRef<HTMLDivElement | null>(null)
   const readRef = useRef<HTMLDivElement | null>(null)
   const voiceRef = useRef<HTMLDivElement | null>(null)
@@ -63,8 +64,24 @@ export default function AccessibilityWidget() {
     el.scrollBy({ top: delta, behavior: 'smooth' })
   }
 
+  // Fermer le panneau quand on clique en dehors
+  useEffect(() => {
+    if (!open) return
+
+    const handleClickOutside = (event: MouseEvent) => {
+      if (widgetRef.current && !widgetRef.current.contains(event.target as Node)) {
+        setOpen(false)
+      }
+    }
+
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [open])
+
   return (
-    <div className="fixed bottom-4 right-4 z-40">
+    <div ref={widgetRef} className="fixed bottom-4 right-4 z-40">
       <div className="relative">
         {/* Panel (au-dessus du bouton, sans bouger le logo) */}
         {open && (

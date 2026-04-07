@@ -185,18 +185,18 @@ export default function HRActivities() {
           </Link>
           <Link
             to={`/hr/recommendations/${a.id}`}
-            className="flex items-center gap-1 rounded-lg border border-emerald-600 bg-emerald-600 px-2.5 py-1 text-xs font-semibold text-white hover:bg-emerald-700"
-            title="Ouvrir et confirmer l'activité côté RH"
+            className="flex items-center justify-center rounded-lg bg-emerald-600 p-2 text-white hover:bg-emerald-700"
+            title="Confirmer l'activité"
           >
-            <Check className="h-3.5 w-3.5" /> Confirmer activité
+            <Check className="h-4 w-4" />
           </Link>
           <a
             href={`http://localhost:3000/activities/${a.id}/export-pptx`}
             download
             title="Télécharger la présentation PPTX"
-            className="button-micro flex items-center gap-1 rounded-lg border border-violet-500 bg-violet-50 px-2 py-1 text-xs font-medium text-violet-700 hover:bg-violet-100 dark:bg-violet-950/30 dark:text-violet-400"
+            className="flex items-center justify-center rounded-lg border border-violet-500 bg-violet-50 p-2 text-violet-700 hover:bg-violet-100 dark:bg-violet-950/30 dark:text-violet-400"
           >
-            <Presentation className="h-3.5 w-3.5" /> PPTX
+            <Presentation className="h-4 w-4" />
           </a>
           <button
             type="button"

@@ -313,9 +313,10 @@ export default function ManagerActivityDetail() {
                           <button
                             onClick={() => void loadProfile(String(userInfo._id))}
                             disabled={!userInfo._id}
-                            className="flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-xs font-medium hover:bg-accent disabled:opacity-50"
+                            className="flex items-center justify-center rounded-lg border border-border p-2 hover:bg-accent disabled:opacity-50"
+                            title="Voir profil"
                           >
-                            <User className="h-3.5 w-3.5" /> Voir profil
+                            <User className="h-4 w-4" />
                           </button>
                           {canDecide && (
                             <>

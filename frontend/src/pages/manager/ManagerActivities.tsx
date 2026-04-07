@@ -135,10 +135,10 @@ export default function ManagerActivities() {
                 <div className="flex items-center gap-2">
                   <button
                     onClick={() => { setPptxModal(a.id); setPptxFile(null) }}
-                    title="Générer une présentation enrichie"
-                    className="flex items-center gap-1 rounded-lg border border-violet-400 bg-violet-50 px-2.5 py-1 text-xs font-medium text-violet-700 hover:bg-violet-100 dark:bg-violet-950/30 dark:text-violet-400"
+                    title="Générer une présentation PPTX"
+                    className="flex items-center justify-center rounded-lg border border-violet-400 bg-violet-50 p-2 text-violet-700 hover:bg-violet-100 dark:bg-violet-950/30 dark:text-violet-400"
                   >
-                    <Presentation className="h-3.5 w-3.5" /> PPTX
+                    <Presentation className="h-4 w-4" />
                   </button>
                   <Link to={`/manager/activity/${a.id}`} className="button-micro flex items-center gap-1 text-xs font-medium text-primary hover:underline">
                     Details <ArrowRight className="h-3 w-3" />
