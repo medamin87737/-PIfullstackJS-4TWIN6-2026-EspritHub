@@ -357,8 +357,14 @@ export default function EditActivity() {
                 <option value="know_how">know_how</option>
                 <option value="soft_skills">soft_skills</option>
               </select>
-              <button type="button" onClick={() => void createSkillInDb()} className="rounded-lg bg-primary px-3 py-2 text-sm text-white whitespace-nowrap min-w-[170px]">
-                Ajouter à la base
+              <button
+                type="button"
+                onClick={() => void createSkillInDb()}
+                className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-primary text-white hover:opacity-90"
+                title="Ajouter a la base"
+                aria-label="Ajouter a la base"
+              >
+                <Plus className="h-4 w-4" />
               </button>
             </div>
           </div>

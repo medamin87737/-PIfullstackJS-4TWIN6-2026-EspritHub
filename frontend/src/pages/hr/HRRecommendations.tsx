@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { useParams, useNavigate, useLocation } from 'react-router-dom'
 import { useData } from '../../context/DataContext'
 import StatusBadge from '../../components/shared/StatusBadge'
-import { ArrowLeft, Sparkles, Send, Zap, Target, Medal, MessageSquare, TrendingUp, FileCheck, FileDown, FileSpreadsheet, Loader2, Mic, MicOff, Smartphone, Award, Check } from 'lucide-react'
+import { ArrowLeft, Sparkles, Send, Zap, Target, Medal, MessageSquare, TrendingUp, FileCheck, FileDown, FileSpreadsheet, Loader2, Mic, MicOff, Smartphone, Award, Check, Plus } from 'lucide-react'
 import { useToast } from '../../../hooks/use-toast'
 import { useSpellCheck } from '../../hooks/useSpellCheck'
 import { useSpeechRecognition } from '../../hooks/useSpeechRecognition'
@@ -1465,9 +1465,11 @@ export default function HRRecommendations() {
               </select>
               <button
                 onClick={() => void createMissingSkill()}
-                className="rounded-lg bg-red-600 px-3 py-2 text-sm font-medium text-white hover:bg-red-700 whitespace-nowrap min-w-[170px]"
+                className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-red-600 text-white hover:bg-red-700"
+                title="Ajouter a la base"
+                aria-label="Ajouter a la base"
               >
-                Ajouter à la base
+                <Plus className="h-4 w-4" />
               </button>
             </div>
           </div>
