@@ -8,6 +8,7 @@ import {
 import { HttpService } from '@nestjs/axios';
 import { firstValueFrom } from 'rxjs';
 import { ActivitiesService } from '../activities/activities.service';
+import { TranslationService } from '../translation/translation.service';
 import { ChatMessageDto } from './dto/chat-message.dto';
 import { ChatResponseDto } from './dto/chat-response.dto';
 import { RewritePromptDto } from './dto/rewrite-prompt.dto';
@@ -25,26 +26,51 @@ export class ChatService {
   constructor(
     private readonly httpService: HttpService,
     private readonly activitiesService: ActivitiesService,
+    private readonly translationService: TranslationService,
   ) {}
 
-  async processMessage(dto: ChatMessageDto): Promise<ChatResponseDto> {
+  async processMessage(dto: ChatMessageDto, userLanguage: string = 'fr'): Promise<ChatResponseDto> {
     try {
-      // 1. Récupérer les données de l'activité
+      // 1. Translate user message to French if needed
+      let messageInFrench = dto.message;
+      if (userLanguage !== 'fr') {
+        const translationResult = await this.translationService.translate(
+          dto.message,
+          'fr',
+          userLanguage,
+        );
+        messageInFrench = translationResult.translatedText;
+        this.logger.log(`Translated user message: ${userLanguage} -> fr: "${dto.message}" -> "${messageInFrench}"`);
+      }
+
+      // 2. Récupérer les données de l'activité
       const activity = await this.getActivityData(dto.activityId);
       
       this.logger.log(`Activity retrieved: ${JSON.stringify(activity)}`);
 
-      // 2. Enrichir le contexte
+      // 3. Enrichir le contexte
       const enrichedContext = this.enrichContext(activity);
       
       this.logger.log(`Enriched context: ${JSON.stringify(enrichedContext)}`);
 
-      // 3. Envoyer à Rasa
-      const rasaResponse = await this.sendToRasa(dto.message, enrichedContext);
+      // 4. Envoyer à Rasa (en français)
+      const rasaResponse = await this.sendToRasa(messageInFrench, enrichedContext);
 
-      // 4. Retourner la réponse
+      // 5. Translate Rasa response back to user language if needed
+      let finalResponse = rasaResponse;
+      if (userLanguage !== 'fr') {
+        const translationResult = await this.translationService.translate(
+          rasaResponse,
+          userLanguage,
+          'fr',
+        );
+        finalResponse = translationResult.translatedText;
+        this.logger.log(`Translated bot response: fr -> ${userLanguage}: "${rasaResponse}" -> "${finalResponse}"`);
+      }
+
+      // 6. Retourner la réponse
       return {
-        message: rasaResponse,
+        message: finalResponse,
         timestamp: new Date(),
         success: true,
       };

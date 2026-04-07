@@ -82,7 +82,7 @@ L'implémentation suit trois axes parallèles qui convergent:
     - Gérer le cas où l'activité n'existe pas (throw NotFoundException)
     - _Exigences: 2.1, 2.3, 12.3_
   
-  - [~] 8.3 Écrire un test de propriété pour la récupération des données d'activité
+  - [ ] 8.3 Écrire un test de propriété pour la récupération des données d'activité
     - **Property 3: Récupération des données d'activité**
     - **Valide: Exigences 2.1, 2.2**
   
@@ -91,7 +91,7 @@ L'implémentation suit trois axes parallèles qui convergent:
     - Fournir des valeurs par défaut pour les champs manquants
     - _Exigences: 2.2, 2.4, 2.5, 12.5_
   
-  - [~] 8.5 Écrire un test de propriété pour l'enrichissement du contexte
+  - [ ] 8.5 Écrire un test de propriété pour l'enrichissement du contexte
     - **Property 4: Enrichissement du contexte**
     - **Valide: Exigences 2.4, 2.5**
   
@@ -103,12 +103,12 @@ L'implémentation suit trois axes parallèles qui convergent:
     - Gérer les erreurs Rasa 4xx/5xx (logger et throw InternalServerErrorException)
     - _Exigences: 3.1, 3.2, 3.3, 3.4, 3.5, 3.6, 12.4_
   
-  - [~] 8.7 Écrire des tests unitaires pour les cas d'erreur Rasa
+  - [ ] 8.7 Écrire des tests unitaires pour les cas d'erreur Rasa
     - Tester erreur de connexion → 503
     - Tester erreur Rasa 4xx/5xx → 500 avec logging
     - _Exigences: 3.4, 3.5_
   
-  - [~] 8.8 Écrire un test de propriété pour la communication avec Rasa
+  - [ ] 8.8 Écrire un test de propriété pour la communication avec Rasa
     - **Property 5: Communication avec Rasa**
     - **Valide: Exigences 3.1, 3.2**
 
@@ -120,15 +120,15 @@ L'implémentation suit trois axes parallèles qui convergent:
     - Retourner ChatResponseDto
     - _Exigences: 1.1, 1.2, 1.5, 12.1_
   
-  - [~] 9.2 Écrire un test de propriété pour la validation des payloads valides
+  - [ ] 9.2 Écrire un test de propriété pour la validation des payloads valides
     - **Property 1: Validation des payloads valides**
     - **Valide: Exigences 1.2, 1.5**
   
-  - [~] 9.3 Écrire un test de propriété pour le rejet des payloads invalides
+  - [ ] 9.3 Écrire un test de propriété pour le rejet des payloads invalides
     - **Property 2: Rejet des payloads invalides**
     - **Valide: Exigences 1.3, 1.4**
   
-  - [~] 9.4 Écrire des tests unitaires pour les cas d'erreur spécifiques
+  - [ ] 9.4 Écrire des tests unitaires pour les cas d'erreur spécifiques
     - Tester message vide → 400
     - Tester activityId vide → 400
     - Tester activité non trouvée → 404
@@ -142,7 +142,7 @@ L'implémentation suit trois axes parallèles qui convergent:
   - S'assurer que les logs ne contiennent pas de données sensibles
   - _Exigences: 15.1, 15.2, 15.3, 15.4, 15.5_
 
-- [~] 11. Checkpoint Backend - Tester l'API avec Postman/curl
+- [ ] 11. Checkpoint Backend - Tester l'API avec Postman/curl
   - Vérifier que POST /api/chat accepte les requêtes valides
   - Vérifier que les erreurs de validation retournent 400
   - Vérifier que les activités non trouvées retournent 404
@@ -176,7 +176,7 @@ L'implémentation suit trois axes parallèles qui convergent:
     - Afficher un message d'erreur si invalide
     - _Exigences: 20.3_
   
-  - [~] 14.3 Écrire un test de propriété pour la validation de activityId
+  - [ ] 14.3 Écrire un test de propriété pour la validation de activityId
     - **Property 30: Validation de activityId**
     - **Valide: Exigences 20.3**
   
@@ -191,11 +191,11 @@ L'implémentation suit trois axes parallèles qui convergent:
     - Vider le champ de saisie après envoi
     - _Exigences: 10.2, 10.3, 10.4, 10.5, 18.1, 18.2_
   
-  - [~] 14.5 Écrire un test de propriété pour l'ajout immédiat des messages utilisateur
+  - [ ] 14.5 Écrire un test de propriété pour l'ajout immédiat des messages utilisateur
     - **Property 26: Ajout immédiat des messages utilisateur**
     - **Valide: Exigences 18.2**
   
-  - [~] 14.6 Écrire des tests unitaires pour la gestion des erreurs
+  - [ ] 14.6 Écrire des tests unitaires pour la gestion des erreurs
     - Tester erreur réseau → message d'erreur convivial
     - Tester erreur backend 4xx/5xx → message d'erreur approprié
     - _Exigences: 10.4, 10.5_
@@ -205,7 +205,7 @@ L'implémentation suit trois axes parallèles qui convergent:
     - Utiliser messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
     - _Exigences: 8.6_
   
-  - [~] 14.8 Écrire un test de propriété pour le scroll automatique
+  - [ ] 14.8 Écrire un test de propriété pour le scroll automatique
     - **Property 16: Scroll automatique**
     - **Valide: Exigences 8.6**
   
@@ -214,7 +214,7 @@ L'implémentation suit trois axes parallèles qui convergent:
     - Envoyer le message si la touche est 'Enter' et le champ n'est pas vide
     - _Exigences: 18.1_
   
-  - [~] 14.10 Écrire un test de propriété pour l'envoi via touche Entrée
+  - [ ] 14.10 Écrire un test de propriété pour l'envoi via touche Entrée
     - **Property 25: Envoi via touche Entrée**
     - **Valide: Exigences 18.1**
 
@@ -234,11 +234,11 @@ L'implémentation suit trois axes parallèles qui convergent:
     - Garder les boutons visibles après envoi
     - _Exigences: 9.1, 9.2, 9.3, 9.4, 9.5, 9.6_
   
-  - [~] 15.3 Écrire un test de propriété pour l'envoi via suggestions
+  - [ ] 15.3 Écrire un test de propriété pour l'envoi via suggestions
     - **Property 19: Envoi via suggestions**
     - **Valide: Exigences 9.5**
   
-  - [~] 15.4 Écrire un test de propriété pour la persistance des suggestions
+  - [ ] 15.4 Écrire un test de propriété pour la persistance des suggestions
     - **Property 20: Persistance des suggestions**
     - **Valide: Exigences 9.6**
   
@@ -248,11 +248,11 @@ L'implémentation suit trois axes parallèles qui convergent:
     - Désactiver le bouton d'envoi pendant isLoading
     - _Exigences: 11.1, 11.2, 11.3, 11.4, 11.5_
   
-  - [~] 15.6 Écrire un test de propriété pour l'affichage du loader
+  - [ ] 15.6 Écrire un test de propriété pour l'affichage du loader
     - **Property 17: Affichage du loader**
     - **Valide: Exigences 8.7, 11.1, 11.3, 11.4, 11.5**
   
-  - [~] 15.7 Écrire des tests unitaires pour la structure de l'interface
+  - [ ] 15.7 Écrire des tests unitaires pour la structure de l'interface
     - Vérifier que l'input field existe
     - Vérifier que le bouton "Envoyer" existe
     - Vérifier que les suggestions sont affichées
@@ -269,7 +269,7 @@ L'implémentation suit trois axes parallèles qui convergent:
     - Styles pour l'indicateur de chargement
     - _Exigences: 8.2, 8.3, 13.5_
   
-  - [~] 16.2 Écrire un test de propriété pour l'alignement des messages
+  - [ ] 16.2 Écrire un test de propriété pour l'alignement des messages
     - **Property 15: Alignement des messages**
     - **Valide: Exigences 8.2, 8.3**
   
@@ -279,7 +279,7 @@ L'implémentation suit trois axes parallèles qui convergent:
     - S'assurer qu'il n'y a pas de débordement horizontal
     - _Exigences: 8.8_
   
-  - [~] 16.4 Écrire un test de propriété pour le responsive design
+  - [ ] 16.4 Écrire un test de propriété pour le responsive design
     - **Property 18: Responsive design**
     - **Valide: Exigences 8.8**
   
@@ -289,17 +289,17 @@ L'implémentation suit trois axes parallèles qui convergent:
     - Ajouter des aria-labels pour les boutons
     - _Exigences: 19.1, 19.2, 19.3_
   
-  - [~] 16.6 Écrire un test de propriété pour le contraste des couleurs
+  - [ ] 16.6 Écrire un test de propriété pour le contraste des couleurs
     - **Property 29: Contraste des couleurs**
     - **Valide: Exigences 19.3**
 
-- [~] 17. Implémentation de l'accessibilité clavier
+- [ ] 17. Implémentation de l'accessibilité clavier
   - Vérifier que tous les éléments interactifs sont accessibles via Tab
   - Implémenter la navigation au clavier (Tab, Entrée, Espace)
   - Gérer le focus correctement après les interactions
   - _Exigences: 19.4_
 
-- [~] 17.1 Écrire un test de propriété pour la navigation au clavier
+- [ ] 17.1 Écrire un test de propriété pour la navigation au clavier
   - **Property 28: Navigation au clavier**
   - **Valide: Exigences 19.4**
 
@@ -310,18 +310,18 @@ L'implémentation suit trois axes parallèles qui convergent:
   - Tester l'intégration complète
 
 - [ ] 19. Tests d'intégration end-to-end
-  - [~] 19.1 Écrire un test E2E pour le flux complet
+  - [ ] 19.1 Écrire un test E2E pour le flux complet
     - Démarrer Rasa, backend et frontend
     - Simuler l'envoi d'un message "Explique cette activité"
     - Vérifier que la réponse du bot apparaît
     - Vérifier que le temps de réponse est < 3 secondes
     - _Exigences: 18.3_
   
-  - [~] 19.2 Écrire un test E2E pour les suggestions rapides
+  - [ ] 19.2 Écrire un test E2E pour les suggestions rapides
     - Cliquer sur "Pourquoi recommandé ?"
     - Vérifier que le message est envoyé et la réponse reçue
   
-  - [~] 19.3 Écrire un test E2E pour la gestion des erreurs
+  - [ ] 19.3 Écrire un test E2E pour la gestion des erreurs
     - Arrêter Rasa
     - Envoyer un message
     - Vérifier que l'erreur 503 est gérée correctement
@@ -332,7 +332,7 @@ L'implémentation suit trois axes parallèles qui convergent:
   - Créer un script de démarrage pour lancer Rasa, backend et frontend ensemble
   - Ajouter des commentaires JSDoc pour les fonctions principales
 
-- [~] 21. Checkpoint Final - Vérifier que tout fonctionne
+- [ ] 21. Checkpoint Final - Vérifier que tout fonctionne
   - Démarrer Rasa avec `rasa run --enable-api --cors '*'`
   - Démarrer le backend NestJS
   - Démarrer le frontend React
