@@ -95,6 +95,14 @@ export default function EmployeeActivities() {
     }
     
     // Ajouter à Google Calendar si connecté
+    console.log('🔍 Vérification Google Calendar:', {
+      isConnected: isGoogleConnected(),
+      hasStartDate: !!rec.start_date,
+      startDate: rec.start_date,
+      endDate: rec.end_date,
+      rec: rec,
+    });
+    
     if (isGoogleConnected() && rec.start_date) {
       const calendarSuccess = await addActivityToCalendar({
         title: rec.activity_title,

@@ -8,7 +8,6 @@ import {
 import { HttpService } from '@nestjs/axios';
 import { firstValueFrom } from 'rxjs';
 import { ActivitiesService } from '../activities/activities.service';
-import { TranslationService } from '../translation/translation.service';
 import { ChatMessageDto } from './dto/chat-message.dto';
 import { ChatResponseDto } from './dto/chat-response.dto';
 import { RewritePromptDto } from './dto/rewrite-prompt.dto';
@@ -26,22 +25,12 @@ export class ChatService {
   constructor(
     private readonly httpService: HttpService,
     private readonly activitiesService: ActivitiesService,
-    private readonly translationService: TranslationService,
   ) {}
 
   async processMessage(dto: ChatMessageDto, userLanguage: string = 'fr'): Promise<ChatResponseDto> {
     try {
-      // 1. Translate user message to French if needed
-      let messageInFrench = dto.message;
-      if (userLanguage !== 'fr') {
-        const translationResult = await this.translationService.translate(
-          dto.message,
-          'fr',
-          userLanguage,
-        );
-        messageInFrench = translationResult.translatedText;
-        this.logger.log(`Translated user message: ${userLanguage} -> fr: "${dto.message}" -> "${messageInFrench}"`);
-      }
+      // 1. Use message as-is (translation removed)
+      const messageInFrench = dto.message;
 
       // 2. Récupérer les données de l'activité
       const activity = await this.getActivityData(dto.activityId);
@@ -56,21 +45,9 @@ export class ChatService {
       // 4. Envoyer à Rasa (en français)
       const rasaResponse = await this.sendToRasa(messageInFrench, enrichedContext);
 
-      // 5. Translate Rasa response back to user language if needed
-      let finalResponse = rasaResponse;
-      if (userLanguage !== 'fr') {
-        const translationResult = await this.translationService.translate(
-          rasaResponse,
-          userLanguage,
-          'fr',
-        );
-        finalResponse = translationResult.translatedText;
-        this.logger.log(`Translated bot response: fr -> ${userLanguage}: "${rasaResponse}" -> "${finalResponse}"`);
-      }
-
-      // 6. Retourner la réponse
+      // 5. Retourner la réponse (translation removed)
       return {
-        message: finalResponse,
+        message: rasaResponse,
         timestamp: new Date(),
         success: true,
       };
