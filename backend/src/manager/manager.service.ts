@@ -401,6 +401,8 @@ export class ManagerService {
         id: employee._id,
         name: employee.name,
         matricule: employee.matricule,
+        email: employee.email ?? '',
+        telephone: (employee as any).telephone ?? '',
       },
       fiches,
       total: fiches.length,

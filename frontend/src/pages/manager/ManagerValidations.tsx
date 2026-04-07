@@ -209,6 +209,10 @@ export default function ManagerValidations() {
 
   const openProfile = async (employeeId: string) => {
     if (!token) return
+    if (!employeeId) {
+      toast({ title: 'Erreur', description: 'ID employe introuvable.', variant: 'destructive' })
+      return
+    }
     const res = await fetchWithAuth(`${API_BASE_URL}/manager/employees/${employeeId}/fiches`)
     if (!res.ok) {
       toast({ title: 'Erreur', description: 'Profil indisponible.', variant: 'destructive' })
@@ -386,7 +390,8 @@ export default function ManagerValidations() {
 
                 <div className="mt-4 flex items-center justify-end gap-2 border-t border-border pt-3">
                   <button onClick={() => openProfile(rec.employee_id)}
-                    className="flex items-center justify-center rounded-lg border border-border p-2 hover:bg-accent"
+                    disabled={!rec.employee_id}
+                    className="flex items-center justify-center rounded-lg border border-border p-2 hover:bg-accent disabled:cursor-not-allowed disabled:opacity-50"
                     title="Voir profil">
                     <User className="h-4 w-4" />
                   </button>

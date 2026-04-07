@@ -220,6 +220,8 @@ export default function HRRecommendations() {
   const [statusFilter, setStatusFilter] = useState('')
   const [minScoreFilter, setMinScoreFilter] = useState('')
   const [confirmSendOpen, setConfirmSendOpen] = useState(false)
+  const [sendSuccessOpen, setSendSuccessOpen] = useState(false)
+  const [sentToManager, setSentToManager] = useState(false)
   const [missingSeats, setMissingSeats] = useState(0)
   const [smsSending, setSmsSending] = useState<Record<string, boolean>>({})
   const [exportLoading, setExportLoading] = useState<'pdf' | 'xlsx' | null>(null)
@@ -469,6 +471,9 @@ export default function HRRecommendations() {
   )
 
   const activity = activities.find(a => a.id === activityId)
+  // Lock "Envoyer au manager" only after explicit successful send action.
+  // Accepting employees via check icons must not auto-disable this button.
+  const sendLocked = sentToManager
   const token = useMemo(
     () => localStorage.getItem('auth_token') ?? sessionStorage.getItem('auth_token'),
     [],
@@ -806,6 +811,10 @@ export default function HRRecommendations() {
   }, [token, toast])
 
   const sendToManager = async (forcePartial = false) => {
+    if (sendLocked) {
+      toast({ title: 'Déjà envoyé', description: 'La liste a déjà été transmise au manager.' })
+      return
+    }
     if (!token || !activityId || !activity) {
       toast({ title: 'Erreur', description: 'Session expirée. Reconnectez-vous.' })
       return
@@ -862,6 +871,8 @@ export default function HRRecommendations() {
       await applyDeclinedReviewDecisions()
       setConfirmSendOpen(false)
       setMissingSeats(0)
+      setSentToManager(true)
+      setSendSuccessOpen(true)
     } catch (err: any) {
       toast({ title: 'Erreur validation RH', description: err.message ?? 'Transmission au manager impossible.' })
       showNotice('error', String(err?.message ?? 'Transmission au manager impossible.'))
@@ -1214,13 +1225,19 @@ export default function HRRecommendations() {
             {aiRunning ? <Zap className="h-4 w-4 animate-pulse" /> : <Zap className="h-4 w-4" />}
             {aiRunning ? 'Analyse en cours...' : 'Lancer recommandation'}
           </button>
-          <button onClick={() => void sendToManager()}
-            className="flex items-center gap-1.5 rounded-lg border border-border bg-secondary px-3 py-2 text-xs font-medium text-secondary-foreground hover:opacity-90">
-            <Send className="h-3.5 w-3.5" /> Envoyer au manager
+          <button
+            onClick={() => void sendToManager()}
+            disabled={sendLocked}
+            className="flex items-center gap-1.5 rounded-lg border border-border bg-secondary px-3 py-2 text-xs font-medium text-secondary-foreground hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            <Send className="h-3.5 w-3.5" /> {sendLocked ? 'Déjà envoyé' : 'Envoyer au manager'}
           </button>
-          <button onClick={() => void sendToManager()}
-            className="flex items-center justify-center rounded-lg bg-emerald-600 p-2.5 text-white hover:bg-emerald-700"
-            title="Confirmer l'activité">
+          <button
+            onClick={() => void sendToManager()}
+            disabled={sendLocked}
+            className="flex items-center justify-center rounded-lg bg-emerald-600 p-2.5 text-white hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-50"
+            title={sendLocked ? 'Déjà envoyé au manager' : "Confirmer l'activité"}
+          >
             <Check className="h-5 w-5" />
           </button>
         </div>
@@ -1505,6 +1522,24 @@ export default function HRRecommendations() {
                 className="rounded-lg bg-amber-600 px-3 py-2 text-xs font-medium text-white hover:bg-amber-700"
               >
                 Confirmer quand même
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {sendSuccessOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/45 backdrop-blur-[1px]">
+          <div className="mx-4 w-full max-w-md rounded-xl border border-emerald-300 bg-card p-4 shadow-2xl">
+            <h3 className="text-sm font-semibold text-card-foreground">Envoi réussi</h3>
+            <p className="mt-2 text-sm text-muted-foreground">
+              La liste a été envoyée au manager avec succès.
+            </p>
+            <div className="mt-4 flex items-center justify-end">
+              <button
+                onClick={() => setSendSuccessOpen(false)}
+                className="rounded-lg bg-emerald-600 px-3 py-2 text-xs font-medium text-white hover:bg-emerald-700"
+              >
+                OK
               </button>
             </div>
           </div>

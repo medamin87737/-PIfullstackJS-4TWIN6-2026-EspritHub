@@ -800,8 +800,13 @@ export class RecommendationService {
         id: rec._id.toString(),
         activity_id: rec.activityId?._id?.toString?.() ?? '',
         activity_title: rec.activityId?.title ?? rec.activityId?.titre ?? 'Activité',
-        employee_id: rec.userId?._id?.toString?.() ?? '',
-        employee_name: rec.userId?.name ?? 'N/A',
+        employee_id:
+          rec.userId?._id?.toString?.() ??
+          (typeof rec.userId === 'string' ? rec.userId : '') ??
+          '',
+        employee_name:
+          rec.userId?.name ??
+          (typeof rec.userId === 'string' ? 'Employe' : 'N/A'),
         employee_email: rec.userId?.email ?? '',
         employee_matricule: rec.userId?.matricule ?? '',
         score_total: rec.score_total,

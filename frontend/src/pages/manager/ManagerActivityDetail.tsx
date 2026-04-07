@@ -42,6 +42,10 @@ function formatScorePercent(value: unknown): string {
   return `${(normalizeScore(value) * 100).toFixed(1)}%`
 }
 
+function looksLikeObjectId(value: string): boolean {
+  return /^[a-fA-F0-9]{24}$/.test(String(value ?? ''))
+}
+
 export default function ManagerActivityDetail() {
   const { id } = useParams()
   const navigate = useNavigate()
@@ -119,6 +123,10 @@ export default function ManagerActivityDetail() {
   if (!activity) return <div className="p-8 text-center text-muted-foreground">Activite non trouvee</div>
 
   const loadProfile = async (employeeId: string) => {
+    if (!employeeId) {
+      toast({ title: 'Profil indisponible', description: "ID employe introuvable.", variant: 'destructive' })
+      return
+    }
     const res = await fetchWithAuth(`${API_BASE_URL}/manager/employees/${employeeId}/fiches`)
     if (!res.ok) {
       const message = await extractErrorMessage(res, 'Profil indisponible')
@@ -288,9 +296,19 @@ export default function ManagerActivityDetail() {
               </thead>
               <tbody className="divide-y divide-border">
                 {filteredRecs.map((rec) => {
+                  const recAny = rec as any
+                  const employeeId =
+                    typeof rec.userId === 'string'
+                      ? (looksLikeObjectId(rec.userId) ? rec.userId : String(recAny.employee_id ?? ''))
+                      : String(rec.userId?._id ?? recAny.employee_id ?? '')
                   const userInfo =
                     typeof rec.userId === 'string'
-                      ? { _id: '', name: rec.userId, email: '-', matricule: '-' }
+                      ? {
+                          _id: employeeId,
+                          name: looksLikeObjectId(rec.userId) ? String(recAny.employee_name ?? 'Employe') : rec.userId,
+                          email: String(recAny.employee_email ?? '-'),
+                          matricule: String(recAny.employee_matricule ?? '-'),
+                        }
                       : rec.userId
                   const canDecide = ['PENDING', 'HR_APPROVED', 'SENT_TO_MANAGER'].includes(String(rec.status))
                   return (
@@ -327,8 +345,8 @@ export default function ManagerActivityDetail() {
                       <td className="px-4 py-3">
                         <div className="flex flex-wrap items-center gap-2">
                           <button
-                            onClick={() => void loadProfile(String(userInfo._id))}
-                            disabled={!userInfo._id}
+                            onClick={() => void loadProfile(employeeId)}
+                            disabled={!employeeId}
                             className="flex items-center justify-center rounded-lg border border-border p-2 hover:bg-accent disabled:opacity-50"
                             title="Voir profil"
                           >
@@ -341,10 +359,10 @@ export default function ManagerActivityDetail() {
                             </>
                           )}
                           <button
-                            onClick={() => void sendInvitationEmail(String(userInfo._id))}
-                            disabled={rec.status !== 'MANAGER_APPROVED' || sendingEmail[String(userInfo._id)] || !userInfo._id}
+                            onClick={() => void sendInvitationEmail(employeeId)}
+                            disabled={rec.status !== 'MANAGER_APPROVED' || sendingEmail[employeeId] || !employeeId}
                             className={`flex items-center gap-1 rounded-lg px-3 py-1.5 text-xs font-medium ${
-                              rec.status === 'MANAGER_APPROVED' && !sendingEmail[String(userInfo._id)]
+                              rec.status === 'MANAGER_APPROVED' && !sendingEmail[employeeId]
                                 ? 'bg-blue-100 text-blue-700 hover:bg-blue-200'
                                 : rec.status === 'NOTIFIED'
                                 ? 'bg-green-100 text-green-700 cursor-default'
@@ -352,7 +370,7 @@ export default function ManagerActivityDetail() {
                             } disabled:opacity-50`}
                           >
                             <Mail className="h-3.5 w-3.5" /> 
-                            {sendingEmail[String(userInfo._id)] 
+                            {sendingEmail[employeeId]
                               ? 'Envoi...' 
                               : rec.status === 'NOTIFIED' 
                               ? 'Email envoyé ✓' 
@@ -371,7 +389,7 @@ export default function ManagerActivityDetail() {
 
       {profileModal.open && (
         <div className="fixed inset-0 z-[1000] flex items-center justify-center bg-black/50 p-4">
-          <div className="reveal reveal-scale w-full max-w-2xl rounded-xl border border-border bg-card p-5 shadow-2xl">
+          <div className="w-full max-w-2xl rounded-xl border border-border bg-card p-5 shadow-2xl">
             <div className="mb-3 flex items-center justify-between">
               <h3 className="text-base font-semibold text-card-foreground">Profil employe</h3>
               <button onClick={() => setProfileModal({ open: false })} className="rounded-lg border border-border px-2 py-1 text-xs hover:bg-accent">Fermer</button>
@@ -382,6 +400,8 @@ export default function ManagerActivityDetail() {
               <div className="space-y-3">
                 <div className="rounded-lg border border-border bg-background p-3">
                   <p className="text-sm font-medium">{profileModal.data?.employee?.name ?? 'N/A'} ({profileModal.data?.employee?.matricule ?? '-'})</p>
+                  <p className="text-xs text-muted-foreground">Email: {profileModal.data?.employee?.email ?? '-'}</p>
+                  <p className="text-xs text-muted-foreground">Telephone: {profileModal.data?.employee?.telephone ?? '-'}</p>
                   <p className="text-xs text-muted-foreground">Fiches trouvées: {Array.isArray(profileModal.data?.fiches) ? profileModal.data.fiches.length : 0}</p>
                 </div>
                 <div className="max-h-72 overflow-auto rounded-lg border border-border">
