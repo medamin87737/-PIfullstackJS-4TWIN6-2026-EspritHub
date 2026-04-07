@@ -17,6 +17,7 @@ type EmployeeRecommendation = {
   activity_id: string
   activity_title: string
   activity_description: string
+  activity_location?: string
   start_date: string | null
   end_date: string | null
   score_total: number
@@ -35,6 +36,11 @@ export default function EmployeeActivities() {
   const [myRecs, setMyRecs] = useState<EmployeeRecommendation[]>([])
   const [activeGestureControl, setActiveGestureControl] = useState<string | null>(null)
   const [activeChatbot, setActiveChatbot] = useState<string | null>(null)
+  const [transportOpenFor, setTransportOpenFor] = useState<string | null>(null)
+  const [transportLoading, setTransportLoading] = useState<Record<string, boolean>>({})
+  const [transportError, setTransportError] = useState<Record<string, string>>({})
+  const [transportResults, setTransportResults] = useState<Record<string, any[]>>({})
+  const [transportSource, setTransportSource] = useState<Record<string, string>>({})
 
   const token = useMemo(
     () => localStorage.getItem('auth_token') ?? sessionStorage.getItem('auth_token'),
@@ -60,6 +66,7 @@ export default function EmployeeActivities() {
         activity_id: String(r?.activityId?._id ?? r?.activityId ?? ''),
         activity_title: String(r?.activityId?.title ?? r?.activityId?.titre ?? 'Activite'),
         activity_description: String(r?.activityId?.description ?? ''),
+        activity_location: String(r?.activityId?.location ?? ''),
         start_date: r?.activityId?.date ? String(r.activityId.date) : null,
         end_date: null,
         score_total: Number(r?.score_total ?? 0),
@@ -177,6 +184,62 @@ export default function EmployeeActivities() {
     setRewriteNotice('Texte reformulé avec succès.')
   }
 
+  const getCurrentPosition = (): Promise<{ lat: number; lng: number }> =>
+    new Promise((resolve, reject) => {
+      if (!navigator.geolocation) {
+        reject(new Error('Geolocalisation non supportee par ce navigateur.'))
+        return
+      }
+      navigator.geolocation.getCurrentPosition(
+        (pos) => resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+        () => reject(new Error('Impossible de recuperer votre position actuelle.')),
+        { enableHighAccuracy: true, timeout: 10000, maximumAge: 30000 },
+      )
+    })
+
+  const estimateTransport = async (recId: string) => {
+    setTransportLoading((prev) => ({ ...prev, [recId]: true }))
+    setTransportError((prev) => ({ ...prev, [recId]: '' }))
+    try {
+      let position: { lat: number; lng: number } | null = null
+      try {
+        position = await getCurrentPosition()
+      } catch {
+        // Fallback: continue without browser geolocation.
+        // Backend will use default pickup coordinates.
+        position = null
+      }
+      const res = await fetchWithAuth(`${API_BASE_URL}/api/recommendations/transport/estimate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          recommendationId: recId,
+          pickupLat: position?.lat,
+          pickupLng: position?.lng,
+          locale: 'fr-FR',
+        }),
+      })
+      if (!res.ok) {
+        const raw = await res.json().catch(() => ({}))
+        const message =
+          typeof raw?.message === 'string'
+            ? raw.message
+            : Array.isArray(raw?.message) && raw.message.length > 0
+              ? String(raw.message[0])
+              : 'Impossible de recuperer les estimations taxi.'
+        setTransportError((prev) => ({ ...prev, [recId]: message }))
+        return
+      }
+      const data = await res.json()
+      setTransportResults((prev) => ({ ...prev, [recId]: Array.isArray(data?.options) ? data.options : [] }))
+      setTransportSource((prev) => ({ ...prev, [recId]: String(data?.provider ?? 'unknown') }))
+    } catch {
+      setTransportError((prev) => ({ ...prev, [recId]: 'Service transport indisponible. Reessayez dans quelques secondes.' }))
+    } finally {
+      setTransportLoading((prev) => ({ ...prev, [recId]: false }))
+    }
+  }
+
   return (
     <div className="flex flex-col gap-6">
       <div className="reveal reveal-left animate-slide-up">
@@ -217,6 +280,58 @@ export default function EmployeeActivities() {
                 <div className="flex items-center gap-1.5 text-xs text-muted-foreground"><Calendar className="h-3.5 w-3.5" /> {rec.start_date ? new Date(rec.start_date).toLocaleDateString() : 'N/A'}</div>
                 <div className="flex items-center gap-1.5 text-xs text-muted-foreground"><MapPin className="h-3.5 w-3.5" /> À définir</div>
                 <div className="flex items-center gap-1.5 text-xs text-muted-foreground"><Target className="h-3.5 w-3.5" /> Rang #{rec.rank}</div>
+              </div>
+
+              <div className="mt-3 rounded-lg border border-border bg-background p-3">
+                <div className="flex items-center justify-between gap-2">
+                  <p className="text-xs font-medium text-card-foreground">Transport vers l'activite (Taxi)</p>
+                  <button
+                    type="button"
+                    onClick={() => setTransportOpenFor((prev) => (prev === rec.id ? null : rec.id))}
+                    className="rounded-md border border-input px-2 py-1 text-[11px] hover:bg-accent"
+                  >
+                    {transportOpenFor === rec.id ? 'Masquer' : 'Estimer prix taxi'}
+                  </button>
+                </div>
+
+                {transportOpenFor === rec.id && (
+                  <div className="mt-2 space-y-2">
+                    <p className="text-[11px] text-muted-foreground">
+                      Un clic suffit: depart = votre position actuelle, arrivee = lieu de l'activite
+                      {rec.activity_location ? ` (${rec.activity_location})` : ''}.
+                    </p>
+                    {transportSource[rec.id] && (
+                      <p className="text-[11px] text-muted-foreground">
+                        Source: {transportSource[rec.id] === 'uber' ? 'Uber' : 'Estimation locale'}
+                      </p>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => void estimateTransport(rec.id)}
+                      disabled={!!transportLoading[rec.id]}
+                      className="rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground disabled:opacity-60"
+                    >
+                      {transportLoading[rec.id] ? 'Recherche...' : 'Voir taxis disponibles'}
+                    </button>
+                    {transportError[rec.id] && (
+                      <p className="text-[11px] text-destructive">{transportError[rec.id]}</p>
+                    )}
+                    {Array.isArray(transportResults[rec.id]) && transportResults[rec.id].length > 0 && (
+                      <div className="space-y-1.5">
+                        {transportResults[rec.id].map((option: any, idx: number) => (
+                          <div key={`${rec.id}-taxi-${idx}`} className="rounded-md border border-border bg-card px-2 py-1.5 text-xs">
+                            <p className="font-medium text-card-foreground">
+                              {option.product_name ?? 'Taxi'} - {option.estimate_text || 'Prix non precise'}
+                            </p>
+                            <p className="text-muted-foreground">
+                              Temps: {Math.round(Number(option.eta_seconds ?? 0) / 60)} min · Distance: {Number(option.distance_km ?? 0).toFixed(1)} km
+                            </p>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
 
               <div className="mt-3 flex items-center gap-4 rounded-lg bg-background p-3">

@@ -19,6 +19,7 @@ import { NotificationType } from '../notifications/schemas/notification.schema'
 import { AuditService } from '../audit/audit.service'
 import { SearchRecommendationsDto } from './dto/search-recommendations.dto'
 import { SmsService } from '../sms/sms.service'
+import { TransportEstimateDto } from './dto/transport-estimate.dto'
 
 type EligibleEmployee = {
   id: string
@@ -52,6 +53,165 @@ export class RecommendationService {
 
   private aiServiceUrl(): string {
     return process.env.AI_SERVICE_URL ?? 'http://localhost:8000'
+  }
+
+  private parseLatLngFromText(raw?: string): { lat: number; lng: number } | null {
+    const text = String(raw ?? '').trim()
+    if (!text) return null
+    const m = text.match(/^\s*(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)\s*$/)
+    if (!m) return null
+    const lat = Number(m[1])
+    const lng = Number(m[2])
+    if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null
+    if (lat < -90 || lat > 90 || lng < -180 || lng > 180) return null
+    return { lat, lng }
+  }
+
+  private haversineKm(a: { lat: number; lng: number }, b: { lat: number; lng: number }): number {
+    const toRad = (v: number) => (v * Math.PI) / 180
+    const R = 6371
+    const dLat = toRad(b.lat - a.lat)
+    const dLng = toRad(b.lng - a.lng)
+    const aa =
+      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.cos(toRad(a.lat)) * Math.cos(toRad(b.lat)) * Math.sin(dLng / 2) * Math.sin(dLng / 2)
+    const c = 2 * Math.atan2(Math.sqrt(aa), Math.sqrt(1 - aa))
+    return R * c
+  }
+
+  private async geocodeAddress(address: string): Promise<{ lat: number; lng: number } | null> {
+    const q = String(address ?? '').trim()
+    if (!q) return null
+    try {
+      const response = await firstValueFrom(
+        this.httpService.get('https://nominatim.openstreetmap.org/search', {
+          params: { q, format: 'json', limit: 1 },
+          headers: {
+            'User-Agent': process.env.TRANSPORT_USER_AGENT ?? 'SkillUpTn/1.0 (transport-estimate)',
+          },
+          timeout: Number(process.env.TRANSPORT_GEOCODE_TIMEOUT_MS ?? 8000),
+        }),
+      )
+      const row = Array.isArray(response?.data) ? response.data[0] : null
+      const lat = Number(row?.lat)
+      const lng = Number(row?.lon)
+      if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null
+      return { lat, lng }
+    } catch {
+      return null
+    }
+  }
+
+  async estimateTaxiOptions(dto: TransportEstimateDto, actorUserId?: string) {
+    const defaultLat = Number(process.env.TRANSPORT_DEFAULT_LAT ?? 36.8065)
+    const defaultLng = Number(process.env.TRANSPORT_DEFAULT_LNG ?? 10.1815)
+    let pickup = {
+      lat: Number.isFinite(Number(dto.pickupLat)) ? Number(dto.pickupLat) : defaultLat,
+      lng: Number.isFinite(Number(dto.pickupLng)) ? Number(dto.pickupLng) : defaultLng,
+    }
+    let dropoff = {
+      lat: Number.isFinite(Number(dto.dropoffLat)) ? Number(dto.dropoffLat) : defaultLat,
+      lng: Number.isFinite(Number(dto.dropoffLng)) ? Number(dto.dropoffLng) : defaultLng,
+    }
+
+    if (dto.recommendationId && isValidObjectId(dto.recommendationId)) {
+      const rec = await this.recommendationModel
+        .findById(new Types.ObjectId(dto.recommendationId))
+        .populate('activityId', 'location')
+        .exec()
+      if (rec) {
+        if (actorUserId) {
+          const actor = await this.userModel.findById(this.resolveUserId(actorUserId)).select('_id role').exec()
+          const isEmployee = String(actor?.role ?? '').toUpperCase() === 'EMPLOYEE'
+          if (isEmployee && String(rec.userId) !== String(this.resolveUserId(actorUserId))) {
+            throw new HttpException('Recommendation access denied', HttpStatus.FORBIDDEN)
+          }
+        }
+        const locText = String((rec as any)?.activityId?.location ?? '')
+        const parsed = this.parseLatLngFromText(locText)
+        const geo = parsed ?? (await this.geocodeAddress(locText))
+        if (geo) dropoff = geo
+      }
+    }
+
+    const token = process.env.UBER_SERVER_TOKEN ?? process.env.UBER_ACCESS_TOKEN
+    const distanceKm = this.haversineKm(pickup, dropoff)
+    const etaSecondsFallback = Math.max(300, Math.round((distanceKm / 32) * 3600))
+    const low = Math.max(3, Number((2 + distanceKm * 1.4).toFixed(2)))
+    const high = Number((low * 1.35).toFixed(2))
+    const fallbackOptions = [
+      {
+        provider: 'LocalTaxiFallback',
+        product_id: 'local-standard',
+        product_name: 'Taxi Standard',
+        estimate_text: `${low.toFixed(2)}-${high.toFixed(2)} TND`,
+        high_estimate: high,
+        low_estimate: low,
+        currency_code: 'TND',
+        eta_seconds: etaSecondsFallback,
+        distance_km: distanceKm,
+      },
+    ]
+
+    if (!token) {
+      return {
+        provider: 'fallback',
+        warning: 'Uber token missing, local estimation used.',
+        from: pickup,
+        to: dropoff,
+        options: fallbackOptions,
+      }
+    }
+
+    const url = process.env.UBER_PRICE_ESTIMATE_URL ?? 'https://api.uber.com/v1.2/estimates/price'
+    const authScheme = process.env.UBER_AUTH_SCHEME ?? 'Token'
+    const timeoutMs = Number(process.env.UBER_TIMEOUT_MS ?? 15000)
+
+    try {
+      const response = await firstValueFrom(
+        this.httpService.get(url, {
+          headers: {
+            Authorization: `${authScheme} ${token}`,
+            'Accept-Language': dto.locale ?? 'fr-FR',
+          },
+          params: {
+            start_latitude: pickup.lat,
+            start_longitude: pickup.lng,
+            end_latitude: dropoff.lat,
+            end_longitude: dropoff.lng,
+          },
+          timeout: timeoutMs,
+        }),
+      )
+
+      const prices = Array.isArray(response?.data?.prices) ? response.data.prices : []
+      const options = prices.map((p: any) => ({
+        provider: 'Uber',
+        product_id: String(p?.product_id ?? ''),
+        product_name: String(p?.localized_display_name ?? p?.display_name ?? 'Taxi'),
+        estimate_text: String(p?.estimate ?? ''),
+        high_estimate: Number(p?.high_estimate ?? 0),
+        low_estimate: Number(p?.low_estimate ?? 0),
+        currency_code: String(p?.currency_code ?? ''),
+        eta_seconds: Number(p?.duration ?? 0),
+        distance_km: Number(p?.distance ?? 0) * 1.60934,
+      }))
+
+      return {
+        provider: 'uber',
+        from: pickup,
+        to: dropoff,
+        options: options.length > 0 ? options : fallbackOptions,
+      }
+    } catch (e: any) {
+      return {
+        provider: 'fallback',
+        warning: e?.response?.data?.message ?? e?.message ?? 'Uber unavailable, local estimation used.',
+        from: pickup,
+        to: dropoff,
+        options: fallbackOptions,
+      }
+    }
   }
 
   private normalizeSkillKey(value: unknown): string {

@@ -16,6 +16,7 @@ import { SimulateRecommendationDto } from './dto/simulate-recommendation.dto'
 import { SearchRecommendationsDto } from './dto/search-recommendations.dto'
 import { HrAdjustScoreDto } from './dto/hr-adjust-score.dto'
 import { HrKeepScoreDto } from './dto/hr-keep-score.dto'
+import { TransportEstimateDto } from './dto/transport-estimate.dto'
 
 @ApiTags('Recommendations')
 @Controller('api/recommendations')
@@ -83,6 +84,12 @@ export class RecommendationController {
   @Roles('EMPLOYEE')
   async myRecommendations(@Req() req: any) {
     return this.recommendationService.getMyRecommendations(this.reqUserId(req))
+  }
+
+  @Post('transport/estimate')
+  @Roles('EMPLOYEE', 'HR', 'MANAGER')
+  async estimateTransport(@Body() dto: TransportEstimateDto, @Req() req: any) {
+    return this.recommendationService.estimateTaxiOptions(dto, this.reqUserId(req))
   }
 
   @Get('my-skill-updates')
