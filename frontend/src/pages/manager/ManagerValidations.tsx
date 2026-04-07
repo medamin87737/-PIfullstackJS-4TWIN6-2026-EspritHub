@@ -372,8 +372,9 @@ export default function ManagerValidations() {
 
                 <div className="mt-4 flex items-center justify-end gap-2 border-t border-border pt-3">
                   <button onClick={() => openProfile(rec.employee_id)}
-                    className="flex items-center gap-1.5 rounded-lg border border-border px-4 py-2 text-sm font-medium text-card-foreground hover:bg-accent">
-                    <User className="h-4 w-4" /> Voir profil
+                    className="flex items-center justify-center rounded-lg border border-border p-2 hover:bg-accent"
+                    title="Voir profil">
+                    <User className="h-4 w-4" />
                   </button>
                   <button onClick={() => decide(rec, 'APPROVED')}
                     disabled={Number(rec.seats_remaining ?? 0) <= 0}

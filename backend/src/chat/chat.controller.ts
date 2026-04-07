@@ -1,28 +1,20 @@
-import { Body, Controller, HttpCode, HttpStatus, Post, UseGuards } from '@nestjs/common';
+import { Controller, Post, Body } from '@nestjs/common';
 import { ChatService } from './chat.service';
+import { ChatMessageDto } from './dto/chat-message.dto';
+import { ChatResponseDto } from './dto/chat-response.dto';
 import { RewritePromptDto } from './dto/rewrite-prompt.dto';
-import { GenerateActivityPromptDto } from './dto/generate-activity-prompt.dto';
-import { JwtAuthGuard } from '../auth/auth/jwt-auth/jwt-auth.guard';
 
 @Controller('chat')
 export class ChatController {
   constructor(private readonly chatService: ChatService) {}
 
-  /**
-   * Protected endpoint (JWT) to avoid exposing the OpenRouter key in the frontend.
-   */
-  @Post('rewrite')
-  @UseGuards(JwtAuthGuard)
-  @HttpCode(HttpStatus.OK)
-  async rewrite(@Body() dto: RewritePromptDto) {
-    return this.chatService.rewritePrompt(dto);
+  @Post()
+  async sendMessage(@Body() dto: ChatMessageDto): Promise<ChatResponseDto> {
+    return await this.chatService.processMessage(dto);
   }
 
-  @Post('generate-activity-prompt')
-  @UseGuards(JwtAuthGuard)
-  @HttpCode(HttpStatus.OK)
-  async generateActivityPrompt(@Body() dto: GenerateActivityPromptDto) {
-    return this.chatService.generateActivityPrompt(dto);
+  @Post('rewrite')
+  async rewrite(@Body() dto: RewritePromptDto): Promise<{ rewritten: string; model: string }> {
+    return await this.chatService.rewritePrompt(dto);
   }
 }
-

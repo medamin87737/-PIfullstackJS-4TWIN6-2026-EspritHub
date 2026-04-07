@@ -70,8 +70,8 @@ function initRippleButtons(): void {
     const el = btn as HTMLElement
     if (el.dataset.rippleBound === '1') return
     el.dataset.rippleBound = '1'
-    btn.addEventListener('click', function onRipple(e: Event) {
-      const me = this as HTMLElement
+    btn.addEventListener('click', function onRipple(this: HTMLElement, e: Event) {
+      const me = this
       const mouse = e as MouseEvent
       const rect = me.getBoundingClientRect()
       const size = Math.max(rect.width, rect.height)

@@ -1,9 +1,9 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import { useData } from '../../context/DataContext'
 import StatusBadge from '../../components/shared/StatusBadge'
 import DataTable from '../../components/shared/DataTable'
-import { Plus, Search, Sparkles, Pencil, Trash2, X, Check, Bot, Presentation } from 'lucide-react'
+import { Plus, Search, Sparkles, Pencil, Trash2, X, Check, Bot, Presentation, ArrowUpDown } from 'lucide-react'
 import type { Activity } from '../../types'
 import { useToast } from '../../../hooks/use-toast'
 
@@ -12,6 +12,7 @@ export default function HRActivities() {
   const { toast } = useToast()
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState('all')
+  const [sortDesc, setSortDesc] = useState(true)
 
   // Edit state
   const [editing, setEditing] = useState<Activity | null>(null)
@@ -143,11 +144,18 @@ export default function HRActivities() {
     }
   }
 
-  const filtered = activities.filter(a => {
-    const matchSearch = a.title.toLowerCase().includes(search.toLowerCase())
-    const matchStatus = statusFilter === 'all' || a.status === statusFilter
-    return matchSearch && matchStatus
-  })
+  const filtered = useMemo(() => {
+    const list = activities.filter(a => {
+      const matchSearch = a.title.toLowerCase().includes(search.toLowerCase())
+      const matchStatus = statusFilter === 'all' || a.status === statusFilter
+      return matchSearch && matchStatus
+    })
+    return [...list].sort((a, b) => {
+      const da = new Date(a.created_at).getTime()
+      const db = new Date(b.created_at).getTime()
+      return sortDesc ? db - da : da - db
+    })
+  }, [activities, search, statusFilter, sortDesc])
 
   const columns = [
     {
@@ -177,18 +185,18 @@ export default function HRActivities() {
           </Link>
           <Link
             to={`/hr/recommendations/${a.id}`}
-            className="flex items-center gap-1 rounded-lg border border-emerald-600 bg-emerald-600 px-2.5 py-1 text-xs font-semibold text-white hover:bg-emerald-700"
-            title="Ouvrir et confirmer l'activité côté RH"
+            className="flex items-center justify-center rounded-lg bg-emerald-600 p-2 text-white hover:bg-emerald-700"
+            title="Confirmer l'activité"
           >
-            <Check className="h-3.5 w-3.5" /> Confirmer activité
+            <Check className="h-4 w-4" />
           </Link>
           <a
             href={`http://localhost:3000/activities/${a.id}/export-pptx`}
             download
             title="Télécharger la présentation PPTX"
-            className="button-micro flex items-center gap-1 rounded-lg border border-violet-500 bg-violet-50 px-2 py-1 text-xs font-medium text-violet-700 hover:bg-violet-100 dark:bg-violet-950/30 dark:text-violet-400"
+            className="flex items-center justify-center rounded-lg border border-violet-500 bg-violet-50 p-2 text-violet-700 hover:bg-violet-100 dark:bg-violet-950/30 dark:text-violet-400"
           >
-            <Presentation className="h-3.5 w-3.5" /> PPTX
+            <Presentation className="h-4 w-4" />
           </a>
           <button
             type="button"
@@ -242,6 +250,13 @@ export default function HRActivities() {
           <option value="in_progress">En cours</option>
           <option value="completed">Terminé</option>
         </select>
+        <button
+          onClick={() => setSortDesc((p) => !p)}
+          className="flex items-center gap-1.5 h-9 rounded-lg border border-input bg-background px-3 text-sm text-foreground hover:bg-accent"
+        >
+          <ArrowUpDown className="h-3.5 w-3.5" />
+          {sortDesc ? 'Plus récentes' : 'Plus anciennes'}
+        </button>
       </div>
 
       {/* Panel confirmation suppression */}

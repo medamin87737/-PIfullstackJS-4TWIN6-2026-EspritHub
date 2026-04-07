@@ -91,5 +91,28 @@
 {"ts": "2026-03-28T23:30:43.539031", "activity_type": "technical", "context": "consolidate_medium", "skills_count": 1, "confidence_score": 0.55}
 >>>>>>> 6f1af563f52de84a919835234ee8a9cfa774a85a
 {"ts": "2026-03-31T16:10:25.409938", "activity_type": "management", "context": "upskill_low", "skills_count": 1, "confidence_score": 0.8}
+<<<<<<< HEAD
 {"ts": "2026-04-01T09:40:06.594573", "activity_type": "certification", "context": "upskill_low", "skills_count": 1, "confidence_score": 0.8}
 {"ts": "2026-04-01T09:41:00.279189", "activity_type": "certification", "context": "upskill_low", "skills_count": 1, "confidence_score": 0.8}
+=======
+<<<<<<< HEAD
+{"ts": "2026-04-01T08:52:48.482862", "activity_type": "technical", "context": "consolidate_medium", "skills_count": 1, "confidence_score": 0.8}
+{"ts": "2026-04-01T08:53:52.746451", "activity_type": "technical", "context": "consolidate_medium", "skills_count": 1, "confidence_score": 0.8}
+{"ts": "2026-04-01T08:54:38.537542", "activity_type": "management", "context": "upskill_low", "skills_count": 1, "confidence_score": 0.8}
+{"ts": "2026-04-01T09:15:26.104400", "activity_type": "technical", "context": "consolidate_medium", "skills_count": 1, "confidence_score": 0.55}
+{"ts": "2026-04-07T11:55:23.744281", "activity_type": "management", "context": "consolidate_medium", "skills_count": 1, "confidence_score": 0.55}
+{"ts": "2026-04-07T12:00:57.034114", "activity_type": "management", "context": "consolidate_medium", "skills_count": 1, "confidence_score": 0.55}
+{"ts": "2026-04-07T12:03:51.560864", "activity_type": "management", "context": "consolidate_medium", "skills_count": 1, "confidence_score": 0.55}
+{"ts": "2026-04-07T12:04:48.482721", "activity_type": "management", "context": "consolidate_medium", "skills_count": 1, "confidence_score": 0.55}
+{"ts": "2026-04-07T12:05:16.356527", "activity_type": "management", "context": "upskill_low", "skills_count": 1, "confidence_score": 0.8}
+{"ts": "2026-04-07T12:08:20.430491", "activity_type": "management", "context": "upskill_low", "skills_count": 1, "confidence_score": 0.8}
+{"ts": "2026-04-07T12:10:34.009943", "activity_type": "management", "context": "upskill_low", "skills_count": 1, "confidence_score": 0.8}
+=======
+{"ts": "2026-04-01T13:19:51.911443", "activity_type": "technical", "context": "consolidate_medium", "skills_count": 1, "confidence_score": 0.8}
+{"ts": "2026-04-01T13:20:39.093911", "activity_type": "technical", "context": "consolidate_medium", "skills_count": 1, "confidence_score": 0.8}
+{"ts": "2026-04-01T13:21:16.238486", "activity_type": "technical", "context": "consolidate_medium", "skills_count": 1, "confidence_score": 0.8}
+{"ts": "2026-04-03T21:05:52.365247", "activity_type": "technical", "context": "consolidate_medium", "skills_count": 1, "confidence_score": 0.55}
+{"ts": "2026-04-03T21:07:48.847005", "activity_type": "technical", "context": "exploit_expert", "skills_count": 1, "confidence_score": 0.8}
+{"ts": "2026-04-03T21:20:30.998584", "activity_type": "technical", "context": "upskill_low", "skills_count": 1, "confidence_score": 0.55}
+>>>>>>> 9a78868fe60185266fc368f3e9fa2fefe588df3f
+>>>>>>> ecbd17b5c38ec91f49d480bf6942ee5221653649

@@ -1,0 +1,89 @@
+version: "3.1"
+
+intents:
+  - greet
+  - goodbye
+  - explain_activity
+  - why_recommended
+  - skills_gained
+  - ask_duration
+  - ask_location
+  - ask_date
+
+actions:
+  - action_explain_activity
+  - action_why_recommended
+  - action_skills_gained
+  - action_ask_duration
+  - action_ask_location
+  - action_ask_date
+
+slots:
+  titre:
+    type: text
+    mappings:
+      - type: custom
+  description:
+    type: text
+    mappings:
+      - type: custom
+  competences:
+    type: list
+    mappings:
+      - type: custom
+  score:
+    type: float
+    mappings:
+      - type: custom
+  objectif:
+    type: text
+    mappings:
+      - type: custom
+
+responses:
+  utter_greet:
+    - text: "Bonjour ! Je suis votre assistant RH. Comment puis-je vous aider avec cette activité ?"
+
+  utter_goodbye:
+    - text: "Au revoir ! N'hésitez pas à revenir si vous avez d'autres questions."
+
+  utter_explain_activity:
+    - text: "Cette activité s'intitule '{titre}'. {description}"
+    - text: "Voici les détails de l'activité '{titre}' : {description}"
+    
+  utter_explain_activity_no_description:
+    - text: "Cette activité s'intitule '{titre}'. Malheureusement, je n'ai pas plus de détails pour le moment. Contactez les RH pour en savoir plus."
+
+  utter_why_recommended:
+    - text: "Cette activité vous est recommandée avec un score de {score}%. Elle correspond à vos objectifs professionnels : {objectif}."
+    - text: "Vous avez été recommandé pour cette activité car elle correspond à {objectif}, avec un score de pertinence de {score}%."
+
+  utter_why_recommended_no_score:
+    - text: "Cette activité vous est recommandée car elle correspond à vos objectifs professionnels : {objectif}."
+    - text: "Cette activité a été sélectionnée pour vous aider à atteindre vos objectifs : {objectif}."
+
+  utter_skills_gained:
+    - text: "En participant à cette activité, vous développerez les compétences suivantes : {competences}."
+    - text: "Cette activité vous permettra d'acquérir ces compétences : {competences}."
+
+  utter_skills_gained_no_data:
+    - text: "Les compétences spécifiques pour cette activité ne sont pas encore définies. Contactez les RH pour plus d'informations."
+
+  utter_ask_duration:
+    - text: "Cette activité dure {duration} jours."
+    - text: "La durée de cette formation est de {duration} jours."
+
+  utter_ask_location:
+    - text: "Cette activité se déroule à : {location}"
+    - text: "Le lieu de l'activité est : {location}"
+
+  utter_ask_date:
+    - text: "Cette activité commence le {start_date} et se termine le {end_date}."
+    - text: "Dates : du {start_date} au {end_date}."
+
+  utter_default:
+    - text: "Je ne suis pas sûr de comprendre. Vous pouvez me demander d'expliquer l'activité, pourquoi elle vous est recommandée, ou quelles compétences vous allez développer."
+
+session_config:
+  session_expiration_time: 60
+  carry_over_slots_to_new_session: true

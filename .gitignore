@@ -21,6 +21,11 @@ logs/
 *.log
 *.log.*
 
+# AI service data files
+ai-service/feedback_events.jsonl
+ai-service/data/models/*.jsonl
+ai-service/data/models/*.pkl
+
 # Env & secrets
 .env
 .env.*

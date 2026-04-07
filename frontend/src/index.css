@@ -734,19 +734,21 @@ html.colorblind {
 }
 
 /* Badges de statut — remplace vert/rouge par bleu/orange */
+/* Fond clair emerald → texte foncé lisible (pas bleu sur bleu) */
 html.colorblind .bg-emerald-100  { background-color: #cce5f6 !important; }
-html.colorblind .text-emerald-700 { color: #0072B2 !important; }
-html.colorblind .bg-emerald-600  { background-color: #0072B2 !important; }
+html.colorblind .text-emerald-700 { color: #004a78 !important; }
+/* Fond plein emerald → bleu avec texte blanc forcé */
+html.colorblind .bg-emerald-600  { background-color: #0072B2 !important; color: #ffffff !important; }
 html.colorblind .hover\:bg-emerald-700:hover { background-color: #005a8e !important; }
 html.colorblind .border-emerald-600 { border-color: #0072B2 !important; }
 
 html.colorblind .bg-red-100  { background-color: #fde8d8 !important; }
-html.colorblind .text-red-700 { color: #D55E00 !important; }
+html.colorblind .text-red-700 { color: #8a2e00 !important; }
 html.colorblind .bg-red-500,
-html.colorblind .bg-red-600  { background-color: #D55E00 !important; }
+html.colorblind .bg-red-600  { background-color: #D55E00 !important; color: #ffffff !important; }
 
 html.colorblind .bg-amber-100  { background-color: #fff3cc !important; }
-html.colorblind .text-amber-700 { color: #b37700 !important; }
+html.colorblind .text-amber-700 { color: #7a5000 !important; }
 
 html.colorblind .bg-violet-50  { background-color: #f0e6f6 !important; }
 html.colorblind .text-violet-700 { color: #7B2D8B !important; }
@@ -786,10 +788,11 @@ html.colorblind [data-active="true"] {
   border-color: #E69F00 !important;
 }
 
-/* Score bars / progress */
+/* Score bars / progress — fond bleu avec texte blanc */
 html.colorblind [class*="bg-emerald"],
 html.colorblind [class*="bg-green"] {
   background-color: #0072B2 !important;
+  color: #ffffff !important;
 }
 
 /* Icône micro active (rouge → orange) */
