@@ -10,6 +10,7 @@ import { firstValueFrom } from 'rxjs';
 import { ActivitiesService } from '../activities/activities.service';
 import { ChatMessageDto } from './dto/chat-message.dto';
 import { ChatResponseDto } from './dto/chat-response.dto';
+import { RewritePromptDto } from './dto/rewrite-prompt.dto';
 import {
   RasaContext,
   RasaWebhookRequest,
@@ -85,6 +86,57 @@ export class ChatService {
       start_date: activity.startDate || activity.date ? new Date(activity.startDate || activity.date).toLocaleDateString('fr-FR') : 'non définie',
       end_date: activity.endDate ? new Date(activity.endDate).toLocaleDateString('fr-FR') : 'non définie',
     };
+  }
+
+  async rewritePrompt(dto: RewritePromptDto): Promise<{ rewritten: string; model: string }> {
+    const apiKey = process.env.OPENROUTER_API_KEY;
+    const model = process.env.OPENROUTER_MODEL ?? 'deepseek/deepseek-chat';
+    const baseUrl = process.env.OPENROUTER_BASE_URL ?? 'https://openrouter.ai/api/v1';
+    const strict = process.env.OPENROUTER_STRICT === 'true';
+
+    const systemPrompt = dto.constraints ??
+      'Reformule ce texte en message professionnel clair et poli. ' +
+      'Corrige les fautes, améliore la formulation. ' +
+      'Conserve le sens original. Réponds uniquement avec le texte reformulé, sans explication.';
+
+    if (!apiKey) {
+      if (strict) throw new ServiceUnavailableException('OpenRouter API key not configured');
+      // Fallback: retourner le texte tel quel
+      return { rewritten: dto.prompt, model: 'fallback' };
+    }
+
+    try {
+      const response = await firstValueFrom(
+        this.httpService.post(
+          `${baseUrl}/chat/completions`,
+          {
+            model,
+            messages: [
+              { role: 'system', content: systemPrompt },
+              { role: 'user', content: dto.prompt },
+            ],
+          },
+          {
+            headers: {
+              Authorization: `Bearer ${apiKey}`,
+              'Content-Type': 'application/json',
+              'HTTP-Referer': process.env.OPENROUTER_HTTP_REFERER ?? 'http://localhost:5173',
+              'X-Title': process.env.OPENROUTER_APP_TITLE ?? 'SkillUpTn',
+            },
+            timeout: Number(process.env.OPENROUTER_TIMEOUT_MS ?? 20000),
+          },
+        ),
+      );
+
+      const rewritten = String(response.data?.choices?.[0]?.message?.content ?? '').trim();
+      if (!rewritten) throw new InternalServerErrorException('Empty response from LLM');
+
+      return { rewritten, model };
+    } catch (error: any) {
+      this.logger.error('OpenRouter rewrite error', error?.message);
+      if (strict) throw new ServiceUnavailableException('Rewrite service unavailable');
+      return { rewritten: dto.prompt, model: 'fallback' };
+    }
   }
 
   private async sendToRasa(

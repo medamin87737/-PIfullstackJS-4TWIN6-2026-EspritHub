@@ -1,4 +1,5 @@
 import { createContext, useContext, useEffect, useRef, useState, type ReactNode, useCallback } from 'react'
+import { hexToHsl } from '../utils/color'
 
 type ZoomLevel = 'normal' | 'large' | 'xlarge'
 
@@ -13,6 +14,21 @@ interface AccessibilityContextType {
   toggleVoiceCommands: () => void
   colorBlindMode: boolean
   toggleColorBlindMode: () => void
+  customPalette: CustomPalette | null
+  setCustomPalette: (palette: CustomPalette) => void
+  resetCustomPalette: () => void
+  contrastPercent: number
+  setContrastPercent: (percent: number) => void
+}
+
+export type CustomPalette = {
+  primary?: string
+  secondary?: string
+  background?: string
+  foreground?: string
+  accent?: string
+  sidebarBackground?: string
+  sidebarForeground?: string
 }
 
 const AccessibilityContext = createContext<AccessibilityContextType | undefined>(undefined)
@@ -26,6 +42,21 @@ export function AccessibilityProvider({ children }: { children: ReactNode }) {
     if (typeof window === 'undefined') return false
     return window.localStorage.getItem('accessibility_colorblind') === 'true'
   })
+  const [customPalette, setCustomPaletteState] = useState<CustomPalette | null>(() => {
+    if (typeof window === 'undefined') return null
+    try {
+      const raw = window.localStorage.getItem('accessibility_custom_palette')
+      return raw ? (JSON.parse(raw) as CustomPalette) : null
+    } catch {
+      return null
+    }
+  })
+  const [contrastPercent, setContrastPercentState] = useState<number>(() => {
+    if (typeof window === 'undefined') return 100
+    const raw = window.localStorage.getItem('accessibility_contrast_percent')
+    const parsed = raw ? parseInt(raw, 10) : 100
+    return Number.isFinite(parsed) ? parsed : 100
+  })
 
   const recognitionRef = useRef<any>(null)
 
@@ -38,6 +69,67 @@ export function AccessibilityProvider({ children }: { children: ReactNode }) {
 
   const toggleColorBlindMode = useCallback(() => {
     setColorBlindMode((prev) => !prev)
+  }, [])
+
+  // Apply global contrast filter on <html>
+  useEffect(() => {
+    if (typeof document === 'undefined') return
+    document.documentElement.style.filter = `contrast(${contrastPercent}%)`
+    if (typeof window !== 'undefined') {
+      window.localStorage.setItem('accessibility_contrast_percent', String(contrastPercent))
+    }
+  }, [contrastPercent])
+
+  const setContrastPercent = useCallback((percent: number) => {
+    const clamped = Math.min(200, Math.max(50, Math.round(percent)))
+    setContrastPercentState(clamped)
+  }, [])
+
+  // Apply custom palette to CSS variables on :root
+  useEffect(() => {
+    if (typeof document === 'undefined') return
+    const root = document.documentElement
+    const applyVar = (name: string, hex?: string) => {
+      if (!hex) return
+      const { h, s, l } = hexToHsl(hex)
+      root.style.setProperty(name, `${h} ${s}% ${l}%`)
+    }
+    if (customPalette) {
+      applyVar('--primary', customPalette.primary)
+      applyVar('--secondary', customPalette.secondary)
+      applyVar('--background', customPalette.background)
+      applyVar('--foreground', customPalette.foreground)
+      applyVar('--accent', customPalette.accent)
+      applyVar('--sidebar-background', customPalette.sidebarBackground)
+      applyVar('--sidebar-foreground', customPalette.sidebarForeground)
+    }
+  }, [customPalette])
+
+  const setCustomPalette = useCallback((palette: CustomPalette) => {
+    setCustomPaletteState(palette)
+    if (typeof window !== 'undefined') {
+      window.localStorage.setItem('accessibility_custom_palette', JSON.stringify(palette))
+    }
+  }, [])
+
+  const resetCustomPalette = useCallback(() => {
+    setCustomPaletteState(null)
+    if (typeof window !== 'undefined') {
+      window.localStorage.removeItem('accessibility_custom_palette')
+    }
+    if (typeof document !== 'undefined') {
+      const root = document.documentElement
+      // Remove inline overrides so Tailwind/CSS defaults take over
+      ;[
+        '--primary',
+        '--secondary',
+        '--background',
+        '--foreground',
+        '--accent',
+        '--sidebar-background',
+        '--sidebar-foreground',
+      ].forEach((name) => root.style.removeProperty(name))
+    }
   }, [])
 
   // Apply zoom to root font-size
@@ -243,6 +335,11 @@ export function AccessibilityProvider({ children }: { children: ReactNode }) {
         toggleVoiceCommands,
         colorBlindMode,
         toggleColorBlindMode,
+        customPalette,
+        setCustomPalette,
+        resetCustomPalette,
+        contrastPercent,
+        setContrastPercent,
       }}
     >
       {children}
