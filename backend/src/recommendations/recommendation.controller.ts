@@ -16,6 +16,9 @@ import { SimulateRecommendationDto } from './dto/simulate-recommendation.dto'
 import { SearchRecommendationsDto } from './dto/search-recommendations.dto'
 import { HrAdjustScoreDto } from './dto/hr-adjust-score.dto'
 import { HrKeepScoreDto } from './dto/hr-keep-score.dto'
+import { TransportEstimateDto } from './dto/transport-estimate.dto'
+import { PostActivitySelfEvalDto } from './dto/post-activity-self-eval.dto'
+import { PostActivityManagerEvalDto } from './dto/post-activity-manager-eval.dto'
 
 @ApiTags('Recommendations')
 @Controller('api/recommendations')
@@ -85,10 +88,40 @@ export class RecommendationController {
     return this.recommendationService.getMyRecommendations(this.reqUserId(req))
   }
 
+  @Post('transport/estimate')
+  @Roles('EMPLOYEE', 'HR', 'MANAGER')
+  async estimateTransport(@Body() dto: TransportEstimateDto, @Req() req: any) {
+    return this.recommendationService.estimateTaxiOptions(dto, this.reqUserId(req))
+  }
+
   @Get('my-skill-updates')
   @Roles('EMPLOYEE')
   async mySkillUpdates(@Req() req: any) {
     return this.recommendationService.getMySkillUpdates(this.reqUserId(req))
+  }
+
+  @Post('post-activity/self-eval')
+  @Roles('EMPLOYEE')
+  async submitSelfEval(@Body() dto: PostActivitySelfEvalDto, @Req() req: any) {
+    return this.recommendationService.submitPostActivitySelfEval(dto, this.reqUserId(req))
+  }
+
+  @Post('post-activity/manager-eval')
+  @Roles('MANAGER')
+  async submitManagerEval(@Body() dto: PostActivityManagerEvalDto, @Req() req: any) {
+    return this.recommendationService.submitPostActivityManagerEval(dto, this.reqUserId(req))
+  }
+
+  @Post('post-activity/run/:activityId')
+  @Roles('HR')
+  async runPostActivity(@Param('activityId') activityId: string, @Req() req: any) {
+    return this.recommendationService.runPostActivityUpdate(activityId, this.reqUserId(req))
+  }
+
+  @Get('post-activity/activity/:activityId')
+  @Roles('HR', 'MANAGER')
+  async postActivityStatus(@Param('activityId') activityId: string) {
+    return this.recommendationService.getPostActivityStatus(activityId)
   }
 
   @Post('manual-add')

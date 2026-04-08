@@ -66,6 +66,9 @@ export class Activity {
 
   @Prop({ type: Boolean, default: false })
   completed: boolean;
+
+  @Prop({ type: Boolean, default: false })
+  post_activity_updated: boolean;
 }
 
 export const ActivitySchema = SchemaFactory.createForClass(Activity);

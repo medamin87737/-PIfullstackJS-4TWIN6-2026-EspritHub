@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common'
+import { Injectable, InternalServerErrorException, Logger, ServiceUnavailableException } from '@nestjs/common'
 import * as fs from 'node:fs/promises'
 import * as path from 'node:path'
 import * as handlebars from 'handlebars'
@@ -26,8 +26,29 @@ export class MailService {
     acceptUrl: string,
     declineUrl: string,
   ) {
+    if (!process.env.MAIL_HOST || !process.env.MAIL_USER || !process.env.MAIL_PASS) {
+      throw new ServiceUnavailableException(
+        'Mail service not configured. Please set MAIL_HOST, MAIL_USER and MAIL_PASS in backend/.env',
+      )
+    }
+
     try {
-      const templatePath = path.join(__dirname, 'templates', 'employee-invitation.hbs')
+      const templateCandidates = [
+        path.join(__dirname, 'templates', 'employee-invitation.hbs'),
+        path.join(process.cwd(), 'dist', 'mail', 'templates', 'employee-invitation.hbs'),
+        path.join(process.cwd(), 'src', 'mail', 'templates', 'employee-invitation.hbs'),
+      ]
+      const templatePath = await (async () => {
+        for (const p of templateCandidates) {
+          try {
+            await fs.access(p)
+            return p
+          } catch {
+            // try next candidate
+          }
+        }
+        throw new Error(`Invitation template not found. Checked: ${templateCandidates.join(', ')}`)
+      })()
       const source = await fs.readFile(templatePath, 'utf-8')
       const html = handlebars.compile(source)({
         employeeName,
@@ -45,8 +66,9 @@ export class MailService {
         subject: `Invitation - ${activityTitle}`,
         html,
       })
-    } catch (err) {
-      this.logger.warn(`Failed to send invitation email to ${to}: ${String(err)}`)
+    } catch (err: any) {
+      this.logger.error(`Failed to send invitation email to ${to}: ${String(err?.message ?? err)}`)
+      throw new InternalServerErrorException('Unable to send invitation email')
     }
   }
 }

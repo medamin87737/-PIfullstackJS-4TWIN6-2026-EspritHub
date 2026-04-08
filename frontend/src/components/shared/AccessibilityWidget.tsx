@@ -6,7 +6,21 @@ import { Globe, Loader2 } from 'lucide-react'
 const TOAST_SOUND_ENABLED_KEY = 'accessibility_toast_sound_enabled'
 
 export default function AccessibilityWidget() {
-  const { zoom, setZoom, autoReadSelection, setAutoReadSelection, voiceCommandsActive, toggleVoiceCommands, colorBlindMode, toggleColorBlindMode } = useAccessibility()
+  const {
+    zoom,
+    setZoom,
+    autoReadSelection,
+    setAutoReadSelection,
+    voiceCommandsActive,
+    toggleVoiceCommands,
+    colorBlindMode,
+    toggleColorBlindMode,
+    customPalette,
+    setCustomPalette,
+    resetCustomPalette,
+    contrastPercent,
+    setContrastPercent,
+  } = useAccessibility()
   const { language, setLanguage, translatePage, isTranslating, supportedLanguages } = useTranslation()
 
   const [open, setOpen] = useState(false)
@@ -158,6 +172,73 @@ export default function AccessibilityWidget() {
               {colorBlindMode && (
                 <p className="mt-1.5 text-[11px] font-medium text-[#0072B2]">✓ Mode daltonien actif</p>
               )}
+            </div>
+
+            {/* Palette personnalisee */}
+            <div className="mt-3 rounded-lg border border-border bg-background/60 p-2.5">
+              <div className="mb-2 flex items-center justify-between">
+                <div>
+                  <p className="text-xs font-medium text-foreground">Palette de couleurs</p>
+                  <p className="text-[11px] text-muted-foreground">Choisissez vos couleurs pour toute l'application.</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={resetCustomPalette}
+                  className="rounded-md border border-input bg-background px-2 py-1 text-[11px] hover:bg-accent"
+                >
+                  Reinitialiser
+                </button>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                {[
+                  { key: 'primary', label: 'Primaire', fallback: '#2563eb' },
+                  { key: 'secondary', label: 'Secondaire', fallback: '#64748b' },
+                  { key: 'background', label: 'Fond', fallback: '#0b1220' },
+                  { key: 'foreground', label: 'Texte', fallback: '#f8fafc' },
+                  { key: 'accent', label: 'Accent', fallback: '#14b8a6' },
+                  { key: 'sidebarBackground', label: 'Sidebar fond', fallback: '#111827' },
+                  { key: 'sidebarForeground', label: 'Sidebar texte', fallback: '#e5e7eb' },
+                ].map((item) => (
+                  <label key={item.key} className="flex items-center justify-between gap-2 rounded-md border border-border bg-card px-2 py-1.5">
+                    <span className="text-[11px] text-muted-foreground">{item.label}</span>
+                    <input
+                      type="color"
+                      value={(customPalette as any)?.[item.key] ?? item.fallback}
+                      onChange={(e) =>
+                        setCustomPalette({
+                          ...(customPalette ?? {}),
+                          [item.key]: e.target.value,
+                        } as any)
+                      }
+                      className="h-6 w-8 cursor-pointer rounded border border-input bg-transparent p-0"
+                    />
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            {/* Contraste */}
+            <div className="mt-3 rounded-lg border border-border bg-background/60 p-2.5">
+              <div className="mb-2 flex items-center justify-between">
+                <p className="text-xs font-medium text-foreground">Contraste d'affichage</p>
+                <button
+                  type="button"
+                  onClick={() => setContrastPercent(100)}
+                  className="rounded-md border border-input bg-background px-2 py-1 text-[11px] hover:bg-accent"
+                >
+                  Par defaut
+                </button>
+              </div>
+              <input
+                type="range"
+                min={75}
+                max={150}
+                step={1}
+                value={contrastPercent}
+                onChange={(e) => setContrastPercent(Number(e.target.value))}
+                className="w-full accent-primary"
+              />
+              <p className="mt-1 text-[11px] text-muted-foreground">Niveau actuel: {contrastPercent}%</p>
             </div>
           </div>
         )}
