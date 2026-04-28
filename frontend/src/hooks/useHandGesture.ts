@@ -202,7 +202,6 @@ export function useHandGesture(options: UseHandGestureOptions): UseHandGestureRe
         modelComplexity: 1, // Modèle moyen (0=lite, 1=full)
         minDetectionConfidence: 0.5, // Réduire le seuil pour faciliter la détection
         minTrackingConfidence: 0.5,
-        selfieMode: true, // Mode selfie (miroir) pour webcam
       });
 
       hands.onResults(onResults);
