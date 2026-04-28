@@ -2,7 +2,7 @@ pipeline {
     agent any
 
     tools {
-        nodejs 'Node20'
+        nodejs 'Node18'
     }
 
     environment {
@@ -29,9 +29,9 @@ pipeline {
                 dir('frontend') {
                     script {
                         if (isUnix()) {
-                            sh 'npm ci'
+                            sh 'npm ci || npm install'
                         } else {
-                            bat 'npm ci'
+                            bat 'npm ci || npm install'
                         }
                     }
                 }
