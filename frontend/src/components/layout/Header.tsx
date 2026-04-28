@@ -5,6 +5,7 @@ import { useData } from '../../context/DataContext'
 import { Bell, Sun, Moon, Award } from 'lucide-react'
 import { cn } from '../../../lib/utils'
 import WeatherWidget from '../WeatherWidget'
+import WebsiteGuideAgent from './WebsiteGuideAgent'
 
 export default function Header() {
   const { user } = useAuth()
@@ -64,6 +65,8 @@ export default function Header() {
       </div>
 
       <div className="flex items-center gap-2">
+        <WebsiteGuideAgent />
+
         <button
           onClick={toggleDarkMode}
           className="button-micro flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground hover:bg-accent hover:text-accent-foreground"

@@ -20,6 +20,8 @@ export default function AccessibilityWidget() {
     resetCustomPalette,
     contrastPercent,
     setContrastPercent,
+    visualFatigueMode,
+    toggleVisualFatigueMode,
   } = useAccessibility()
   const { language, setLanguage, translatePage, isTranslating, supportedLanguages } = useTranslation()
 
@@ -51,14 +53,14 @@ export default function AccessibilityWidget() {
             <h2 className="mb-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Accessibilite</h2>
 
             {/* Taille du texte */}
-            <div className="mb-3">
-              <p className="mb-1 text-xs font-medium text-muted-foreground">Taille du texte</p>
-              <div className="inline-flex rounded-md border border-input bg-background p-0.5">
+          <div className="mb-3">
+            <p className="mb-1 text-xs font-medium text-muted-foreground">Taille du texte</p>
+            <div className="inline-flex rounded-md border border-input bg-background p-0.5">
                 {(['normal', 'large', 'xlarge'] as const).map((z, i) => (
                   <button key={z} type="button" onClick={() => setZoom(z)}
                     className={`px-2 py-1 text-xs ${zoom === z ? 'rounded-md bg-primary text-primary-foreground' : 'text-foreground'}`}>
                     {['A', 'A+', 'A++'][i]}
-                  </button>
+              </button>
                 ))}
               </div>
             </div>
@@ -85,7 +87,7 @@ export default function AccessibilityWidget() {
                     <span className="text-sm">{l.flag}</span>
                     <span>{l.name}</span>
                     {language === l.code && <span className="text-[9px] opacity-80">✓</span>}
-                  </button>
+              </button>
                 ))}
               </div>
               <select value={language} onChange={e => handleLanguageChange(e.target.value)}
@@ -103,79 +105,79 @@ export default function AccessibilityWidget() {
                     className="flex items-center gap-1 rounded-md bg-primary/10 px-2 py-1 text-[11px] font-medium text-primary hover:bg-primary/20 disabled:opacity-50">
                     {isTranslating ? <Loader2 className="h-3 w-3 animate-spin" /> : <Globe className="h-3 w-3" />}
                     {isTranslating ? 'Traduction...' : 'Retraduire'}
-                  </button>
-                </div>
-              )}
+              </button>
             </div>
+              )}
+          </div>
 
             {/* Lecture vocale */}
-            <div className="mb-3">
-              <p className="mb-1 text-xs font-medium text-muted-foreground">Lecture vocale automatique</p>
-              <label className="inline-flex cursor-pointer items-center gap-2 text-xs text-muted-foreground">
-                <span>Off</span>
+          <div className="mb-3">
+            <p className="mb-1 text-xs font-medium text-muted-foreground">Lecture vocale automatique</p>
+            <label className="inline-flex cursor-pointer items-center gap-2 text-xs text-muted-foreground">
+              <span>Off</span>
                 <button type="button" onClick={() => setAutoReadSelection(!autoReadSelection)}
                   className={`relative h-5 w-9 rounded-full border transition-colors ${autoReadSelection ? 'bg-primary border-primary' : 'bg-background border-input'}`}
                   aria-pressed={autoReadSelection}>
                   <span className={`absolute left-0.5 top-0.5 h-4 w-4 rounded-full bg-white shadow transition-transform ${autoReadSelection ? 'translate-x-4' : ''}`} />
-                </button>
-                <span>On</span>
-              </label>
-              <p className="mt-1 text-[11px] text-muted-foreground">
-                Quand c&apos;est active, tout texte que vous selectionnez est lu automatiquement.
-              </p>
-            </div>
+              </button>
+              <span>On</span>
+            </label>
+            <p className="mt-1 text-[11px] text-muted-foreground">
+              Quand c&apos;est active, tout texte que vous selectionnez est lu automatiquement.
+            </p>
+          </div>
 
             {/* Commandes vocales */}
-            <div className="mb-2">
-              <p className="mb-1 text-xs font-medium text-muted-foreground">Commandes vocales</p>
+          <div className="mb-2">
+            <p className="mb-1 text-xs font-medium text-muted-foreground">Commandes vocales</p>
               <button type="button" onClick={toggleVoiceCommands}
                 className={`w-full rounded-md px-2 py-1 text-xs ${voiceCommandsActive ? 'bg-primary text-primary-foreground' : 'border border-input bg-background text-foreground hover:bg-accent hover:text-accent-foreground'}`}>
-                {voiceCommandsActive ? 'Desactiver les commandes vocales' : 'Activer les commandes vocales'}
-              </button>
-              <p className="mt-1 text-[11px] text-muted-foreground">
-                Dites par exemple &quot;se connecter&quot; / &quot;login&quot; sur la page de connexion.
-              </p>
-            </div>
+              {voiceCommandsActive ? 'Desactiver les commandes vocales' : 'Activer les commandes vocales'}
+            </button>
+            <p className="mt-1 text-[11px] text-muted-foreground">
+              Dites par exemple &quot;se connecter&quot; / &quot;login&quot; sur la page de connexion.
+            </p>
+          </div>
 
             {/* Son des popups */}
-            <div className="mb-2">
-              <p className="mb-1 text-xs font-medium text-muted-foreground">Son des popups</p>
-              <label className="inline-flex cursor-pointer items-center gap-2 text-xs text-muted-foreground">
-                <span>Off</span>
+          <div className="mb-2">
+            <p className="mb-1 text-xs font-medium text-muted-foreground">Son des popups</p>
+            <label className="inline-flex cursor-pointer items-center gap-2 text-xs text-muted-foreground">
+              <span>Off</span>
                 <button type="button" onClick={toggleToastSound}
                   className={`relative h-5 w-9 rounded-full border transition-colors ${toastSoundEnabled ? 'bg-primary border-primary' : 'bg-background border-input'}`}
                   aria-pressed={toastSoundEnabled}>
                   <span className={`absolute left-0.5 top-0.5 h-4 w-4 rounded-full bg-white shadow transition-transform ${toastSoundEnabled ? 'translate-x-4' : ''}`} />
-                </button>
-                <span>On</span>
-              </label>
-              <p className="mt-1 text-[11px] text-muted-foreground">
-                Active ou desactive le son des notifications de succes/erreur.
-              </p>
-            </div>
+              </button>
+              <span>On</span>
+            </label>
+            <p className="mt-1 text-[11px] text-muted-foreground">
+              Active ou desactive le son des notifications de succes/erreur.
+            </p>
+          </div>
 
             {/* Mode daltonien */}
             <div className="rounded-lg border border-border bg-background/60 p-2.5">
-              <div className="flex items-center justify-between gap-2">
-                <div>
-                  <p className="text-xs font-medium text-foreground">Mode daltonien</p>
-                  <p className="text-[11px] text-muted-foreground">
-                    Palette haute visibilité (bleu/jaune) pour deutéranopie et protanopie.
-                  </p>
-                </div>
+            <div className="flex items-center justify-between gap-2">
+              <div>
+                <p className="text-xs font-medium text-foreground">Mode daltonien</p>
+                <p className="text-[11px] text-muted-foreground">
+                  Palette haute visibilité (bleu/jaune) pour deutéranopie et protanopie.
+                </p>
+              </div>
                 <button type="button" onClick={toggleColorBlindMode}
                   className={`relative h-5 w-9 shrink-0 rounded-full border transition-colors ${colorBlindMode ? 'bg-[#0072B2] border-[#0072B2]' : 'bg-background border-input'}`}
                   aria-pressed={colorBlindMode} aria-label="Activer le mode daltonien">
                   <span className={`absolute left-0.5 top-0.5 h-4 w-4 rounded-full bg-white shadow transition-transform ${colorBlindMode ? 'translate-x-4' : ''}`} />
-                </button>
-              </div>
-              {colorBlindMode && (
-                <p className="mt-1.5 text-[11px] font-medium text-[#0072B2]">✓ Mode daltonien actif</p>
-              )}
+              </button>
             </div>
+            {colorBlindMode && (
+                <p className="mt-1.5 text-[11px] font-medium text-[#0072B2]">✓ Mode daltonien actif</p>
+            )}
+          </div>
 
             {/* Palette personnalisee */}
-            <div className="mt-3 rounded-lg border border-border bg-background/60 p-2.5">
+          <div className="mt-3 rounded-lg border border-border bg-background/60 p-2.5">
               <div className="mb-2 flex items-center justify-between">
                 <div>
                   <p className="text-xs font-medium text-foreground">Palette de couleurs</p>
@@ -189,7 +191,7 @@ export default function AccessibilityWidget() {
                   Reinitialiser
                 </button>
               </div>
-              <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-2 gap-2">
                 {[
                   { key: 'primary', label: 'Primaire', fallback: '#2563eb' },
                   { key: 'secondary', label: 'Secondaire', fallback: '#64748b' },
@@ -201,8 +203,8 @@ export default function AccessibilityWidget() {
                 ].map((item) => (
                   <label key={item.key} className="flex items-center justify-between gap-2 rounded-md border border-border bg-card px-2 py-1.5">
                     <span className="text-[11px] text-muted-foreground">{item.label}</span>
-                    <input
-                      type="color"
+                <input
+                  type="color"
                       value={(customPalette as any)?.[item.key] ?? item.fallback}
                       onChange={(e) =>
                         setCustomPalette({
@@ -211,23 +213,51 @@ export default function AccessibilityWidget() {
                         } as any)
                       }
                       className="h-6 w-8 cursor-pointer rounded border border-input bg-transparent p-0"
-                    />
-                  </label>
+                />
+              </label>
                 ))}
               </div>
             </div>
 
             {/* Contraste */}
             <div className="mt-3 rounded-lg border border-border bg-background/60 p-2.5">
+              <div className="mb-3 rounded-md border border-border bg-card/70 p-2">
+                <div className="flex items-center justify-between gap-2">
+                  <div>
+                    <p className="text-xs font-medium text-foreground">Interface adaptee a la fatigue visuelle</p>
+                    <p className="text-[11px] text-muted-foreground">
+                      Active un filtre chaud qui diminue la lumiere bleue de l'ecran.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={toggleVisualFatigueMode}
+                    className={`relative h-5 w-9 shrink-0 rounded-full border transition-colors ${
+                      visualFatigueMode ? 'border-amber-500 bg-amber-500' : 'border-input bg-background'
+                    }`}
+                    aria-pressed={visualFatigueMode}
+                    aria-label="Activer le filtre anti lumiere bleue"
+                  >
+                    <span
+                      className={`absolute left-0.5 top-0.5 h-4 w-4 rounded-full bg-white shadow transition-transform ${
+                        visualFatigueMode ? 'translate-x-4' : ''
+                      }`}
+                    />
+                  </button>
+                </div>
+                {visualFatigueMode && (
+                  <p className="mt-1.5 text-[11px] font-medium text-amber-600">✓ Filtre anti lumiere bleue actif</p>
+                )}
+              </div>
               <div className="mb-2 flex items-center justify-between">
                 <p className="text-xs font-medium text-foreground">Contraste d'affichage</p>
-                <button
-                  type="button"
+              <button
+                type="button"
                   onClick={() => setContrastPercent(100)}
                   className="rounded-md border border-input bg-background px-2 py-1 text-[11px] hover:bg-accent"
-                >
+              >
                   Par defaut
-                </button>
+              </button>
               </div>
               <input
                 type="range"

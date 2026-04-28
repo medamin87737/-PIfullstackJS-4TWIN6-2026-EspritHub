@@ -41,6 +41,18 @@ export type RewritePromptResponse = {
   outputFormat: 'text' | 'json'
 }
 
+export type WebsiteGuideRequest = {
+  message: string
+  currentPath?: string
+  userRole?: 'ADMIN' | 'HR' | 'MANAGER' | 'EMPLOYEE'
+  language?: string
+}
+
+export type WebsiteGuideResponse = {
+  reply: string
+  timestamp: string
+}
+
 export async function rewritePrompt(req: RewritePromptRequest): Promise<RewritePromptResponse> {
   let token = getAuthItem('auth_token')
   if (!token) {
@@ -64,6 +76,58 @@ export async function rewritePrompt(req: RewritePromptRequest): Promise<RewriteP
     const newToken = await refreshAccessToken()
     if (newToken) {
       res = await fetch(`${API_BASE_URL}/chat/rewrite`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${newToken}`,
+        },
+        body: JSON.stringify(req),
+      })
+    }
+  }
+
+  if (!res.ok) {
+    try {
+      const data = await res.json()
+      if (typeof data?.message === 'string') {
+        throw new Error(data.message)
+      }
+      if (Array.isArray(data?.message) && data.message.length > 0) {
+        throw new Error(String(data.message[0]))
+      }
+      throw new Error(`Erreur serveur: ${res.status}`)
+    } catch (e: any) {
+      if (e instanceof Error) throw e
+      const text = await res.text().catch(() => '')
+      throw new Error(text || `Erreur serveur: ${res.status}`)
+    }
+  }
+
+  return res.json()
+}
+
+export async function askWebsiteGuide(req: WebsiteGuideRequest): Promise<WebsiteGuideResponse> {
+  let token = getAuthItem('auth_token')
+  if (!token) {
+    token = await refreshAccessToken()
+  }
+  if (!token) {
+    throw new Error('Utilisateur non authentifie')
+  }
+
+  let res = await fetch(`${API_BASE_URL}/chat/website-guide`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(req),
+  })
+
+  if (res.status === 401 || res.status === 403) {
+    const newToken = await refreshAccessToken()
+    if (newToken) {
+      res = await fetch(`${API_BASE_URL}/chat/website-guide`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

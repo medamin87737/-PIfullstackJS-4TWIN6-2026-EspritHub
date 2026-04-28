@@ -1,6 +1,10 @@
 pipeline {
     agent any
 
+    environment {
+        CD_BACK_JOB = 'CD-Back'
+    }
+
     options {
         skipDefaultCheckout(true)
     }
@@ -15,48 +19,61 @@ pipeline {
             }
         }
 
-        stage('SonarQube Analysis (Backend)') {
+        stage('Install (Backend)') {
             steps {
-                echo "🔍 Analyse SonarQube du backend..."
-                withSonarQubeEnv('SonarQube') {
+                echo "📦 Installation des dépendances backend..."
+                dir('backend') {
                     script {
-                        def scannerHome = tool 'SonarScanner'
-                        sh """
-                          "${scannerHome}/bin/sonar-scanner" \
-                            -Dsonar.projectKey=SkillUpTN-Backend \
-                            -Dsonar.projectName=SkillUpTN-Backend \
-                            -Dsonar.sources=backend
-                        """
+                        if (isUnix()) {
+                            sh 'npm ci'
+                        } else {
+                            bat 'npm ci'
+                        }
                     }
                 }
             }
         }
 
-        stage('Build Docker Image (Backend)') {
+        stage('Test (Backend)') {
             steps {
-                echo "🛠 Build de l'image Docker du backend (CI)..."
-                sh 'docker-compose build backend'
+                echo "🧪 Exécution des tests backend..."
+                dir('backend') {
+                    script {
+                        if (isUnix()) {
+                            sh 'npm run test:ci'
+                        } else {
+                            bat 'npm run test:ci'
+                        }
+                    }
+                }
             }
         }
 
-        stage('Run Backend Tests') {
+        stage('Build (Backend)') {
             steps {
-                echo "🧪 Lancement des tests backend dans le conteneur..."
-                script {
-                    // Évite les conflits de nom de conteneur si un ancien Mongo / backend existe déjà
-                    sh 'docker stop skillup-mongo || true'
-                    sh 'docker rm skillup-mongo || true'
-                    sh 'docker stop skillup-backend || true'
-                    sh 'docker rm skillup-backend || true'
-
-                    sh 'docker-compose run --rm backend npm run test'
+                echo "🏗 Build backend..."
+                dir('backend') {
+                    script {
+                        if (isUnix()) {
+                            sh 'npm run build'
+                        } else {
+                            bat 'npm run build'
+                        }
+                    }
                 }
             }
         }
     }
 
     post {
-        success { echo "✅ CI BACK terminé avec succès" }
+        always {
+            archiveArtifacts artifacts: 'backend/coverage/**', allowEmptyArchive: true
+        }
+        success {
+            echo "✅ CI BACK terminé avec succès"
+            echo "🚀 Déclenchement automatique du pipeline CD backend..."
+            build job: env.CD_BACK_JOB, wait: false
+        }
         failure { echo "❌ CI BACK échoué" }
     }
 }

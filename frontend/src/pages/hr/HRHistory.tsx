@@ -112,8 +112,8 @@ export default function HRHistory() {
       <div className="reveal reveal-left animate-slide-up">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <h1 className="text-2xl font-bold text-foreground">Historique des activites</h1>
-            <p className="text-sm text-muted-foreground">Suivi complet des activites passees et en cours</p>
+        <h1 className="text-2xl font-bold text-foreground">Historique des activites</h1>
+        <p className="text-sm text-muted-foreground">Suivi complet des activites passees et en cours</p>
           </div>
           <div className="inline-flex rounded-lg border border-input bg-background p-1">
             <button

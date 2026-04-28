@@ -11,6 +11,7 @@ import { ActivitiesService } from '../activities/activities.service';
 import { ChatMessageDto } from './dto/chat-message.dto';
 import { ChatResponseDto } from './dto/chat-response.dto';
 import { RewritePromptDto } from './dto/rewrite-prompt.dto';
+import { WebsiteGuideDto } from './dto/website-guide.dto';
 import {
   RasaContext,
   RasaWebhookRequest,
@@ -139,6 +140,153 @@ export class ChatService {
       this.logger.error('OpenRouter rewrite error', error?.message);
       if (strict) throw new ServiceUnavailableException('Rewrite service unavailable');
       return { rewritten: dto.prompt, model: 'fallback' };
+    }
+  }
+
+  async websiteGuide(dto: WebsiteGuideDto): Promise<{ reply: string; timestamp: Date }> {
+    const role = (dto.userRole ?? 'EMPLOYEE').toUpperCase();
+    const currentPath = dto.currentPath ?? '/';
+    const language = dto.language || 'fr';
+    const question = dto.message.trim();
+
+    const systemPrompt =
+      'Tu es AgentWebsite, un assistant qui explique comment utiliser ce site. ' +
+      'Donne une reponse pratique, courte, actionnable, en etapes numerotees. ' +
+      'Reponds dans la langue demandee (fr par defaut). ' +
+      'N invente pas des pages qui n existent pas.';
+
+    const roleMap = this.getRoleNavigationMap(role);
+    const pageHint = this.getCurrentPageHint(currentPath);
+
+    const userPrompt = [
+      `Langue: ${language}`,
+      `Role utilisateur: ${role}`,
+      `Page actuelle: ${currentPath}`,
+      `Pages disponibles pour ce role: ${roleMap.join(', ')}`,
+      `Contexte de la page: ${pageHint}`,
+      `Question utilisateur: ${question}`,
+      'Donne aussi 2 prochaines actions concretes.',
+      'Ajoute une section "Liens utiles" avec 2 a 4 routes internes exactes (ex: /hr/activities).',
+    ].join('\n');
+
+    const apiKey = process.env.OPENROUTER_API_KEY;
+    const model = process.env.OPENROUTER_MODEL ?? 'deepseek/deepseek-chat';
+    const baseUrl = process.env.OPENROUTER_BASE_URL ?? 'https://openrouter.ai/api/v1';
+
+    if (!apiKey) {
+      return {
+        reply: this.buildWebsiteGuideFallback(question, role, currentPath),
+        timestamp: new Date(),
+      };
+    }
+
+    try {
+      const response = await firstValueFrom(
+        this.httpService.post(
+          `${baseUrl}/chat/completions`,
+          {
+            model,
+            messages: [
+              { role: 'system', content: systemPrompt },
+              { role: 'user', content: userPrompt },
+            ],
+          },
+          {
+            headers: {
+              Authorization: `Bearer ${apiKey}`,
+              'Content-Type': 'application/json',
+              'HTTP-Referer': process.env.OPENROUTER_HTTP_REFERER ?? 'http://localhost:5173',
+              'X-Title': process.env.OPENROUTER_APP_TITLE ?? 'SkillUpTn AgentWebsite',
+            },
+            timeout: Number(process.env.OPENROUTER_TIMEOUT_MS ?? 20000),
+          },
+        ),
+      );
+
+      const reply = String(response.data?.choices?.[0]?.message?.content ?? '').trim();
+      return {
+        reply: reply || this.buildWebsiteGuideFallback(question, role, currentPath),
+        timestamp: new Date(),
+      };
+    } catch (error: any) {
+      this.logger.warn(`Website guide AI fallback used: ${error?.message ?? 'unknown error'}`);
+      return {
+        reply: this.buildWebsiteGuideFallback(question, role, currentPath),
+        timestamp: new Date(),
+      };
+    }
+  }
+
+  private getRoleNavigationMap(role: string): string[] {
+    const maps: Record<string, string[]> = {
+      ADMIN: ['/admin/dashboard', '/admin/users', '/admin/departments', '/admin/skills', '/admin/questions', '/admin/analytics'],
+      HR: ['/hr/dashboard', '/hr/activities', '/hr/reports', '/hr/create-activity', '/hr/import-employees', '/hr/activity-requests', '/hr/history', '/hr/analytics'],
+      MANAGER: ['/manager/dashboard', '/manager/activities', '/manager/activity-requests', '/manager/validations', '/manager/history'],
+      EMPLOYEE: ['/employee/dashboard', '/employee/activities', '/employee/notifications', '/employee/certificates', '/employee/skill-updates', '/employee/history', '/employee/profile'],
+    };
+    return maps[role] ?? maps.EMPLOYEE;
+  }
+
+  private getCurrentPageHint(path: string): string {
+    if (path.includes('/dashboard')) return 'Vue generale et indicateurs principaux';
+    if (path.includes('/activities')) return 'Gestion et suivi des activites';
+    if (path.includes('/reports')) return 'Rapports et exports';
+    if (path.includes('/notifications')) return 'Lecture des notifications et actions rapides';
+    if (path.includes('/profile')) return 'Informations utilisateur et preferences';
+    if (path.includes('/analytics')) return 'Graphiques et analyse de performance';
+    if (path.includes('/history')) return 'Historique des actions et decisions';
+    return 'Page applicative en cours';
+  }
+
+  private buildWebsiteGuideFallback(question: string, role: string, currentPath: string): string {
+    const quickTips = this.getQuickTipsByRole(role);
+    const pageHint = this.getCurrentPageHint(currentPath);
+    const roleMap = this.getRoleNavigationMap(role).slice(0, 3);
+
+    return [
+      `Je suis AgentWebsite. Je vous aide a utiliser la page: ${currentPath}.`,
+      `Contexte: ${pageHint}.`,
+      '',
+      'Etapes conseillees:',
+      '1) Ouvrez la map de navigation sous le header pour voir votre position dans le site.',
+      '2) Utilisez les liens rapides de votre role pour acceder directement aux pages principales.',
+      `3) Pour votre question "${question}", commencez par cette action: ${quickTips[0]}.`,
+      '',
+      'Prochaines actions:',
+      `- ${quickTips[1]}`,
+      `- ${quickTips[2]}`,
+      '',
+      'Liens utiles:',
+      ...roleMap.map((p) => `- ${p}`),
+    ].join('\n');
+  }
+
+  private getQuickTipsByRole(role: string): [string, string, string] {
+    switch (role) {
+      case 'ADMIN':
+        return [
+          'allez dans Utilisateurs pour verifier les comptes et roles',
+          'consultez Analytiques pour suivre les indicateurs globaux',
+          'mettez a jour Competences/Questions pour garder le referentiel coherent',
+        ];
+      case 'HR':
+        return [
+          'allez dans Activites pour creer ou suivre une activite',
+          'utilisez Rapports pour exporter les resultats et le suivi',
+          'ouvrez Demandes managers pour valider les demandes d activites',
+        ];
+      case 'MANAGER':
+        return [
+          'ouvrez Activites pour suivre les collaborateurs',
+          'allez dans Validations pour traiter les decisions en attente',
+          'utilisez Demander activite pour proposer une nouvelle action',
+        ];
+      default:
+        return [
+          'ouvrez Mes activites pour voir vos affectations',
+          'consultez Notifications pour traiter les actions importantes',
+          'mettez a jour Mon profil et suivez Evolution competences',
+        ];
     }
   }
 

@@ -8,6 +8,7 @@
     "build": "tsc -b && vite build",
     "preview": "vite preview",
     "test": "vitest run",
+    "test:ci": "vitest run --coverage --reporter=default --reporter=junit --outputFile.junit=reports/junit.xml",
     "test:watch": "vitest",
     "test:ui": "vitest --ui"
   },
@@ -82,6 +83,7 @@
     "tailwindcss": "^3.4.17",
     "typescript": "5.7.3",
     "vite": "^6.0.7",
+    "@vitest/coverage-v8": "^4.0.7",
     "vitest": "^4.1.2"
   }
 }

@@ -1,6 +1,14 @@
 pipeline {
     agent any
 
+    environment {
+        DOCKER_IMAGE = 'medamin87737/skillup-frontend'
+        IMAGE_TAG = "${env.BUILD_NUMBER}"
+        K8S_NAMESPACE = 'default'
+        KUBE_CONFIG_CREDENTIAL = 'kubeconfig'
+        DOCKER_CREDENTIAL = 'dockerhub-creds'
+    }
+
     options {
         skipDefaultCheckout(true)
     }
@@ -15,22 +23,57 @@ pipeline {
             }
         }
 
-        stage('Build Docker Image (Frontend)') {
+        stage('Docker Build (Frontend)') {
             steps {
-                echo "🛠 Build de l'image Docker du frontend (CD)..."
-                sh 'docker-compose build frontend'
+                echo "🛠 Build image frontend..."
+                dir('frontend') {
+                    script {
+                        if (isUnix()) {
+                            sh "docker build -t ${DOCKER_IMAGE}:${IMAGE_TAG} -t ${DOCKER_IMAGE}:latest ."
+                        } else {
+                            bat "docker build -t ${DOCKER_IMAGE}:${IMAGE_TAG} -t ${DOCKER_IMAGE}:latest ."
+                        }
+                    }
+                }
             }
         }
 
-        stage('Deploy Frontend Container') {
+        stage('Docker Push (Frontend)') {
             steps {
-                echo "🚀 Déploiement du conteneur frontend..."
-                script {
-                    // On s'assure d'abord que l'ancien conteneur est arrêté / supprimé
-                    sh 'docker stop skillup-frontend || true'
-                    sh 'docker rm skillup-frontend || true'
-                    // --no-deps pour ne pas toucher au backend/mongo
-                    sh 'docker-compose up -d --no-deps --force-recreate frontend'
+                echo "📤 Push image frontend vers Docker Hub..."
+                withCredentials([usernamePassword(credentialsId: "${DOCKER_CREDENTIAL}", usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
+                    script {
+                        if (isUnix()) {
+                            sh 'echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin'
+                            sh "docker push ${DOCKER_IMAGE}:${IMAGE_TAG}"
+                            sh "docker push ${DOCKER_IMAGE}:latest"
+                        } else {
+                            bat '@echo %DOCKER_PASS% | docker login -u %DOCKER_USER% --password-stdin'
+                            bat "docker push ${DOCKER_IMAGE}:${IMAGE_TAG}"
+                            bat "docker push ${DOCKER_IMAGE}:latest"
+                        }
+                    }
+                }
+            }
+        }
+
+        stage('Deploy to Kubernetes (Frontend)') {
+            steps {
+                echo "🚀 Déploiement frontend sur Kubernetes..."
+                withCredentials([file(credentialsId: "${KUBE_CONFIG_CREDENTIAL}", variable: 'KCFG')]) {
+                    script {
+                        if (isUnix()) {
+                            sh 'export KUBECONFIG=$KCFG && kubectl version --client'
+                            sh "export KUBECONFIG=$KCFG && kubectl -n ${K8S_NAMESPACE} set image deployment/frontend frontend=${DOCKER_IMAGE}:${IMAGE_TAG} --record || true"
+                            sh "export KUBECONFIG=$KCFG && kubectl apply -n ${K8S_NAMESPACE} -f k8s/frontend.yaml"
+                            sh "export KUBECONFIG=$KCFG && kubectl rollout status deployment/frontend -n ${K8S_NAMESPACE}"
+                        } else {
+                            bat 'set KUBECONFIG=%KCFG% && kubectl version --client'
+                            bat "set KUBECONFIG=%KCFG% && kubectl -n ${K8S_NAMESPACE} set image deployment/frontend frontend=${DOCKER_IMAGE}:${IMAGE_TAG} --record || ver > nul"
+                            bat "set KUBECONFIG=%KCFG% && kubectl apply -n ${K8S_NAMESPACE} -f k8s/frontend.yaml"
+                            bat "set KUBECONFIG=%KCFG% && kubectl rollout status deployment/frontend -n ${K8S_NAMESPACE}"
+                        }
+                    }
                 }
             }
         }

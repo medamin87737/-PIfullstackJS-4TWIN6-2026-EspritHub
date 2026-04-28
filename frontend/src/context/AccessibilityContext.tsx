@@ -19,6 +19,8 @@ interface AccessibilityContextType {
   resetCustomPalette: () => void
   contrastPercent: number
   setContrastPercent: (percent: number) => void
+  visualFatigueMode: boolean
+  toggleVisualFatigueMode: () => void
 }
 
 export type CustomPalette = {
@@ -57,6 +59,10 @@ export function AccessibilityProvider({ children }: { children: ReactNode }) {
     const parsed = raw ? parseInt(raw, 10) : 100
     return Number.isFinite(parsed) ? parsed : 100
   })
+  const [visualFatigueMode, setVisualFatigueMode] = useState(() => {
+    if (typeof window === 'undefined') return false
+    return window.localStorage.getItem('accessibility_visual_fatigue') === 'true'
+  })
 
   const recognitionRef = useRef<any>(null)
 
@@ -71,18 +77,28 @@ export function AccessibilityProvider({ children }: { children: ReactNode }) {
     setColorBlindMode((prev) => !prev)
   }, [])
 
-  // Apply global contrast filter on <html>
+  // Apply global contrast filter and anti-blue-light effect on <html>
   useEffect(() => {
     if (typeof document === 'undefined') return
-    document.documentElement.style.filter = `contrast(${contrastPercent}%)`
+    const filters = [`contrast(${contrastPercent}%)`]
+    if (visualFatigueMode) {
+      // Warmer tones and reduced intensity to reduce visual fatigue.
+      filters.push('sepia(18%)', 'hue-rotate(-12deg)', 'saturate(88%)', 'brightness(96%)')
+    }
+    document.documentElement.style.filter = filters.join(' ')
     if (typeof window !== 'undefined') {
       window.localStorage.setItem('accessibility_contrast_percent', String(contrastPercent))
+      window.localStorage.setItem('accessibility_visual_fatigue', String(visualFatigueMode))
     }
-  }, [contrastPercent])
+  }, [contrastPercent, visualFatigueMode])
 
   const setContrastPercent = useCallback((percent: number) => {
     const clamped = Math.min(200, Math.max(50, Math.round(percent)))
     setContrastPercentState(clamped)
+  }, [])
+
+  const toggleVisualFatigueMode = useCallback(() => {
+    setVisualFatigueMode((prev) => !prev)
   }, [])
 
   // Apply custom palette to CSS variables on :root
@@ -340,6 +356,8 @@ export function AccessibilityProvider({ children }: { children: ReactNode }) {
         resetCustomPalette,
         contrastPercent,
         setContrastPercent,
+        visualFatigueMode,
+        toggleVisualFatigueMode,
       }}
     >
       {children}

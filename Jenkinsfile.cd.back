@@ -1,6 +1,14 @@
 pipeline {
     agent any
 
+    environment {
+        DOCKER_IMAGE = 'medamin87737/skillup-backend'
+        IMAGE_TAG = "${env.BUILD_NUMBER}"
+        K8S_NAMESPACE = 'default'
+        KUBE_CONFIG_CREDENTIAL = 'kubeconfig'
+        DOCKER_CREDENTIAL = 'dockerhub-creds'
+    }
+
     options {
         skipDefaultCheckout(true)
     }
@@ -15,26 +23,57 @@ pipeline {
             }
         }
 
-        stage('Build Docker Image (Backend)') {
+        stage('Docker Build (Backend)') {
             steps {
-                echo "🛠 Build de l'image Docker du backend (CD)..."
-                sh 'docker-compose build backend'
+                echo "🛠 Build image backend..."
+                dir('backend') {
+                    script {
+                        if (isUnix()) {
+                            sh "docker build -t ${DOCKER_IMAGE}:${IMAGE_TAG} -t ${DOCKER_IMAGE}:latest ."
+                        } else {
+                            bat "docker build -t ${DOCKER_IMAGE}:${IMAGE_TAG} -t ${DOCKER_IMAGE}:latest ."
+                        }
+                    }
+                }
             }
         }
 
-        stage('Deploy Backend + Mongo') {
+        stage('Docker Push (Backend)') {
             steps {
-                echo "🚀 Déploiement du backend (et démarrage de Mongo si besoin)..."
-                script {
-                    // Évite les conflits de nom de conteneur si un ancien Mongo/backend existe déjà
-                    sh 'docker stop skillup-mongo || true'
-                    sh 'docker rm skillup-mongo || true'
-                    sh 'docker stop skillup-backend || true'
-                    sh 'docker rm skillup-backend || true'
+                echo "📤 Push image backend vers Docker Hub..."
+                withCredentials([usernamePassword(credentialsId: "${DOCKER_CREDENTIAL}", usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
+                    script {
+                        if (isUnix()) {
+                            sh 'echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin'
+                            sh "docker push ${DOCKER_IMAGE}:${IMAGE_TAG}"
+                            sh "docker push ${DOCKER_IMAGE}:latest"
+                        } else {
+                            bat '@echo %DOCKER_PASS% | docker login -u %DOCKER_USER% --password-stdin'
+                            bat "docker push ${DOCKER_IMAGE}:${IMAGE_TAG}"
+                            bat "docker push ${DOCKER_IMAGE}:latest"
+                        }
+                    }
+                }
+            }
+        }
 
-                    // On s'assure que Mongo est lancé puis on (re)déploie le backend
-                    sh 'docker-compose up -d mongo'
-                    sh 'docker-compose up -d --force-recreate backend'
+        stage('Deploy to Kubernetes (Backend)') {
+            steps {
+                echo "🚀 Déploiement backend sur Kubernetes..."
+                withCredentials([file(credentialsId: "${KUBE_CONFIG_CREDENTIAL}", variable: 'KCFG')]) {
+                    script {
+                        if (isUnix()) {
+                            sh 'export KUBECONFIG=$KCFG && kubectl version --client'
+                            sh "export KUBECONFIG=$KCFG && kubectl -n ${K8S_NAMESPACE} set image deployment/backend backend=${DOCKER_IMAGE}:${IMAGE_TAG} --record || true"
+                            sh "export KUBECONFIG=$KCFG && kubectl apply -n ${K8S_NAMESPACE} -f k8s/backend.yaml"
+                            sh "export KUBECONFIG=$KCFG && kubectl rollout status deployment/backend -n ${K8S_NAMESPACE}"
+                        } else {
+                            bat 'set KUBECONFIG=%KCFG% && kubectl version --client'
+                            bat "set KUBECONFIG=%KCFG% && kubectl -n ${K8S_NAMESPACE} set image deployment/backend backend=${DOCKER_IMAGE}:${IMAGE_TAG} --record || ver > nul"
+                            bat "set KUBECONFIG=%KCFG% && kubectl apply -n ${K8S_NAMESPACE} -f k8s/backend.yaml"
+                            bat "set KUBECONFIG=%KCFG% && kubectl rollout status deployment/backend -n ${K8S_NAMESPACE}"
+                        }
+                    }
                 }
             }
         }

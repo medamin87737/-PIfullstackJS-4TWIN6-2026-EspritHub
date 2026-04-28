@@ -1,8 +1,11 @@
 pipeline {
     agent any
 
+    environment {
+        CD_FRONT_JOB = 'CD-Front'
+    }
+
     options {
-        // On gère nous‑mêmes le checkout
         skipDefaultCheckout(true)
     }
 
@@ -16,33 +19,61 @@ pipeline {
             }
         }
 
-        stage('SonarQube Analysis (Frontend)') {
+        stage('Install (Frontend)') {
             steps {
-                echo "🔍 Analyse SonarQube du frontend..."
-                withSonarQubeEnv('SonarQube') {
+                echo "📦 Installation des dépendances frontend..."
+                dir('frontend') {
                     script {
-                        def scannerHome = tool 'SonarScanner'
-                        sh """
-                          "${scannerHome}/bin/sonar-scanner" \
-                            -Dsonar.projectKey=SkillUpTN-Frontend \
-                            -Dsonar.projectName=SkillUpTN-Frontend \
-                            -Dsonar.sources=frontend
-                        """
+                        if (isUnix()) {
+                            sh 'npm ci'
+                        } else {
+                            bat 'npm ci'
+                        }
                     }
                 }
             }
         }
 
-        stage('Build Docker Image (Frontend)') {
+        stage('Test (Frontend)') {
             steps {
-                echo "🛠 Build de l'image Docker du frontend (CI)..."
-                sh 'docker-compose build frontend'
+                echo "🧪 Exécution des tests frontend..."
+                dir('frontend') {
+                    script {
+                        if (isUnix()) {
+                            sh 'npm run test:ci'
+                        } else {
+                            bat 'npm run test:ci'
+                        }
+                    }
+                }
+            }
+        }
+
+        stage('Build (Frontend)') {
+            steps {
+                echo "🏗 Build frontend..."
+                dir('frontend') {
+                    script {
+                        if (isUnix()) {
+                            sh 'npm run build'
+                        } else {
+                            bat 'npm run build'
+                        }
+                    }
+                }
             }
         }
     }
 
     post {
-        success { echo "✅ CI FRONT terminé avec succès" }
+        always {
+            archiveArtifacts artifacts: 'frontend/coverage/**, frontend/reports/**', allowEmptyArchive: true
+        }
+        success {
+            echo "✅ CI FRONT terminé avec succès"
+            echo "🚀 Déclenchement automatique du pipeline CD frontend..."
+            build job: env.CD_FRONT_JOB, wait: false
+        }
         failure { echo "❌ CI FRONT échoué" }
     }
 }
