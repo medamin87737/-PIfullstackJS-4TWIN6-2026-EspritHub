@@ -1,6 +1,10 @@
 pipeline {
     agent any
 
+    tools {
+        nodejs 'Node18'
+    }
+
     environment {
         CD_FRONT_JOB = 'CD-Front'
     }
