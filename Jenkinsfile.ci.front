@@ -30,6 +30,7 @@ pipeline {
                     script {
                         if (isUnix()) {
                             sh 'npm ci || npm install'
+                            sh 'npm install --no-save --include=optional @rollup/rollup-linux-x64-gnu || true'
                         } else {
                             bat 'npm ci || npm install'
                         }
