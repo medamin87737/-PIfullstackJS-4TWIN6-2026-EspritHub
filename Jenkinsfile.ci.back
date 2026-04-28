@@ -2,7 +2,7 @@ pipeline {
     agent any
 
     tools {
-        nodejs 'Node18'
+        nodejs 'Node20'
     }
 
     environment {
@@ -19,7 +19,7 @@ pipeline {
             steps {
                 echo "🔄 CI BACK – Checkout du repository..."
                 deleteDir()
-                git branch: 'main', url: 'https://github.com/medamin87737/SkillUpTnFrontBack.git'
+                git branch: 'main', url: 'https://github.com/medamin87737/-PIfullstackJS-4TWIN6-2026-EspritHub.git'
             }
         }
 
@@ -44,9 +44,9 @@ pipeline {
                 dir('backend') {
                     script {
                         if (isUnix()) {
-                            sh 'npm run test:ci'
+                            sh 'if npm run | grep -q "test:ci"; then npm run test:ci; else npm run test; fi'
                         } else {
-                            bat 'npm run test:ci'
+                            bat 'npm run test:ci || npm run test'
                         }
                     }
                 }
