@@ -61,10 +61,11 @@ pipeline {
                 echo "📊 Analyse SonarQube backend..."
                 dir('backend') {
                     script {
+                        def scannerHome = tool 'SonarScanner'
                         // Le nom "SonarQubeServer" doit correspondre à la config de ton serveur dans Jenkins (Manage Jenkins > Configure System > SonarQube servers)
                         withSonarQubeEnv('SonarQubeServer') {
-                            sh '''
-                                sonar-scanner \
+                            sh """
+                                "${scannerHome}/bin/sonar-scanner" \
                                   -Dsonar.projectKey=skillup-backend \
                                   -Dsonar.projectName="SkillUp Backend" \
                                   -Dsonar.sources=src \
@@ -72,7 +73,7 @@ pipeline {
                                   -Dsonar.test.inclusions=**/*.spec.ts,**/*.test.ts \
                                   -Dsonar.javascript.lcov.reportPaths=coverage/lcov.info \
                                   -Dsonar.sourceEncoding=UTF-8
-                            '''
+                            """
                         }
                     }
                 }
