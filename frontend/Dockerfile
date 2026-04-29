@@ -8,12 +8,10 @@ ARG VITE_API_URL
 ENV VITE_API_URL=${VITE_API_URL}
 
 COPY package*.json ./
-# Force a stable registry and add retries to reduce transient network failures
+# Force a stable registry and add retries to reduce transient network failures.
+# On utilise npm install (pas npm ci) car le package-lock.json n'est pas strictement en phase dans ce projet.
 RUN npm config set registry https://registry.npmjs.org/ \
-  && npm ci --no-audit --no-progress \
-    --fetch-retries=5 \
-    --fetch-retry-mintimeout=20000 \
-    --fetch-retry-maxtimeout=120000
+  && npm install --no-audit --no-fund --no-progress
 COPY . .
 
 # Le build Vite lit VITE_API_URL et la "bake" dans le frontend
