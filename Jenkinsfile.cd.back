@@ -19,7 +19,7 @@ pipeline {
             steps {
                 echo "🔄 CD BACK – Checkout du repository..."
                 deleteDir()
-                git branch: 'main', url: 'https://github.com/medamin87737/SkillUpTnFrontBack.git'
+                git branch: 'main', url: 'https://github.com/medamin87737/-PIfullstackJS-4TWIN6-2026-EspritHub.git'
             }
         }
 

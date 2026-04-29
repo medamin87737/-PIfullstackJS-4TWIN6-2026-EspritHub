@@ -27,6 +27,11 @@ describe('RecommendationService advanced workflow', () => {
     find: jest.fn(),
   }
   const activityHistoryModel: any = { findOneAndUpdate: jest.fn() }
+  const postActivityEvaluationModel: any = {
+    findOne: jest.fn(),
+    create: jest.fn(),
+    find: jest.fn(),
+  }
 
   const service = new RecommendationService(
     httpService,
@@ -38,6 +43,7 @@ describe('RecommendationService advanced workflow', () => {
     departmentModel,
     recommendationModel,
     activityHistoryModel,
+    postActivityEvaluationModel,
     notificationService,
     mailService,
     auditService,
