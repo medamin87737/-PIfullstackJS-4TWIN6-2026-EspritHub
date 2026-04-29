@@ -7,6 +7,7 @@ pipeline {
         K8S_NAMESPACE = 'default'
         KUBE_CONFIG_CREDENTIAL = 'kubeconfig'
         DOCKER_CREDENTIAL = 'dockerhub-creds'
+        ENABLE_K8S_DEPLOY = 'false'
     }
 
     options {
@@ -58,6 +59,9 @@ pipeline {
         }
 
         stage('Deploy to Kubernetes (Frontend)') {
+            when {
+                expression { env.ENABLE_K8S_DEPLOY == 'true' }
+            }
             steps {
                 echo "🚀 Déploiement frontend sur Kubernetes..."
                 withCredentials([file(credentialsId: "${KUBE_CONFIG_CREDENTIAL}", variable: 'KCFG')]) {
