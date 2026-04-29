@@ -8,7 +8,12 @@ ARG VITE_API_URL
 ENV VITE_API_URL=${VITE_API_URL}
 
 COPY package*.json ./
-RUN npm install
+# Force a stable registry and add retries to reduce transient network failures
+RUN npm config set registry https://registry.npmjs.org/ \
+  && npm ci --no-audit --no-progress \
+    --fetch-retries=5 \
+    --fetch-retry-mintimeout=20000 \
+    --fetch-retry-maxtimeout=120000
 COPY . .
 
 # Le build Vite lit VITE_API_URL et la "bake" dans le frontend
