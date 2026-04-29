@@ -8,9 +8,10 @@ ARG VITE_API_URL
 ENV VITE_API_URL=${VITE_API_URL}
 
 COPY package*.json ./
-# Force a stable registry and add retries to reduce transient network failures.
-# On utilise npm install (pas npm ci) car le package-lock.json n'est pas strictement en phase dans ce projet.
+# Force un registry stable et évite les URLs codées en dur vers cdn.npmmirror
+# dans le package-lock en supprimant le lock dans l'image.
 RUN npm config set registry https://registry.npmjs.org/ \
+  && rm -f package-lock.json pnpm-lock.yaml yarn.lock \
   && npm install --no-audit --no-fund --no-progress
 COPY . .
 
