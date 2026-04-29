@@ -76,7 +76,13 @@ pipeline {
         success {
             echo "✅ CI BACK terminé avec succès"
             echo "🚀 Déclenchement automatique du pipeline CD backend..."
-            build job: env.CD_BACK_JOB, wait: false
+            script {
+                // Si le job CD n'existe pas (ou a un nom différent / est dans un folder),
+                // on ne veut pas faire passer le CI en FAILURE.
+                catchError(buildResult: 'SUCCESS', stageResult: 'SUCCESS') {
+                    build job: env.CD_BACK_JOB, wait: false
+                }
+            }
         }
         failure { echo "❌ CI BACK échoué" }
     }
