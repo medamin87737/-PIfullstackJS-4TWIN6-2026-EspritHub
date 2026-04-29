@@ -53,6 +53,32 @@ pipeline {
             }
         }
 
+        stage('SonarQube Analysis (Backend)') {
+            when {
+                expression { return isUnix() } // simplifie: analyse Sonar sur agent Linux
+            }
+            steps {
+                echo "📊 Analyse SonarQube backend..."
+                dir('backend') {
+                    script {
+                        // Le nom "SonarQubeServer" doit correspondre à la config de ton serveur dans Jenkins (Manage Jenkins > Configure System > SonarQube servers)
+                        withSonarQubeEnv('SonarQubeServer') {
+                            sh '''
+                                sonar-scanner \
+                                  -Dsonar.projectKey=skillup-backend \
+                                  -Dsonar.projectName="SkillUp Backend" \
+                                  -Dsonar.sources=src \
+                                  -Dsonar.tests=src \
+                                  -Dsonar.test.inclusions=**/*.spec.ts,**/*.test.ts \
+                                  -Dsonar.javascript.lcov.reportPaths=coverage/lcov.info \
+                                  -Dsonar.sourceEncoding=UTF-8
+                            '''
+                        }
+                    }
+                }
+            }
+        }
+
         stage('Build (Backend)') {
             steps {
                 echo "🏗 Build backend..."

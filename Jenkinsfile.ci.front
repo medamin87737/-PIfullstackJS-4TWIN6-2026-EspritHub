@@ -54,6 +54,32 @@ pipeline {
             }
         }
 
+        stage('SonarQube Analysis (Frontend)') {
+            when {
+                expression { return isUnix() } // simplifie: analyse Sonar sur agent Linux
+            }
+            steps {
+                echo "📊 Analyse SonarQube frontend..."
+                dir('frontend') {
+                    script {
+                        // Le nom "SonarQubeServer" doit correspondre à la config de ton serveur dans Jenkins
+                        withSonarQubeEnv('SonarQubeServer') {
+                            sh '''
+                                sonar-scanner \
+                                  -Dsonar.projectKey=skillup-frontend \
+                                  -Dsonar.projectName="SkillUp Frontend" \
+                                  -Dsonar.sources=src \
+                                  -Dsonar.tests=src \
+                                  -Dsonar.test.inclusions=**/*.spec.ts,**/*.spec.tsx,**/*.test.ts,**/*.test.tsx \
+                                  -Dsonar.javascript.lcov.reportPaths=coverage/lcov.info \
+                                  -Dsonar.sourceEncoding=UTF-8
+                            '''
+                        }
+                    }
+                }
+            }
+        }
+
         stage('Build (Frontend)') {
             steps {
                 echo "🏗 Build frontend..."
