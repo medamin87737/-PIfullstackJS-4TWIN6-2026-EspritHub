@@ -7,6 +7,7 @@ pipeline {
         K8S_NAMESPACE = 'skillup'
         KUBE_CONFIG_CREDENTIAL = 'kubeconfig'
         DOCKER_CREDENTIAL = 'dockerhub-creds'
+        KUBECTL_VERSION = 'v1.29.15'
     }
 
     options {
@@ -85,13 +86,23 @@ pipeline {
                 withCredentials([file(credentialsId: "${KUBE_CONFIG_CREDENTIAL}", variable: 'KCFG')]) {
                     script {
                         if (isUnix()) {
-                            sh 'export KUBECONFIG=$KCFG && kubectl version --client'
-                            sh "export KUBECONFIG=$KCFG && kubectl apply -f k8s/namespace.yaml"
-                            sh "export KUBECONFIG=$KCFG && kubectl apply -n ${K8S_NAMESPACE} -f k8s/mongo.yaml"
-                            sh "export KUBECONFIG=$KCFG && kubectl rollout status deployment/mongo -n ${K8S_NAMESPACE} --timeout=300s"
-                            sh "export KUBECONFIG=$KCFG && kubectl apply -n ${K8S_NAMESPACE} -f k8s/backend.yaml"
-                            sh "export KUBECONFIG=$KCFG && kubectl -n ${K8S_NAMESPACE} set image deployment/backend backend=${DOCKER_IMAGE}:${IMAGE_TAG} --record || true"
-                            sh "export KUBECONFIG=$KCFG && kubectl rollout status deployment/backend -n ${K8S_NAMESPACE} --timeout=300s"
+                            sh """
+                                set -e
+                                KUBECTL_LOCAL="${env.WORKSPACE}/.jenkins-kubectl/kubectl"
+                                mkdir -p "${env.WORKSPACE}/.jenkins-kubectl"
+                                if [ ! -x "\$KUBECTL_LOCAL" ]; then
+                                  curl -fsSL -o "\$KUBECTL_LOCAL" "https://dl.k8s.io/release/${KUBECTL_VERSION}/bin/linux/amd64/kubectl"
+                                  chmod +x "\$KUBECTL_LOCAL"
+                                fi
+                                export KUBECONFIG="${env.KCFG}"
+                                "\$KUBECTL_LOCAL" version --client
+                                "\$KUBECTL_LOCAL" apply -f k8s/namespace.yaml
+                                "\$KUBECTL_LOCAL" apply -n ${K8S_NAMESPACE} -f k8s/mongo.yaml
+                                "\$KUBECTL_LOCAL" rollout status deployment/mongo -n ${K8S_NAMESPACE} --timeout=300s
+                                "\$KUBECTL_LOCAL" apply -n ${K8S_NAMESPACE} -f k8s/backend.yaml
+                                "\$KUBECTL_LOCAL" -n ${K8S_NAMESPACE} set image deployment/backend backend=${DOCKER_IMAGE}:${IMAGE_TAG} --record || true
+                                "\$KUBECTL_LOCAL" rollout status deployment/backend -n ${K8S_NAMESPACE} --timeout=300s
+                            """
                         } else {
                             bat 'set KUBECONFIG=%KCFG% && kubectl version --client'
                             bat "set KUBECONFIG=%KCFG% && kubectl apply -f k8s/namespace.yaml"
