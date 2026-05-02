@@ -1,5 +1,6 @@
+# Images via ECR Public (évite Docker Hub / auth.docker.io si IPv6 injoignable sur l’agent Jenkins)
 # Stage de build
-FROM node:20-alpine AS build
+FROM public.ecr.aws/docker/library/node:20-alpine AS build
 
 WORKDIR /app
 
@@ -19,7 +20,7 @@ COPY . .
 RUN npm run build || true   # continue même si TS échoue
 
 # Stage de production
-FROM nginx:alpine
+FROM public.ecr.aws/docker/library/nginx:alpine
 COPY --from=build /app/dist /usr/share/nginx/html
 EXPOSE 80
 CMD ["nginx", "-g", "daemon off;"]

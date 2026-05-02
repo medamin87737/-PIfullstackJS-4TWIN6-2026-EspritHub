@@ -1,4 +1,5 @@
-FROM node:20-alpine
+# Évite Docker Hub si IPv6 vers auth.docker.io est injoignable (agent Jenkins)
+FROM public.ecr.aws/docker/library/node:20-alpine
 
 WORKDIR /app
 
