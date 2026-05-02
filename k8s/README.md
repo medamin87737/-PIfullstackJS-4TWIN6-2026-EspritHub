@@ -1,5 +1,7 @@
 # Déploiement Kubernetes (kubeadm — master + workers)
 
+**Pas de TP fourni par le cours ?** Suis le guide pas à pas **[KUBEADM-TUTORIAL.md](./KUBEADM-TUTORIAL.md)** (1 master + 2 workers, Ubuntu, Flannel).
+
 ## Ordre recommandé (première fois)
 
 ```bash
