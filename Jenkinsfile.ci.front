@@ -7,7 +7,7 @@ pipeline {
 
     environment {
         CD_FRONT_JOB = 'CD-Front'
-        // Mettre true dans le job Jenkins une fois le webhook SonarQube configuré (voir DEVOPS.md)
+        // true = bloque si Quality Gate Sonar échoue. Défaut false pour CI vert sans webhook ni gate verte.
         SONAR_WAIT_QUALITY_GATE = "${env.SONAR_WAIT_QUALITY_GATE ?: 'false'}"
     }
 
@@ -111,7 +111,11 @@ pipeline {
         success {
             echo "✅ CI FRONT terminé avec succès"
             echo "🚀 Déclenchement automatique du pipeline CD frontend..."
-            build job: env.CD_FRONT_JOB, wait: false
+            script {
+                catchError(buildResult: 'SUCCESS', stageResult: 'SUCCESS') {
+                    build job: env.CD_FRONT_JOB, wait: false
+                }
+            }
         }
         failure { echo "❌ CI FRONT échoué" }
     }

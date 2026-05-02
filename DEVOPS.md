@@ -224,8 +224,8 @@ Dans Jenkins, on crée **4 items (jobs)** de type **Pipeline** :
    - Branches : `*/main`.  
    - Script Path : `Jenkinsfile.ci.front`.
 
-2. **CD-FRONT**  
-   - New Item → nom : `CD-FRONT` → Pipeline.  
+2. **CD-Front** (nom exact pour le déclenchement automatique depuis le CI)  
+   - New Item → nom : **`CD-Front`** → Pipeline.  
    - Même config SCM que ci‑dessus.  
    - Script Path : `Jenkinsfile.cd.front`.
 
@@ -234,10 +234,12 @@ Dans Jenkins, on crée **4 items (jobs)** de type **Pipeline** :
    - Même config SCM.  
    - Script Path : `Jenkinsfile.ci.back`.
 
-4. **CD-BACK**  
-   - New Item → nom : `CD-BACK` → Pipeline.  
+4. **CD-Back** (nom exact pour le déclenchement automatique depuis le CI)  
+   - New Item → nom : **`CD-Back`** → Pipeline.  
    - Même config SCM.  
    - Script Path : `Jenkinsfile.cd.back`.
+
+Si `CI-BACK` affiche « No item named … », le nom du job CD ne correspond pas à la variable **`CD_BACK_JOB`** dans `Jenkinsfile.ci.back` (par défaut **`CD-Back`**).
 
 ### 5.5. Rôle de chaque Jenkinsfile
 
@@ -255,10 +257,25 @@ Dans Jenkins, on crée **4 items (jobs)** de type **Pipeline** :
 
 ### 5.6. Lancer les pipelines
 
-Dans Jenkins, sur chaque job (`CI-FRONT`, `CD-FRONT`, `CI-BACK`, `CD-BACK`) :
+Dans Jenkins, sur chaque job (`CI-FRONT`, `CD-Front`, `CI-BACK`, `CD-Back`) :
 
 1. Cliquer sur **Build Now**.
 2. Ouvrir la **Console Output** pour suivre les étapes du pipeline (checkout, analyse SonarQube, build Docker, tests éventuels, déploiement).
+
+### 5.7. Check-list « les 4 pipelines au vert »
+
+À valider **une fois** sur le contrôleur Jenkins / l’agent qui exécute les builds :
+
+| Besoin | CI-Back / CI-Front | CD-Back / CD-Front |
+|--------|-------------------|---------------------|
+| **Outils Jenkins** | Global Tool : **Node20**, **SonarScanner** ; serveur Sonar : **SonarQubeServer** | — |
+| **Credentials** | Token Sonar (via `SonarQubeServer`) | **`dockerhub-creds`** (Username/Password Docker Hub), **`kubeconfig`** (Secret file = fichier kubeconfig valide) |
+| **Docker** | Non requis pour le CI actuel | CLI Docker sur l’agent + accès au daemon (ex. socket monté si Jenkins est en conteneur) |
+| **Kubernetes** | Non | **`kubectl`** sur l’agent, cluster joignable avec ce kubeconfig |
+| **Noms des jobs** | Déclenchent **`CD-Back`** et **`CD-Front`** (exact, sensible à la casse) | Jobs créés sous ces noms avec **Script Path** `Jenkinsfile.cd.back` / `Jenkinsfile.cd.front` |
+| **Images Docker Hub** | — | Les Jenkinsfiles CD utilisent **`workapp21/skillup-backend`** et **`workapp21/skillup-frontend`** (alignés sur `dockerhub-creds`). Crée ces dépôts sur Docker Hub ou change `DOCKER_IMAGE` dans les `Jenkinsfile.cd.*`. |
+
+**Ordre de test manuel conseillé** : **CI-Back** → **CI-FRONT** (vérifier succès) → **CD-Back** → **CD-Front** (Docker + push + kubectl). Pour le frontend en cluster, définir sur le job **CD-Front** une variable **`FRONTEND_VITE_API_URL`** (ex. `http://<IP-noeud>:30080`) à la place du placeholder `NODE_IP`.
 
 ---
 
@@ -299,13 +316,15 @@ Accès : `http://localhost:9000`
 
 1. Jenkins installe le plugin **SonarQube Scanner**.
 2. Dans **Manage Jenkins → Configure System → SonarQube servers** :
-   - On ajoute un serveur nommé `SonarQube`.
+   - On ajoute un serveur nommé **`SonarQubeServer`** (identique au `withSonarQubeEnv(...)` des Jenkinsfiles).
    - URL : `http://host.docker.internal:9000` (vu depuis le conteneur Jenkins).
    - Token : on crée un credential “Secret text” avec le token Sonar.
-3. Dans **Global Tool Configuration → SonarQube Scanner** :
+3. **Quality Gate dans le CI** : dans SonarQube, **Administration → Configuration → Webhooks**, ajouter l’URL fournie par le plugin Sonar pour Jenkins (`waitForQualityGate`). Sans webhook, le stage **Sonar Quality Gate** peut rester bloqué jusqu’au timeout.  
+   - Variables d’environnement des jobs **CI-BACK** / **CI-FRONT** : par défaut **`SONAR_WAIT_QUALITY_GATE=false`** (CI vert si tests + build OK). Mettre **`true`** sur le job pour **faire échouer** le pipeline quand la Quality Gate Sonar échoue (webhook obligatoire).
+4. Dans **Global Tool Configuration → SonarQube Scanner** :
    - On configure un scanner nommé `SonarScanner`.
-4. Les Jenkinsfiles de **CI** peuvent contenir un stage `SonarQube Analysis` qui :
-   - Utilise `withSonarQubeEnv('SonarQube')` pour se connecter.
+5. Les Jenkinsfiles de **CI** peuvent contenir un stage `SonarQube Analysis` qui :
+   - Utilise `withSonarQubeEnv('SonarQubeServer')` pour se connecter.
    - Appelle `sonar-scanner` sur les dossiers `backend` et `frontend`.
 
 Les résultats sont visibles dans l’UI SonarQube pour le projet `SkillUpTN`.

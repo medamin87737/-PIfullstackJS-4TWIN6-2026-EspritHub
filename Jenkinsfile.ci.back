@@ -6,7 +6,9 @@ pipeline {
     }
 
     environment {
+        // Must match the Jenkins pipeline job name exactly (dashboard: CD-Back).
         CD_BACK_JOB = 'CD-Back'
+        // true = bloque le build si Sonar Quality Gate échoue (webhook Sonar→Jenkins requis). Défaut false = CI stable tant que tests+build OK.
         SONAR_WAIT_QUALITY_GATE = "${env.SONAR_WAIT_QUALITY_GATE ?: 'false'}"
     }
 

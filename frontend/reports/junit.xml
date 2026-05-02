@@ -1,61 +1,61 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<testsuites name="vitest tests" tests="26" failures="0" errors="0" time="0.0461541">
-    <testsuite name="src/test/mediapipe-setup.test.ts" timestamp="2026-05-02T12:03:52.039Z" hostname="DESKTOP-2E08CL5" tests="3" failures="0" errors="0" skipped="0" time="0.0101133">
-        <testcase classname="src/test/mediapipe-setup.test.ts" name="MediaPipe and fast-check setup &gt; should have fast-check available" time="0.0023468">
+<testsuites name="vitest tests" tests="26" failures="0" errors="0" time="0.0685963">
+    <testsuite name="src/test/mediapipe-setup.test.ts" timestamp="2026-05-02T13:02:36.972Z" hostname="DESKTOP-2E08CL5" tests="3" failures="0" errors="0" skipped="0" time="0.012944">
+        <testcase classname="src/test/mediapipe-setup.test.ts" name="MediaPipe and fast-check setup &gt; should have fast-check available" time="0.0028255">
         </testcase>
-        <testcase classname="src/test/mediapipe-setup.test.ts" name="MediaPipe and fast-check setup &gt; should verify fast-check works with a simple property" time="0.005531">
+        <testcase classname="src/test/mediapipe-setup.test.ts" name="MediaPipe and fast-check setup &gt; should verify fast-check works with a simple property" time="0.0069187">
         </testcase>
-        <testcase classname="src/test/mediapipe-setup.test.ts" name="MediaPipe and fast-check setup &gt; should have MediaPipe types available" time="0.0001964">
-        </testcase>
-    </testsuite>
-    <testsuite name="src/utils/gestureDetector.test.ts" timestamp="2026-05-02T12:03:52.041Z" hostname="DESKTOP-2E08CL5" tests="15" failures="0" errors="0" skipped="0" time="0.0073061">
-        <testcase classname="src/utils/gestureDetector.test.ts" name="gestureDetector &gt; euclideanDistance &gt; should calculate distance between two identical points as 0" time="0.0023531">
-        </testcase>
-        <testcase classname="src/utils/gestureDetector.test.ts" name="gestureDetector &gt; euclideanDistance &gt; should calculate distance in 2D (z=0)" time="0.0001861">
-        </testcase>
-        <testcase classname="src/utils/gestureDetector.test.ts" name="gestureDetector &gt; euclideanDistance &gt; should calculate distance in 3D" time="0.0002239">
-        </testcase>
-        <testcase classname="src/utils/gestureDetector.test.ts" name="gestureDetector &gt; euclideanDistance &gt; should calculate distance with normalized coordinates (0-1)" time="0.0001615">
-        </testcase>
-        <testcase classname="src/utils/gestureDetector.test.ts" name="gestureDetector &gt; euclideanDistance &gt; should be symmetric (distance(p1,p2) = distance(p2,p1))" time="0.0001469">
-        </testcase>
-        <testcase classname="src/utils/gestureDetector.test.ts" name="gestureDetector &gt; calculateReferenceDistance &gt; should calculate distance between wrist (0) and middle MCP (9)" time="0.00023">
-        </testcase>
-        <testcase classname="src/utils/gestureDetector.test.ts" name="gestureDetector &gt; calculateReferenceDistance &gt; should calculate reference distance in 3D" time="0.0001766">
-        </testcase>
-        <testcase classname="src/utils/gestureDetector.test.ts" name="gestureDetector &gt; calculateReferenceDistance &gt; should work with realistic hand landmarks" time="0.0002804">
-        </testcase>
-        <testcase classname="src/utils/gestureDetector.test.ts" name="gestureDetector &gt; normalizedDistance &gt; should normalize distance by reference distance" time="0.0001873">
-        </testcase>
-        <testcase classname="src/utils/gestureDetector.test.ts" name="gestureDetector &gt; normalizedDistance &gt; should return value &gt; 1 when distance exceeds reference" time="0.000138">
-        </testcase>
-        <testcase classname="src/utils/gestureDetector.test.ts" name="gestureDetector &gt; normalizedDistance &gt; should return value &lt; 1 when distance is less than reference" time="0.0001449">
-        </testcase>
-        <testcase classname="src/utils/gestureDetector.test.ts" name="gestureDetector &gt; normalizedDistance &gt; should detect extended finger (normalized distance &gt; 0.6)" time="0.0001685">
-        </testcase>
-        <testcase classname="src/utils/gestureDetector.test.ts" name="gestureDetector &gt; normalizedDistance &gt; should detect closed finger (normalized distance &lt; 0.3)" time="0.000182">
-        </testcase>
-        <testcase classname="src/utils/gestureDetector.test.ts" name="gestureDetector &gt; normalizedDistance &gt; should be independent of hand size with proper reference" time="0.0001703">
-        </testcase>
-        <testcase classname="src/utils/gestureDetector.test.ts" name="gestureDetector &gt; Integration - Complete gesture detection flow &gt; should correctly normalize distances for gesture detection" time="0.0002426">
+        <testcase classname="src/test/mediapipe-setup.test.ts" name="MediaPipe and fast-check setup &gt; should have MediaPipe types available" time="0.000228">
         </testcase>
     </testsuite>
-    <testsuite name="src/pages/hr/activityChatParse.spec.ts" timestamp="2026-05-02T12:03:52.044Z" hostname="DESKTOP-2E08CL5" tests="8" failures="0" errors="0" skipped="0" time="0.0287347">
-        <testcase classname="src/pages/hr/activityChatParse.spec.ts" name="activityChatParse &gt; parseActivityFromText &gt; détecte une formation et le titre après le mot formation" time="0.0032309">
+    <testsuite name="src/utils/gestureDetector.test.ts" timestamp="2026-05-02T13:02:36.974Z" hostname="DESKTOP-2E08CL5" tests="15" failures="0" errors="0" skipped="0" time="0.0081294">
+        <testcase classname="src/utils/gestureDetector.test.ts" name="gestureDetector &gt; euclideanDistance &gt; should calculate distance between two identical points as 0" time="0.0029654">
         </testcase>
-        <testcase classname="src/pages/hr/activityChatParse.spec.ts" name="activityChatParse &gt; parseActivityFromText &gt; détecte certification et priorité haute" time="0.0004821">
+        <testcase classname="src/utils/gestureDetector.test.ts" name="gestureDetector &gt; euclideanDistance &gt; should calculate distance in 2D (z=0)" time="0.0002838">
         </testcase>
-        <testcase classname="src/pages/hr/activityChatParse.spec.ts" name="activityChatParse &gt; parseActivityFromText &gt; extrait une compétence présente dans le texte" time="0.0002425">
+        <testcase classname="src/utils/gestureDetector.test.ts" name="gestureDetector &gt; euclideanDistance &gt; should calculate distance in 3D" time="0.000247">
         </testcase>
-        <testcase classname="src/pages/hr/activityChatParse.spec.ts" name="activityChatParse &gt; generateRecommendations &gt; ajoute une reco pour gros groupe" time="0.0002372">
+        <testcase classname="src/utils/gestureDetector.test.ts" name="gestureDetector &gt; euclideanDistance &gt; should calculate distance with normalized coordinates (0-1)" time="0.0001678">
         </testcase>
-        <testcase classname="src/pages/hr/activityChatParse.spec.ts" name="activityChatParse &gt; generateRecommendations &gt; ajoute une reco pour formation" time="0.0002333">
+        <testcase classname="src/utils/gestureDetector.test.ts" name="gestureDetector &gt; euclideanDistance &gt; should be symmetric (distance(p1,p2) = distance(p2,p1))" time="0.0001518">
         </testcase>
-        <testcase classname="src/pages/hr/activityChatParse.spec.ts" name="activityChatParse &gt; generateManagerMessage &gt; produit sujet et corps" time="0.0213021">
+        <testcase classname="src/utils/gestureDetector.test.ts" name="gestureDetector &gt; calculateReferenceDistance &gt; should calculate distance between wrist (0) and middle MCP (9)" time="0.0002298">
         </testcase>
-        <testcase classname="src/pages/hr/activityChatParse.spec.ts" name="activityChatParse &gt; parseFieldCompletion &gt; parse champ: valeur" time="0.0006086">
+        <testcase classname="src/utils/gestureDetector.test.ts" name="gestureDetector &gt; calculateReferenceDistance &gt; should calculate reference distance in 3D" time="0.0001799">
         </testcase>
-        <testcase classname="src/pages/hr/activityChatParse.spec.ts" name="activityChatParse &gt; parseFieldCompletion &gt; retourne null si pas de préfixe attendu" time="0.0001502">
+        <testcase classname="src/utils/gestureDetector.test.ts" name="gestureDetector &gt; calculateReferenceDistance &gt; should work with realistic hand landmarks" time="0.0002925">
+        </testcase>
+        <testcase classname="src/utils/gestureDetector.test.ts" name="gestureDetector &gt; normalizedDistance &gt; should normalize distance by reference distance" time="0.0001852">
+        </testcase>
+        <testcase classname="src/utils/gestureDetector.test.ts" name="gestureDetector &gt; normalizedDistance &gt; should return value &gt; 1 when distance exceeds reference" time="0.0001387">
+        </testcase>
+        <testcase classname="src/utils/gestureDetector.test.ts" name="gestureDetector &gt; normalizedDistance &gt; should return value &lt; 1 when distance is less than reference" time="0.0001312">
+        </testcase>
+        <testcase classname="src/utils/gestureDetector.test.ts" name="gestureDetector &gt; normalizedDistance &gt; should detect extended finger (normalized distance &gt; 0.6)" time="0.0001636">
+        </testcase>
+        <testcase classname="src/utils/gestureDetector.test.ts" name="gestureDetector &gt; normalizedDistance &gt; should detect closed finger (normalized distance &lt; 0.3)" time="0.0001761">
+        </testcase>
+        <testcase classname="src/utils/gestureDetector.test.ts" name="gestureDetector &gt; normalizedDistance &gt; should be independent of hand size with proper reference" time="0.000169">
+        </testcase>
+        <testcase classname="src/utils/gestureDetector.test.ts" name="gestureDetector &gt; Integration - Complete gesture detection flow &gt; should correctly normalize distances for gesture detection" time="0.0002405">
+        </testcase>
+    </testsuite>
+    <testsuite name="src/pages/hr/activityChatParse.spec.ts" timestamp="2026-05-02T13:02:36.978Z" hostname="DESKTOP-2E08CL5" tests="8" failures="0" errors="0" skipped="0" time="0.0475229">
+        <testcase classname="src/pages/hr/activityChatParse.spec.ts" name="activityChatParse &gt; parseActivityFromText &gt; détecte une formation et le titre après le mot formation" time="0.004628">
+        </testcase>
+        <testcase classname="src/pages/hr/activityChatParse.spec.ts" name="activityChatParse &gt; parseActivityFromText &gt; détecte certification et priorité haute" time="0.0005468">
+        </testcase>
+        <testcase classname="src/pages/hr/activityChatParse.spec.ts" name="activityChatParse &gt; parseActivityFromText &gt; extrait une compétence présente dans le texte" time="0.0002463">
+        </testcase>
+        <testcase classname="src/pages/hr/activityChatParse.spec.ts" name="activityChatParse &gt; generateRecommendations &gt; ajoute une reco pour gros groupe" time="0.000233">
+        </testcase>
+        <testcase classname="src/pages/hr/activityChatParse.spec.ts" name="activityChatParse &gt; generateRecommendations &gt; ajoute une reco pour formation" time="0.0002342">
+        </testcase>
+        <testcase classname="src/pages/hr/activityChatParse.spec.ts" name="activityChatParse &gt; generateManagerMessage &gt; produit sujet et corps" time="0.0379953">
+        </testcase>
+        <testcase classname="src/pages/hr/activityChatParse.spec.ts" name="activityChatParse &gt; parseFieldCompletion &gt; parse champ: valeur" time="0.0010193">
+        </testcase>
+        <testcase classname="src/pages/hr/activityChatParse.spec.ts" name="activityChatParse &gt; parseFieldCompletion &gt; retourne null si pas de préfixe attendu" time="0.0002292">
         </testcase>
     </testsuite>
 </testsuites>

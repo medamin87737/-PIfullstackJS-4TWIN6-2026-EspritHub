@@ -2,6 +2,7 @@ pipeline {
     agent any
 
     environment {
+        // Même compte Docker Hub que le backend (credentials dockerhub-creds). Surcharge possible via paramètre / env Jenkins.
         DOCKER_IMAGE = 'workapp21/skillup-frontend'
         IMAGE_TAG = "${env.BUILD_NUMBER}"
         K8S_NAMESPACE = 'skillup'
@@ -95,13 +96,13 @@ pipeline {
                             sh "export KUBECONFIG=$KCFG && kubectl apply -f k8s/namespace.yaml"
                             sh "export KUBECONFIG=$KCFG && kubectl apply -n ${K8S_NAMESPACE} -f k8s/frontend.yaml"
                             sh "export KUBECONFIG=$KCFG && kubectl -n ${K8S_NAMESPACE} set image deployment/frontend frontend=${DOCKER_IMAGE}:${IMAGE_TAG} --record || true"
-                            sh "export KUBECONFIG=$KCFG && kubectl rollout status deployment/frontend -n ${K8S_NAMESPACE}"
+                            sh "export KUBECONFIG=$KCFG && kubectl rollout status deployment/frontend -n ${K8S_NAMESPACE} --timeout=300s"
                         } else {
                             bat 'set KUBECONFIG=%KCFG% && kubectl version --client'
                             bat "set KUBECONFIG=%KCFG% && kubectl apply -f k8s/namespace.yaml"
                             bat "set KUBECONFIG=%KCFG% && kubectl apply -n ${K8S_NAMESPACE} -f k8s/frontend.yaml"
                             bat "set KUBECONFIG=%KCFG% && kubectl -n ${K8S_NAMESPACE} set image deployment/frontend frontend=${DOCKER_IMAGE}:${IMAGE_TAG} --record || ver > nul"
-                            bat "set KUBECONFIG=%KCFG% && kubectl rollout status deployment/frontend -n ${K8S_NAMESPACE}"
+                            bat "set KUBECONFIG=%KCFG% && kubectl rollout status deployment/frontend -n ${K8S_NAMESPACE} --timeout=300s"
                         }
                     }
                 }

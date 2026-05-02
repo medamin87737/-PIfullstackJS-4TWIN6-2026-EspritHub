@@ -2,7 +2,7 @@ pipeline {
     agent any
 
     environment {
-        DOCKER_IMAGE = 'medamin87737/skillup-backend'
+        DOCKER_IMAGE = 'workapp21/skillup-backend'
         IMAGE_TAG = "${env.BUILD_NUMBER}"
         K8S_NAMESPACE = 'skillup'
         KUBE_CONFIG_CREDENTIAL = 'kubeconfig'
