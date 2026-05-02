@@ -7,6 +7,7 @@ pipeline {
 
     environment {
         CD_BACK_JOB = 'CD-Back'
+        SONAR_WAIT_QUALITY_GATE = "${env.SONAR_WAIT_QUALITY_GATE ?: 'false'}"
     }
 
     options {
@@ -64,18 +65,23 @@ pipeline {
                         def scannerHome = tool 'SonarScanner'
                         // Le nom "SonarQubeServer" doit correspondre à la config de ton serveur dans Jenkins (Manage Jenkins > Configure System > SonarQube servers)
                         withSonarQubeEnv('SonarQubeServer') {
-                            sh """
-                                "${scannerHome}/bin/sonar-scanner" \
-                                  -Dsonar.projectKey=skillup-backend \
-                                  -Dsonar.projectName="SkillUp Backend" \
-                                  -Dsonar.sources=src \
-                                  -Dsonar.tests=src \
-                                  -Dsonar.test.inclusions=**/*.spec.ts,**/*.test.ts \
-                                  -Dsonar.javascript.lcov.reportPaths=coverage/lcov.info \
-                                  -Dsonar.sourceEncoding=UTF-8
-                            """
+                            sh "\"${scannerHome}/bin/sonar-scanner\""
                         }
                     }
+                }
+            }
+        }
+
+        stage('Sonar Quality Gate') {
+            when {
+                allOf {
+                    expression { return isUnix() }
+                    expression { return env.SONAR_WAIT_QUALITY_GATE == 'true' }
+                }
+            }
+            steps {
+                timeout(time: 10, unit: 'MINUTES') {
+                    waitForQualityGate abortPipeline: true
                 }
             }
         }

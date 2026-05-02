@@ -1,0 +1,28 @@
+# Règle d’alerte exemple — nécessite Prometheus Operator (kube-prometheus-stack).
+# Ajuster metadata.labels pour correspondre au sélecteur du Prometheus dans ton namespace monitoring.
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: skillup-backend-health
+  namespace: monitoring
+  labels:
+    # À aligner avec ton installation Helm (ex. release: kube-prom)
+    release: kube-prom
+    app: kube-prometheus-stack
+spec:
+  groups:
+    - name: skillup.deployments
+      rules:
+        - alert: SkillUpBackendReplicasUnavailable
+          expr: |
+            kube_deployment_spec_replicas{namespace="skillup",deployment="backend"}
+            - kube_deployment_status_replicas_available{namespace="skillup",deployment="backend"}
+            > 0
+          for: 2m
+          labels:
+            severity: warning
+            team: skillup
+          annotations:
+            summary: 'Backend SkillUp sans suffisamment de pods disponibles'
+            description: |
+              Le deployment backend dans skillup n’a pas tous ses replicas Ready.

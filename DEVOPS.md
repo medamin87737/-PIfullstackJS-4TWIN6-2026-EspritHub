@@ -113,12 +113,15 @@ Toutes les commandes ci‑dessous sont à exécuter dans **WSL (Ubuntu)**, sauf 
 
 ### 3.4. Kubernetes (`k8s/`)
 
-> Les manifests Kubernetes **ne sont pas versionnés** dans la version actuelle du projet.  
-> On pourra, si besoin, ajouter un dossier `k8s/` contenant des manifests pour :
-> - un namespace (ex : `skilluptn`) ;
-> - MongoDB (Deployment + Service) ;
-> - backend (Deployment + Service) ;
-> - frontend (Deployment + Service avec NodePort ou Ingress).
+Les manifests sont versionnés sous **`k8s/`** :
+
+- `namespace.yaml` — namespace `skillup` ;
+- `mongo.yaml` — MongoDB (PVC + Deployment + Service) ;
+- `backend.yaml` — backend NestJS (Deployment + NodePort **30080**) ;
+- `frontend.yaml` — frontend Nginx (Deployment + NodePort **30081**) ;
+
+Voir **`k8s/README.md`** pour l’ordre d’application et l’URL **`VITE_API_URL`** au build Docker.  
+Monitoring exemple : **`k8s/monitoring/`** (PrometheusRule + instructions Helm Grafana/Prometheus/Alertmanager).
 
 ---
 
@@ -495,4 +498,49 @@ kubectl port-forward -n monitoring svc/monitoring-kube-prometheus-prometheus 320
 
 Ce fichier peut être partagé directement à l’équipe pour les guider dans
 l’installation et l’utilisation de toute la chaîne DevOps autour de SkillUpTN.
+
+---
+
+## 11. Alignement exigences encadrant (checklist soutenance)
+
+### 11.1. Quatre pipelines Jenkins
+
+| Fichier | Rôle |
+|--------|------|
+| `Jenkinsfile.ci.back` | CI backend : checkout → install → **tests** (`test:ci`) → **Sonar** → build |
+| `Jenkinsfile.ci.front` | CI frontend : idem avec Vitest + couverture |
+| `Jenkinsfile.cd.back` | CD backend : image Docker → push Hub → **Trivy** (si installé) → **Kubernetes** (mongo + backend) |
+| `Jenkinsfile.cd.front` | CD frontend : build avec `VITE_API_URL` → push → **Trivy** (si installé) → **Kubernetes** |
+
+- Après succès du CI, le job CD correspondant est déclenché (`build job: CD-Front` / `CD-Back`).
+- Jobs Jenkins à créer avec les **mêmes noms** : `CD-Front`, `CD-Back` (ou adapter les variables d’environnement en tête de fichier).
+
+### 11.2. SonarQube et couverture
+
+- Fichiers **`backend/sonar-project.properties`** et **`frontend/sonar-project.properties`** : clés projet, sources, tests, **`lcov.info`**.
+- Le scanner est invoqué depuis le dossier `backend/` ou `frontend/` après les tests (génération de `coverage/lcov.info`).
+- **Quality Gate** : dans les CI, stage optionnel contrôlé par la variable d’environnement Jenkins **`SONAR_WAIT_QUALITY_GATE=true`** (nécessite le plugin *SonarQube Scanner* + webhook Sonar ↔ Jenkins). Par défaut `false` pour ne pas bloquer si le webhook n’est pas encore configuré.
+
+### 11.3. Kubernetes (kubeadm)
+
+- Manifests dans **`k8s/`** : namespace **`skillup`**, Mongo, backend (NodePort **30080**), frontend (NodePort **30081**).
+- Probes **liveness/readiness** sur les deployments backend et frontend.
+- Ordre d’application et URL **`VITE_API_URL`** pour le navigateur : **`k8s/README.md`**.
+
+### 11.4. Monitoring et alerting
+
+- Instructions Helm **kube-prometheus-stack** + Alertmanager : **`k8s/monitoring/README.md`**.
+- Règle Prometheus exemple : **`k8s/monitoring/skillup-prometheus-rule.yaml`** (adapter le label `release` au nom de ton release Helm).
+
+### 11.5. Excellence (bonus)
+
+- Étapes **Trivy** dans les CD : si la commande `trivy` est disponible sur l’agent Jenkins, scan automatique de l’image ; sinon message informatif sans échec du pipeline.
+
+### 11.6. Preuves à préparer (captures / démo live)
+
+1. Jenkins : les **4 pipelines** + enchaînement CI → CD.  
+2. Sonar : **avant / après** refactoring + **couverture** visible.  
+3. `kubectl get nodes` (cluster kubeadm groupe) + `kubectl get pods -n skillup`.  
+4. Navigateur : frontend + appels API (NodePorts).  
+5. Grafana + **Alertmanager** (au moins une alerte ou receiver de test).
 

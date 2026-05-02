@@ -21,7 +21,14 @@ import {
   Wand2,
   ArrowLeft
 } from 'lucide-react';
-import type { RequiredSkill } from '../../types';
+import {
+  type ActivityData,
+  type ManagerMessage,
+  parseActivityFromText,
+  parseFieldCompletion,
+  generateRecommendations,
+  generateManagerMessage,
+} from './activityChatParse';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:3000';
 
@@ -37,162 +44,6 @@ interface ChatMessage {
   missingFields?: string[];
   recommendations?: string[];
   managerMessage?: ManagerMessage;
-}
-
-interface ActivityData {
-  title: string;
-  description: string;
-  type: 'training' | 'project' | 'mission' | 'certification';
-  location: string;
-  startDate: string;
-  endDate: string;
-  maxParticipants: number;
-  departmentId: string;
-  requiredSkills: RequiredSkill[];
-  objectives: string[];
-  experienceLevel: 'junior' | 'mid' | 'senior';
-  priority: 'low' | 'medium' | 'high';
-}
-
-interface ManagerMessage {
-  subject: string;
-  content: string;
-}
-
-interface ParsedActivity {
-  activity: Partial<ActivityData>;
-  missingFields: string[];
-  confidence: number;
-}
-
-// Parser NLP pour extraire les informations
-function parseActivityFromText(text: string): ParsedActivity {
-  const lowerText = text.toLowerCase();
-  
-  const activity: Partial<ActivityData> = {};
-  const missingFields: string[] = [];
-  
-  // Type d'activité
-  if (lowerText.includes('formation') || lowerText.includes('training')) {
-    activity.type = 'training';
-  } else if (lowerText.includes('projet') || lowerText.includes('project')) {
-    activity.type = 'project';
-  } else if (lowerText.includes('mission')) {
-    activity.type = 'mission';
-  } else if (lowerText.includes('certification')) {
-    activity.type = 'certification';
-  }
-  
-  // Titre
-  const titleMatch = text.match(/(?:créer|proposer|organiser|lancer|préparer|une|un)?\s+(?:formation|projet|mission|certification|activité)?\s+(?:sur|en|de)?\s+(.+?)(?:\s+pour|\s+avec|\s+le|\s+la|\s+les|\s+durant|\s+pendant|\s+en\s+|$)/i);
-  if (titleMatch) {
-    activity.title = titleMatch[1].trim();
-  }
-  
-  // Nombre de participants
-  const participantsMatch = text.match(/(\d+)\s*(?:participants?|personnes?|employés?|managers?|personnel)/i);
-  if (participantsMatch) {
-    activity.maxParticipants = parseInt(participantsMatch[1]);
-  }
-  
-  // Niveau d'expérience
-  if (lowerText.includes('junior') || lowerText.includes('débutant')) {
-    activity.experienceLevel = 'junior';
-  } else if (lowerText.includes('senior') || lowerText.includes('confirmé') || lowerText.includes('expert')) {
-    activity.experienceLevel = 'senior';
-  } else if (lowerText.includes('mid') || lowerText.includes('intermédiaire')) {
-    activity.experienceLevel = 'mid';
-  }
-  
-  // Priorité
-  if (lowerText.includes('urgent') || lowerText.includes('priorité haute')) {
-    activity.priority = 'high';
-  } else if (lowerText.includes('important')) {
-    activity.priority = 'medium';
-  }
-  
-  // Compétences
-  const skills: RequiredSkill[] = [];
-  const skillKeywords = [
-    'leadership', 'management', 'communication', 'react', 'javascript', 'python',
-    'java', 'cybersécurité', 'data', 'analyse', 'marketing', 'vente',
-    'négociation', 'gestion', 'projet', 'agile', 'scrum', 'design', 'ux', 'ui'
-  ];
-  
-  skillKeywords.forEach(skill => {
-    if (lowerText.includes(skill.toLowerCase())) {
-      skills.push({
-        skill_name: skill.charAt(0).toUpperCase() + skill.slice(1),
-        desired_level: activity.experienceLevel === 'senior' ? 'expert' : 
-                       activity.experienceLevel === 'mid' ? 'high' : 'medium'
-      });
-    }
-  });
-  
-  if (skills.length > 0) {
-    activity.requiredSkills = skills;
-  }
-  
-  // Déterminer les champs manquants
-  if (!activity.title) missingFields.push('title');
-  if (!activity.description) missingFields.push('description');
-  if (!activity.type) missingFields.push('type');
-  if (!activity.maxParticipants) missingFields.push('maxParticipants');
-  if (!activity.startDate) missingFields.push('startDate');
-  if (!activity.endDate) missingFields.push('endDate');
-  if (!activity.departmentId) missingFields.push('departmentId');
-  if (!activity.location) missingFields.push('location');
-  if (!activity.requiredSkills || activity.requiredSkills.length === 0) missingFields.push('requiredSkills');
-  
-  const totalFields = 9;
-  const filledFields = totalFields - missingFields.length;
-  const confidence = filledFields / totalFields;
-  
-  return { activity, missingFields, confidence };
-}
-
-// Générer les recommandations
-function generateRecommendations(activity: Partial<ActivityData>): string[] {
-  const recommendations: string[] = [];
-  
-  if (activity.maxParticipants && activity.maxParticipants > 20) {
-    recommendations.push('Avec plus de 20 participants, envisagez de diviser en groupes pour une meilleure interaction');
-  }
-  
-  if (activity.maxParticipants && activity.maxParticipants < 5) {
-    recommendations.push('Un petit groupe permet des sessions personnalisées - prévoyez du temps pour les Q&A');
-  }
-  
-  if (activity.type === 'training') {
-    recommendations.push('Prévoyez une évaluation pré/post formation pour mesurer l\'impact');
-    recommendations.push('Planifiez à mi-semaine pour maximiser la participation');
-  }
-  
-  if (activity.experienceLevel === 'senior') {
-    recommendations.push('Pour un public senior, privilégiez des études de cas et du peer-learning');
-  }
-  
-  return recommendations;
-}
-
-// Générer le message manager
-function generateManagerMessage(activity: ActivityData): ManagerMessage {
-  const typeLabels: Record<string, string> = {
-    training: 'Formation',
-    project: 'Projet',
-    mission: 'Mission',
-    certification: 'Certification'
-  };
-  
-  const subject = `Validation demandée: ${typeLabels[activity.type] || 'Activité'} - ${activity.title}`;
-  
-  const skillsText = activity.requiredSkills?.map(s => s.skill_name).join(', ') || 'À définir';
-  const experienceLabel = activity.experienceLevel === 'junior' ? 'Junior' : 
-                          activity.experienceLevel === 'senior' ? 'Senior' : 'Intermédiaire';
-  
-  const content = `Bonjour,\n\nNous avons préparé une ${typeLabels[activity.type]?.toLowerCase() || 'activité'} pour votre validation.\n\n**DÉTAILS DE L'ACTIVITÉ**\n• Titre: ${activity.title}\n• Type: ${typeLabels[activity.type] || activity.type}\n• Description: ${activity.description}\n• Date: ${activity.startDate ? new Date(activity.startDate).toLocaleDateString('fr-FR') : 'À définir'} au ${activity.endDate ? new Date(activity.endDate).toLocaleDateString('fr-FR') : 'À définir'}\n• Lieu: ${activity.location || 'À définir'}\n• Participants max: ${activity.maxParticipants || 'À définir'}\n• Niveau visé: ${experienceLabel}\n• Priorité: ${activity.priority === 'high' ? 'Haute' : activity.priority === 'medium' ? 'Moyenne' : 'Basse'}\n\n**COMPÉTENCES REQUISES**\n${skillsText}\n\n**OBJECTIFS**\n${activity.objectives?.join('\n') || '• Développer les compétences identifiées'}\n\nCette activité est en ligne avec nos objectifs de développement. Merci de la valider.\n\nCordialement,\nService RH`;
-
-  return { subject, content };
 }
 
 export default function HRActivityChatCreator() {
@@ -554,9 +405,9 @@ export default function HRActivityChatCreator() {
       return;
     }
     
-    // Détecter complétion de champ
-    const completionMatch = userText.match(/(?:ajoute|ajouter|complète|modifier|changer)\s+(?:la|le)?\s*(\w+)\s*(?::|est|=)?\s*(.+)/i);
-    if (completionMatch && currentActivity) {
+    // Détecter complétion de champ (parse borné, sans regex à backtracking catastrophique)
+    const completion = parseFieldCompletion(userText);
+    if (completion && currentActivity) {
       const fieldMap: Record<string, string> = {
         'description': 'description',
         'desc': 'description',
@@ -571,8 +422,8 @@ export default function HRActivityChatCreator() {
         'titre': 'title'
       };
       
-      const fieldKey = completionMatch[1].toLowerCase();
-      const fieldValue = completionMatch[2].trim();
+      const fieldKey = completion.rawField.toLowerCase();
+      const fieldValue = completion.value.trim();
       const mappedField = fieldMap[fieldKey];
       
       if (mappedField) {

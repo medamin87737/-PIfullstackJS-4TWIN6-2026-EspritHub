@@ -4,7 +4,7 @@ pipeline {
     environment {
         DOCKER_IMAGE = 'medamin87737/skillup-backend'
         IMAGE_TAG = "${env.BUILD_NUMBER}"
-        K8S_NAMESPACE = 'default'
+        K8S_NAMESPACE = 'skillup'
         KUBE_CONFIG_CREDENTIAL = 'kubeconfig'
         DOCKER_CREDENTIAL = 'dockerhub-creds'
     }
@@ -57,6 +57,28 @@ pipeline {
             }
         }
 
+        stage('Scan image Trivy (excellence, optionnel)') {
+            steps {
+                script {
+                    if (isUnix()) {
+                        def code = sh(script: 'command -v trivy >/dev/null 2>&1', returnStatus: true)
+                        if (code == 0) {
+                            sh "trivy image --exit-code 0 --severity HIGH,CRITICAL ${DOCKER_IMAGE}:${IMAGE_TAG}"
+                        } else {
+                            echo 'Trivy absent sur l agent — ignorer ou installer pour bonus securite.'
+                        }
+                    } else {
+                        def code = bat(script: 'where trivy >nul 2>&1', returnStatus: true)
+                        if (code == 0) {
+                            bat "trivy image --exit-code 0 --severity HIGH,CRITICAL ${DOCKER_IMAGE}:${IMAGE_TAG}"
+                        } else {
+                            echo 'Trivy absent sur l agent — ignorer ou installer pour bonus securite.'
+                        }
+                    }
+                }
+            }
+        }
+
         stage('Deploy to Kubernetes (Backend)') {
             steps {
                 echo "🚀 Déploiement backend sur Kubernetes..."
@@ -64,14 +86,20 @@ pipeline {
                     script {
                         if (isUnix()) {
                             sh 'export KUBECONFIG=$KCFG && kubectl version --client'
-                            sh "export KUBECONFIG=$KCFG && kubectl -n ${K8S_NAMESPACE} set image deployment/backend backend=${DOCKER_IMAGE}:${IMAGE_TAG} --record || true"
+                            sh "export KUBECONFIG=$KCFG && kubectl apply -f k8s/namespace.yaml"
+                            sh "export KUBECONFIG=$KCFG && kubectl apply -n ${K8S_NAMESPACE} -f k8s/mongo.yaml"
+                            sh "export KUBECONFIG=$KCFG && kubectl rollout status deployment/mongo -n ${K8S_NAMESPACE} --timeout=300s"
                             sh "export KUBECONFIG=$KCFG && kubectl apply -n ${K8S_NAMESPACE} -f k8s/backend.yaml"
-                            sh "export KUBECONFIG=$KCFG && kubectl rollout status deployment/backend -n ${K8S_NAMESPACE}"
+                            sh "export KUBECONFIG=$KCFG && kubectl -n ${K8S_NAMESPACE} set image deployment/backend backend=${DOCKER_IMAGE}:${IMAGE_TAG} --record || true"
+                            sh "export KUBECONFIG=$KCFG && kubectl rollout status deployment/backend -n ${K8S_NAMESPACE} --timeout=300s"
                         } else {
                             bat 'set KUBECONFIG=%KCFG% && kubectl version --client'
-                            bat "set KUBECONFIG=%KCFG% && kubectl -n ${K8S_NAMESPACE} set image deployment/backend backend=${DOCKER_IMAGE}:${IMAGE_TAG} --record || ver > nul"
+                            bat "set KUBECONFIG=%KCFG% && kubectl apply -f k8s/namespace.yaml"
+                            bat "set KUBECONFIG=%KCFG% && kubectl apply -n ${K8S_NAMESPACE} -f k8s/mongo.yaml"
+                            bat "set KUBECONFIG=%KCFG% && kubectl rollout status deployment/mongo -n ${K8S_NAMESPACE} --timeout=300s"
                             bat "set KUBECONFIG=%KCFG% && kubectl apply -n ${K8S_NAMESPACE} -f k8s/backend.yaml"
-                            bat "set KUBECONFIG=%KCFG% && kubectl rollout status deployment/backend -n ${K8S_NAMESPACE}"
+                            bat "set KUBECONFIG=%KCFG% && kubectl -n ${K8S_NAMESPACE} set image deployment/backend backend=${DOCKER_IMAGE}:${IMAGE_TAG} --record || ver > nul"
+                            bat "set KUBECONFIG=%KCFG% && kubectl rollout status deployment/backend -n ${K8S_NAMESPACE} --timeout=300s"
                         }
                     }
                 }

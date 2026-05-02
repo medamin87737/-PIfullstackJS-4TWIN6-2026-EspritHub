@@ -4,10 +4,12 @@ pipeline {
     environment {
         DOCKER_IMAGE = 'workapp21/skillup-frontend'
         IMAGE_TAG = "${env.BUILD_NUMBER}"
-        K8S_NAMESPACE = 'default'
+        K8S_NAMESPACE = 'skillup'
         KUBE_CONFIG_CREDENTIAL = 'kubeconfig'
         DOCKER_CREDENTIAL = 'dockerhub-creds'
-        ENABLE_K8S_DEPLOY = 'false'
+        // URL API vue par le navigateur (NodePort backend 30080 sur ton cluster kubeadm)
+        FRONTEND_VITE_API_URL = "${env.FRONTEND_VITE_API_URL ?: 'http://NODE_IP:30080'}"
+        ENABLE_K8S_DEPLOY = 'true'
     }
 
     options {
@@ -30,9 +32,9 @@ pipeline {
                 dir('frontend') {
                     script {
                         if (isUnix()) {
-                            sh "docker build -t ${DOCKER_IMAGE}:${IMAGE_TAG} -t ${DOCKER_IMAGE}:latest ."
+                            sh "docker build --build-arg VITE_API_URL=\"${FRONTEND_VITE_API_URL}\" -t ${DOCKER_IMAGE}:${IMAGE_TAG} -t ${DOCKER_IMAGE}:latest ."
                         } else {
-                            bat "docker build -t ${DOCKER_IMAGE}:${IMAGE_TAG} -t ${DOCKER_IMAGE}:latest ."
+                            bat "docker build --build-arg VITE_API_URL=\"${FRONTEND_VITE_API_URL}\" -t ${DOCKER_IMAGE}:${IMAGE_TAG} -t ${DOCKER_IMAGE}:latest ."
                         }
                     }
                 }
@@ -58,6 +60,28 @@ pipeline {
             }
         }
 
+        stage('Scan image Trivy (excellence, optionnel)') {
+            steps {
+                script {
+                    if (isUnix()) {
+                        def code = sh(script: 'command -v trivy >/dev/null 2>&1', returnStatus: true)
+                        if (code == 0) {
+                            sh "trivy image --exit-code 0 --severity HIGH,CRITICAL ${DOCKER_IMAGE}:${IMAGE_TAG}"
+                        } else {
+                            echo 'Trivy absent sur l agent — ignorer ou installer pour bonus securite.'
+                        }
+                    } else {
+                        def code = bat(script: 'where trivy >nul 2>&1', returnStatus: true)
+                        if (code == 0) {
+                            bat "trivy image --exit-code 0 --severity HIGH,CRITICAL ${DOCKER_IMAGE}:${IMAGE_TAG}"
+                        } else {
+                            echo 'Trivy absent sur l agent — ignorer ou installer pour bonus securite.'
+                        }
+                    }
+                }
+            }
+        }
+
         stage('Deploy to Kubernetes (Frontend)') {
             when {
                 expression { env.ENABLE_K8S_DEPLOY == 'true' }
@@ -68,11 +92,13 @@ pipeline {
                     script {
                         if (isUnix()) {
                             sh 'export KUBECONFIG=$KCFG && kubectl version --client'
+                            sh "export KUBECONFIG=$KCFG && kubectl apply -f k8s/namespace.yaml"
                             sh "export KUBECONFIG=$KCFG && kubectl apply -n ${K8S_NAMESPACE} -f k8s/frontend.yaml"
                             sh "export KUBECONFIG=$KCFG && kubectl -n ${K8S_NAMESPACE} set image deployment/frontend frontend=${DOCKER_IMAGE}:${IMAGE_TAG} --record || true"
                             sh "export KUBECONFIG=$KCFG && kubectl rollout status deployment/frontend -n ${K8S_NAMESPACE}"
                         } else {
                             bat 'set KUBECONFIG=%KCFG% && kubectl version --client'
+                            bat "set KUBECONFIG=%KCFG% && kubectl apply -f k8s/namespace.yaml"
                             bat "set KUBECONFIG=%KCFG% && kubectl apply -n ${K8S_NAMESPACE} -f k8s/frontend.yaml"
                             bat "set KUBECONFIG=%KCFG% && kubectl -n ${K8S_NAMESPACE} set image deployment/frontend frontend=${DOCKER_IMAGE}:${IMAGE_TAG} --record || ver > nul"
                             bat "set KUBECONFIG=%KCFG% && kubectl rollout status deployment/frontend -n ${K8S_NAMESPACE}"
