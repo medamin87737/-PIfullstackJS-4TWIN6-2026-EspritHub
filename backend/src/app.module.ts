@@ -10,6 +10,8 @@ import { RecommendationModule } from './recommendations/recommendation.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { MailModule } from './mail/mail.module';
 import { AuditModule } from './audit/audit.module';
+import { AppController } from './app.controller';
+import { AppService } from './app.service';
 
 @Module({
   imports: [
@@ -41,7 +43,7 @@ import { AuditModule } from './audit/audit.module';
     MailModule,
     AuditModule,
   ],
-  controllers: [],
-  providers: [],
+  controllers: [AppController],
+  providers: [AppService],
 })
 export class AppModule {}
