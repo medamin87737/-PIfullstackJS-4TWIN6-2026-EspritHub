@@ -33,7 +33,7 @@ spec:
     spec:
       containers:
         - name: backend
-          image: medamin87737/skillup-backend:latest
+          image: workapp21/skillup-backend:latest
           ports:
             - containerPort: 3000
           env:

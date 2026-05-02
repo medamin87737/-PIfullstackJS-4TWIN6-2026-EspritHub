@@ -34,7 +34,8 @@ spec:
     spec:
       containers:
         - name: mongo
-          image: mongo:6.0
+          # ECR Public : évite Docker Hub si IPv6 / auth.docker.io injoignable depuis le nœud
+          image: public.ecr.aws/docker/library/mongo:6.0
           ports:
             - containerPort: 27017
           volumeMounts:
