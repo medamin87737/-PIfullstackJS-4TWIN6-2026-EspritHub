@@ -1,6 +1,9 @@
-# Défaut : Docker Hub. Surcharge ECR si besoin sur l'agent qui build :
+# Les ARG utilisés dans FROM doivent être déclarés avant tout FROM (Docker BuildKit).
+# Surcharge ECR si besoin :
 # docker build --build-arg NODE_IMAGE=public.ecr.aws/docker/library/node:20-alpine --build-arg NGINX_IMAGE=public.ecr.aws/docker/library/nginx:alpine .
 ARG NODE_IMAGE=node:20-alpine
+ARG NGINX_IMAGE=nginx:alpine
+
 FROM ${NODE_IMAGE} AS build
 
 WORKDIR /app
@@ -16,7 +19,6 @@ COPY . .
 
 RUN npm run build || true
 
-ARG NGINX_IMAGE=nginx:alpine
 FROM ${NGINX_IMAGE}
 COPY --from=build /app/dist /usr/share/nginx/html
 EXPOSE 80
