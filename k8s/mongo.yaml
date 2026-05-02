@@ -1,15 +1,6 @@
 # MongoDB pour le backend SkillUp (1 replica — suffisant pour démo / projet)
-apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
-  name: mongo-pvc
-  namespace: skillup
-spec:
-  accessModes:
-    - ReadWriteOnce
-  resources:
-    requests:
-      storage: 2Gi
+# Stockage hostPath : adapté au cluster kubeadm 1 nœud sans StorageClass / PVC dynamique.
+# Données sur le master : /var/skillup/mongo-data
 ---
 apiVersion: v1
 kind: Service
@@ -58,5 +49,6 @@ spec:
               cpu: '500m'
       volumes:
         - name: data
-          persistentVolumeClaim:
-            claimName: mongo-pvc
+          hostPath:
+            path: /var/skillup/mongo-data
+            type: DirectoryOrCreate
