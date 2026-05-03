@@ -26,9 +26,11 @@ ai-service/feedback_events.jsonl
 ai-service/data/models/*.jsonl
 ai-service/data/models/*.pkl
 
-# Env & secrets
+# Env & secrets (never commit real keys)
 .env
 .env.*
+**/backend/.env
+**/frontend/.env
 k8s/ai-service-secret.yaml
 
 # OS / editor files
