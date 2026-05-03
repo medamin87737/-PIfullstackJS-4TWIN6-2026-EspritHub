@@ -8,9 +8,18 @@
 kubectl apply -f k8s/namespace.yaml
 kubectl apply -f k8s/mongo.yaml
 kubectl wait --for=condition=available deployment/mongo -n skillup --timeout=120s
+# Secret Anthropic (une fois, ne pas commiter la clé) :
+kubectl create secret generic ai-service-secrets -n skillup \
+  --from-literal=ANTHROPIC_API_KEY='VOTRE_CLE_ANTHROPIC' \
+  --dry-run=client -o yaml | kubectl apply -f -
+# (Alternative : copier k8s/ai-service-secret.example.yaml vers k8s/ai-service-secret.yaml, éditer, puis kubectl apply -f k8s/ai-service-secret.yaml — fichier ignoré par git.)
+kubectl apply -n skillup -f k8s/ai-service.yaml
+kubectl wait --for=condition=available deployment/ai-service -n skillup --timeout=600s
 kubectl apply -f k8s/backend.yaml
 kubectl apply -f k8s/frontend.yaml
 ```
+
+Le backend appelle le service IA sur **`http://ai-service:8000`** (`AI_SERVICE_URL` dans `k8s/backend.yaml`). Sans pod **ai-service** prêt, **`POST /api/recommendations/generate`** renvoie **503**.
 
 Les pipelines **Jenkins CD** du projet appliquent aussi `namespace` + manifests correspondants.
 

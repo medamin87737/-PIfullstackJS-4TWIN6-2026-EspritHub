@@ -8,6 +8,17 @@ services:
     volumes:
       - mongo-data:/data/db
 
+  ai-service:
+    build: ./ai-service
+    container_name: skillup-ai
+    restart: always
+    ports:
+      - "8000:8000"
+    environment:
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+    depends_on:
+      - mongo
+
   backend:
     build: ./backend
     container_name: skillup-backend
@@ -16,8 +27,11 @@ services:
       - "3000:3000"
     environment:
       MONGODB_URI: mongodb://mongo:27017/skillupdb
+      AI_SERVICE_URL: http://ai-service:8000
+      AI_FEEDBACK_ENABLED: "true"
     depends_on:
       - mongo
+      - ai-service
 
   # VITE_API_URL = URL vue par le navigateur sur ta machine (pas le hostname Docker "backend")
   frontend:

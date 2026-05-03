@@ -39,6 +39,10 @@ spec:
           env:
             - name: MONGODB_URI
               value: mongodb://mongo:27017/skillupdb
+            - name: AI_SERVICE_URL
+              value: http://ai-service:8000
+            - name: AI_FEEDBACK_ENABLED
+              value: "true"
           # tcpSocket : vérifie que le port écoute (Nest peut être lent au démarrage avec Mongo)
           startupProbe:
             tcpSocket:

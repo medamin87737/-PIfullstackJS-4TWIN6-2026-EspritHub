@@ -1,0 +1,98 @@
+pipeline {
+    agent any
+
+    environment {
+        DOCKER_IMAGE = 'workapp21/skillup-ai'
+        IMAGE_TAG = "${env.BUILD_NUMBER}"
+        K8S_NAMESPACE = 'skillup'
+        KUBE_CONFIG_CREDENTIAL = 'kubeconfig'
+        DOCKER_CREDENTIAL = 'dockerhub-creds'
+        KUBECTL_VERSION = 'v1.29.15'
+    }
+
+    options {
+        skipDefaultCheckout(true)
+    }
+
+    stages {
+
+        stage('Checkout') {
+            steps {
+                echo '🔄 CD AI – Checkout du repository...'
+                deleteDir()
+                git branch: 'main', url: 'https://github.com/medamin87737/-PIfullstackJS-4TWIN6-2026-EspritHub.git'
+            }
+        }
+
+        stage('Docker Build (AI service)') {
+            steps {
+                echo '🛠 Build image ai-service...'
+                dir('ai-service') {
+                    script {
+                        if (isUnix()) {
+                            sh "docker build -t ${DOCKER_IMAGE}:${IMAGE_TAG} -t ${DOCKER_IMAGE}:latest ."
+                        } else {
+                            bat "docker build -t ${DOCKER_IMAGE}:${IMAGE_TAG} -t ${DOCKER_IMAGE}:latest ."
+                        }
+                    }
+                }
+            }
+        }
+
+        stage('Docker Push (AI service)') {
+            steps {
+                echo '📤 Push image ai-service vers Docker Hub...'
+                withCredentials([usernamePassword(credentialsId: "${DOCKER_CREDENTIAL}", usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
+                    script {
+                        if (isUnix()) {
+                            sh 'echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin'
+                            sh "docker push ${DOCKER_IMAGE}:${IMAGE_TAG}"
+                            sh "docker push ${DOCKER_IMAGE}:latest"
+                        } else {
+                            bat '@echo %DOCKER_PASS% | docker login -u %DOCKER_USER% --password-stdin'
+                            bat "docker push ${DOCKER_IMAGE}:${IMAGE_TAG}"
+                            bat "docker push ${DOCKER_IMAGE}:latest"
+                        }
+                    }
+                }
+            }
+        }
+
+        stage('Deploy to Kubernetes (AI service)') {
+            steps {
+                echo '🚀 Déploiement ai-service sur Kubernetes...'
+                withCredentials([file(credentialsId: "${KUBE_CONFIG_CREDENTIAL}", variable: 'KCFG')]) {
+                    script {
+                        if (isUnix()) {
+                            sh """
+                                set -e
+                                KUBECTL_LOCAL="${env.WORKSPACE}/.jenkins-kubectl/kubectl"
+                                mkdir -p "${env.WORKSPACE}/.jenkins-kubectl"
+                                if [ ! -x "\$KUBECTL_LOCAL" ]; then
+                                  curl -fsSL -o "\$KUBECTL_LOCAL" "https://dl.k8s.io/release/${KUBECTL_VERSION}/bin/linux/amd64/kubectl"
+                                  chmod +x "\$KUBECTL_LOCAL"
+                                fi
+                                export KUBECONFIG="${env.KCFG}"
+                                "\$KUBECTL_LOCAL" apply -f k8s/namespace.yaml
+                                "\$KUBECTL_LOCAL" apply -n ${K8S_NAMESPACE} -f k8s/ai-service.yaml
+                                "\$KUBECTL_LOCAL" -n ${K8S_NAMESPACE} set image deployment/ai-service ai-service=${DOCKER_IMAGE}:${IMAGE_TAG} --record || true
+                                "\$KUBECTL_LOCAL" rollout status deployment/ai-service -n ${K8S_NAMESPACE} --timeout=600s
+                            """
+                        } else {
+                            bat 'set KUBECONFIG=%KCFG% && kubectl version --client'
+                            bat "set KUBECONFIG=%KCFG% && kubectl apply -f k8s/namespace.yaml"
+                            bat "set KUBECONFIG=%KCFG% && kubectl apply -n ${K8S_NAMESPACE} -f k8s/ai-service.yaml"
+                            bat "set KUBECONFIG=%KCFG% && kubectl -n ${K8S_NAMESPACE} set image deployment/ai-service ai-service=${DOCKER_IMAGE}:${IMAGE_TAG} --record || ver > nul"
+                            bat "set KUBECONFIG=%KCFG% && kubectl rollout status deployment/ai-service -n ${K8S_NAMESPACE} --timeout=600s"
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    post {
+        success { echo '✅ CD AI déployé avec succès' }
+        failure { echo '❌ CD AI échoué' }
+    }
+}

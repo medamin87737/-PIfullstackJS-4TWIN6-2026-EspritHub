@@ -1,0 +1,12 @@
+# Image Docker : torch est installé séparément (wheel CPU) dans le Dockerfile.
+fastapi
+uvicorn
+sentence-transformers
+scikit-learn
+numpy
+anthropic
+python-dotenv
+pydantic
+spacy
+scipy
+redis

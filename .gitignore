@@ -29,6 +29,7 @@ ai-service/data/models/*.pkl
 # Env & secrets
 .env
 .env.*
+k8s/ai-service-secret.yaml
 
 # OS / editor files
 .DS_Store
