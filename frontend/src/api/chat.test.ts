@@ -108,5 +108,24 @@ describe('chat api', () => {
     expect(result.reply).toBe('ok')
     expect(fetchMock).toHaveBeenCalledTimes(3)
   })
+
+  it('askWebsiteGuide throws backend message on 400', async () => {
+    localStorage.setItem('auth_token', 't')
+    fetchMock.mockResolvedValueOnce(response({ message: 'not allowed' }, { ok: false, status: 400 }))
+
+    await expect(askWebsiteGuide({ message: 'x' })).rejects.toThrow('not allowed')
+  })
+
+  it('askWebsiteGuide throws generic server error when body has no message field', async () => {
+    localStorage.setItem('auth_token', 't')
+    fetchMock.mockResolvedValueOnce({
+      ok: false,
+      status: 502,
+      json: async () => ({ other: true }),
+      text: async () => 'bad gateway body',
+    })
+
+    await expect(askWebsiteGuide({ message: 'x' })).rejects.toThrow('Erreur serveur: 502')
+  })
 })
 

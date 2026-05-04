@@ -129,5 +129,154 @@ describe('DataContext', () => {
     expect(ctxRef!.getUserNotifications('u1').length).toBe(1)
     expect(ctxRef!.getActivityRecommendations('a1')).toEqual([])
   })
+
+  it('fetchWithAuth retries on 403 with renewed token', async () => {
+    await renderProvider()
+    localStorage.setItem('auth_token', 'old')
+    localStorage.setItem('auth_refresh_token', 'r')
+    fetchMock
+      .mockResolvedValueOnce(mkResponse(403, {}))
+      .mockResolvedValueOnce(mkResponse(200, { token: 't2' }))
+      .mockResolvedValueOnce(mkResponse(200, { ok: true }))
+    const res = await ctxRef!.fetchWithAuth('http://x/ok')
+    expect(res.ok).toBe(true)
+  })
+
+  it('fetchWithAuth surfaces network failure', async () => {
+    await renderProvider()
+    fetchMock.mockRejectedValueOnce(new Error('offline'))
+    await expect(ctxRef!.fetchWithAuth('http://x')).rejects.toThrow('Connexion au serveur impossible')
+    expect(toastSpy).toHaveBeenCalled()
+  })
+
+  it('fetchWithAuth shows mutation error with array message', async () => {
+    await renderProvider()
+    fetchMock.mockResolvedValueOnce(mkResponse(400, { message: ['Première erreur'] }))
+    await ctxRef!.fetchWithAuth('http://x', { method: 'POST' })
+    const last = toastSpy.mock.calls.at(-1)?.[0] as { description?: string }
+    expect(last?.description).toContain('Première erreur')
+  })
+
+  it('fetchWithAuth shows read error on failed GET', async () => {
+    await renderProvider()
+    fetchMock.mockResolvedValueOnce(mkResponse(500, { message: 'srv' }))
+    await ctxRef!.fetchWithAuth('http://x/read')
+    expect(toastSpy.mock.calls.some((c) => String((c[0] as any)?.title).includes('chargement'))).toBe(true)
+  })
+
+  it('fetchWithAuth skips network toast when x-toast-silent', async () => {
+    const before = toastSpy.mock.calls.length
+    await renderProvider()
+    fetchMock.mockRejectedValueOnce(new Error('x'))
+    await expect(
+      ctxRef!.fetchWithAuth('http://x', { headers: { 'x-toast-silent': 'true' } }),
+    ).rejects.toThrow()
+    expect(toastSpy.mock.calls.length).toBe(before)
+  })
+
+  it('refreshNotifications clears list on HTTP error', async () => {
+    await renderProvider()
+    fetchMock.mockResolvedValueOnce(mkResponse(500, {}))
+    await act(async () => {
+      await ctxRef!.refreshNotifications()
+    })
+    expect(ctxRef!.notifications).toEqual([])
+  })
+
+  it('getDepartmentName returns N/A for empty id', async () => {
+    await renderProvider()
+    expect(ctxRef!.getDepartmentName('')).toBe('N/A')
+  })
+
+  it('updateActivity and deleteActivity mutate activities', async () => {
+    await renderProvider()
+    act(() => {
+      ctxRef!.addActivity({
+        id: 'a1',
+        title: 'Act',
+        description: 'Desc',
+        type: 'training',
+        required_skills: [],
+        seats: 10,
+        date: new Date().toISOString(),
+        duration: '1d',
+        location: 'Tunis',
+        priority: 'consolidate_medium',
+        status: 'open',
+        created_by: 'HR',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      })
+    })
+    act(() => {
+      ctxRef!.updateActivity({
+        id: 'a1',
+        title: 'Act2',
+        description: 'Desc',
+        type: 'training',
+        required_skills: [],
+        seats: 10,
+        date: new Date().toISOString(),
+        duration: '1d',
+        location: 'Tunis',
+        priority: 'consolidate_medium',
+        status: 'open',
+        created_by: 'HR',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      })
+    })
+    expect(ctxRef!.activities.find((a) => a.id === 'a1')?.title).toBe('Act2')
+    act(() => {
+      ctxRef!.deleteActivity('a1')
+    })
+    expect(ctxRef!.activities.find((a) => a.id === 'a1')).toBeUndefined()
+  })
+
+  it('importUsersFromCsv merges created users', async () => {
+    await renderProvider()
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 150))
+    })
+    fetchMock.mockResolvedValueOnce(
+      mkResponse(200, {
+        created: [
+          {
+            _id: 'imp1',
+            name: 'Imported',
+            matricule: 'M99',
+            email: 'i@i.com',
+            telephone: '',
+            role: 'EMPLOYEE',
+            status: 'ACTIVE',
+            department_id: null,
+            manager_id: null,
+            date_embauche: new Date().toISOString(),
+          },
+        ],
+        message: 'OK',
+        createdCount: 1,
+        errorCount: 0,
+      }),
+    )
+    const file = new File(['a,b'], 'u.csv', { type: 'text/csv' })
+    const out = await ctxRef!.importUsersFromCsv(file)
+    expect(out.createdCount).toBe(1)
+    expect(out.message).toBe('OK')
+  })
+
+  it('markNotificationRead patches server and updates state', async () => {
+    await renderProvider()
+    act(() => {
+      ctxRef!.sendNotification('u1', undefined, 't', 'm', 'general')
+    })
+    const id = ctxRef!.getUserNotifications('u1')[0]!.id
+    fetchMock.mockResolvedValueOnce(mkResponse(200, {}))
+    await act(async () => {
+      ctxRef!.markNotificationRead(id)
+      await new Promise((r) => setTimeout(r, 30))
+    })
+    expect(ctxRef!.getUnreadCount('u1')).toBe(0)
+  })
 })
 
