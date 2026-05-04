@@ -30,13 +30,13 @@ import { Recommendation, RecommendationDocument } from '../recommendations/schem
 @Injectable()
 export class ManagerService {
   constructor(
-    @InjectModel(User.name) private userModel: Model<UserDocument>,
-    @InjectModel(Department.name) private departmentModel: Model<DepartmentDocument>,
-    @InjectModel(Activity.name) private activityModel: Model<ActivityDocument>,
-    @InjectModel(ActivityRequest.name) private activityRequestModel: Model<ActivityRequestDocument>,
-    @InjectModel(Fiche.name) private ficheModel: Model<FicheDocument>,
-    @InjectModel(Competence.name) private competenceModel: Model<CompetenceDocument>,
-    @InjectModel(Recommendation.name) private recommendationModel: Model<RecommendationDocument>,
+    @InjectModel(User.name) private readonly userModel: Model<UserDocument>,
+    @InjectModel(Department.name) private readonly departmentModel: Model<DepartmentDocument>,
+    @InjectModel(Activity.name) private readonly activityModel: Model<ActivityDocument>,
+    @InjectModel(ActivityRequest.name) private readonly activityRequestModel: Model<ActivityRequestDocument>,
+    @InjectModel(Fiche.name) private readonly ficheModel: Model<FicheDocument>,
+    @InjectModel(Competence.name) private readonly competenceModel: Model<CompetenceDocument>,
+    @InjectModel(Recommendation.name) private readonly recommendationModel: Model<RecommendationDocument>,
     private readonly notificationsService: NotificationsService,
     private readonly mailService: MailService,
   ) {}

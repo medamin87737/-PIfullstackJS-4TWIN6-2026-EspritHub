@@ -24,7 +24,14 @@ export class NotificationGateway implements OnGatewayInit, OnGatewayConnection, 
 
   handleConnection(@ConnectedSocket() socket: Socket) {
     const userIdRaw = socket.handshake.query.userId
-    const userId = typeof userIdRaw === 'string' ? userIdRaw : Array.isArray(userIdRaw) ? userIdRaw[0] : undefined
+    let userId: string | undefined
+    if (typeof userIdRaw === 'string') {
+      userId = userIdRaw
+    } else if (Array.isArray(userIdRaw)) {
+      userId = userIdRaw[0]
+    } else {
+      userId = undefined
+    }
     if (!userId) {
       this.logger.warn(`Socket connected without userId: ${socket.id}`)
       return

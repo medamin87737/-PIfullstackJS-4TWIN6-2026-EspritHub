@@ -221,10 +221,10 @@ export class RecommendationService {
   private normalizeSkillKey(value: unknown): string {
     return String(value ?? '')
       .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '')
+      .replaceAll(/[\u0300-\u036f]/g, '')
       .toLowerCase()
       .trim()
-      .replace(/\s+/g, ' ')
+      .replaceAll(/\s+/g, ' ')
   }
 
   private sanitizeRequestedSkillName(raw: string): string {
@@ -234,15 +234,15 @@ export class RecommendationService {
     // "trouver 10 profil Analyse de donnees".
     for (let i = 0; i < 3; i += 1) {
       const before = name
-      name = name.replace(/^(trouver|trouve|chercher|cherche|identifier|identifie|generer|genere)\s+/i, '')
-      name = name.replace(/^\d+\s+profils?\s+/i, '')
-      name = name.replace(/^(profil|profils)\s+/i, '')
+      name = name.replaceAll(/^(trouver|trouve|chercher|cherche|identifier|identifie|generer|genere)\s+/gi, '')
+      name = name.replaceAll(/^\d+\s+profils?\s+/gi, '')
+      name = name.replaceAll(/^(profil|profils)\s+/gi, '')
       name = name.trim()
       if (name === before) break
     }
-    name = name.replace(/^(competences?\s+obligatoires?\s+et\s+niveaux?\s+cibles?\s*:\s*)/i, '')
-    name = name.replace(/[.,;:!?]+$/g, '')
-    return name.replace(/\s+/g, ' ').trim()
+    name = name.replaceAll(/^(competences?\s+obligatoires?\s+et\s+niveaux?\s+cibles?\s*:\s*)/gi, '')
+    name = name.replaceAll(/[.,;:!?]+$/g, '')
+    return name.replaceAll(/\s+/g, ' ').trim()
   }
 
   private extractRequestedSkillsFromPrompt(prompt: string): string[] {
@@ -261,7 +261,7 @@ export class RecommendationService {
     for (const name of [...byLevel, ...byBullet]) {
       const key = this.normalizeSkillKey(name)
       if (!key) continue
-      if (!unique.has(key)) unique.set(key, name.replace(/\s+/g, ' '))
+      if (!unique.has(key)) unique.set(key, name.replaceAll(/\s+/g, ' '))
     }
     return Array.from(unique.values())
   }
@@ -1559,7 +1559,7 @@ export class RecommendationService {
         .exec()
 
       const activityTitle: string = (activity as any).titre ?? (activity as any).title ?? 'Activite'
-      const safeTitle = activityTitle.replace(/[^a-z0-9]/gi, '_').slice(0, 40)
+      const safeTitle = activityTitle.replaceAll(/[^a-z0-9]/gi, '_').slice(0, 40)
       const headers = ['Employe', 'Score Global', 'Hard Skills']
 
       const rows = recs.map((rec: any) => {
@@ -1684,7 +1684,7 @@ export class RecommendationService {
     return String(value ?? '')
       .trim()
       .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '')
+      .replaceAll(/[\u0300-\u036f]/g, '')
       .toLowerCase()
   }
 
@@ -1945,7 +1945,7 @@ export class RecommendationService {
         // If the evaluated skill does not exist in employee fiche yet, create it
         // so post-activity update can still enrich the profile.
         if (!existing) {
-          const escaped = skillLabel.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+          const escaped = skillLabel.replaceAll(/[.*+?^${}()|[\]\\]/g, '\\$&')
           let question = await this.questionCompetenceModel
             .findOne({
               intitule: { $regex: `^${escaped}$`, $options: 'i' },

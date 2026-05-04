@@ -287,7 +287,7 @@ export class PptxService {
 
     // ── Slides supplémentaires : contenu du fichier joint avec mise en forme ──
     // Découper le texte en sections basées sur les titres (lignes en majuscules ou avec ===)
-    const cleanText = extraText.replace(/\r\n/g, '\n').replace(/\n{3,}/g, '\n\n').trim()
+    const cleanText = extraText.replaceAll(/\r\n/g, '\n').replaceAll(/\n{3,}/g, '\n\n').trim()
 
     // Détecter les sections : ligne tout en majuscules ou ligne suivie de === ou ---
     const isSectionTitle = (line: string): boolean => {
@@ -336,7 +336,10 @@ export class PptxService {
       if (isSubTitle(trimmed)) {
         currentSection.items.push({ text: trimmed, level: 'subtitle' })
       } else if (isBullet(line)) {
-        currentSection.items.push({ text: trimmed.replace(/^[-•*]\s+/, '').replace(/^\d+\.\s+/, ''), level: 'bullet' })
+        currentSection.items.push({
+          text: trimmed.replaceAll(/^[-•*]\s+/g, '').replaceAll(/^\d+\.\s+/g, ''),
+          level: 'bullet',
+        })
       } else {
         currentSection.items.push({ text: trimmed, level: 'text' })
       }

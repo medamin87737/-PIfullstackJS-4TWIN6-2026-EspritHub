@@ -2,8 +2,8 @@
  * Temporary patch script — run once then delete.
  * Appends exportRecommendations() to recommendation.service.ts
  */
-import * as fs from 'fs'
-import * as path from 'path'
+import * as fs from 'node:fs'
+import * as path from 'node:path'
 
 const filePath = path.join(__dirname, 'recommendation.service.ts')
 let content = fs.readFileSync(filePath, 'utf8')

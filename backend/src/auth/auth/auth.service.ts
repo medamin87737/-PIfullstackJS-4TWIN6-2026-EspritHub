@@ -7,8 +7,8 @@ import { UserStatus } from '../../users/schemas/user.schema';
 @Injectable()
 export class AuthService {
     constructor(
-        private usersService: UsersService,
-        private jwtService: JwtService,
+        private readonly usersService: UsersService,
+        private readonly jwtService: JwtService,
     ) {}
 
     // Valide l'utilisateur avant de générer un token

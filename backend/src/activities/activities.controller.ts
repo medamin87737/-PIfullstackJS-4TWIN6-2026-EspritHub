@@ -46,7 +46,7 @@ export class ActivitiesController {
       requiredSkills: activity.requiredSkills ?? [],
     })
 
-    const filename = `activite-${activity.title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.pptx`
+    const filename = `activite-${activity.title.replaceAll(/[^a-z0-9]/gi, '_').toLowerCase()}.pptx`
     res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.presentationml.presentation')
     res.setHeader('Content-Disposition', `attachment; filename="${filename}"`)
     res.send(buffer)
@@ -78,7 +78,7 @@ export class ActivitiesController {
       file?.buffer,
       file?.mimetype,
     )
-    const filename = `manager-${activity.title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.pptx`
+    const filename = `manager-${activity.title.replaceAll(/[^a-z0-9]/gi, '_').toLowerCase()}.pptx`
     res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.presentationml.presentation')
     res.setHeader('Content-Disposition', `attachment; filename="${filename}"`)
     res.send(buffer)

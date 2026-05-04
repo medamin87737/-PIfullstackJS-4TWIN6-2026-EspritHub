@@ -19,7 +19,7 @@ function locationToString(location: any): string | undefined {
 @Injectable()
 export class ActivitiesService {
   constructor(
-    @InjectModel(Activity.name) private activityModel: Model<ActivityDocument>,
+    @InjectModel(Activity.name) private readonly activityModel: Model<ActivityDocument>,
   ) {}
 
   async create(createActivityDto: CreateActivityDto) {

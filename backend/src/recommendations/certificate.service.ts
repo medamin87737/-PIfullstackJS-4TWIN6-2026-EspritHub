@@ -132,7 +132,7 @@ export class CertificateService {
     for (const cert of certs) {
       try {
         // pdfData est un data URI "data:application/pdf;base64,..."
-        const base64 = cert.pdfData.replace(/^data:application\/pdf;base64,/, '')
+        const base64 = cert.pdfData.replaceAll(/^data:application\/pdf;base64,/g, '')
         const bytes = Buffer.from(base64, 'base64')
         const srcDoc = await MergeDoc.load(bytes)
         const pages = await merged.copyPages(srcDoc, srcDoc.getPageIndices())
@@ -163,7 +163,7 @@ export class CertificateService {
 
     if (!cert) throw new HttpException('Certificat introuvable', HttpStatus.NOT_FOUND)
 
-    const safeName = cert.activityTitle.replace(/[^a-z0-9]/gi, '_').toLowerCase()
+    const safeName = cert.activityTitle.replaceAll(/[^a-z0-9]/gi, '_').toLowerCase()
     return { pdfData: cert.pdfData, filename: `certificat_${safeName}.pdf` }
   }
 

@@ -19,10 +19,10 @@ import { CreateQuestionCompetenceDto } from './dto/create-question-competence.dt
 @Injectable()
 export class UsersService {
   constructor(
-    @InjectModel(User.name) private userModel: Model<UserDocument>,
-    @InjectModel(Fiche.name) private ficheModel: Model<FicheDocument>,
-    @InjectModel(Competence.name) private competenceModel: Model<CompetenceDocument>,
-    @InjectModel(QuestionCompetence.name) private questionCompetenceModel: Model<QuestionCompetenceDocument>,
+    @InjectModel(User.name) private readonly userModel: Model<UserDocument>,
+    @InjectModel(Fiche.name) private readonly ficheModel: Model<FicheDocument>,
+    @InjectModel(Competence.name) private readonly competenceModel: Model<CompetenceDocument>,
+    @InjectModel(QuestionCompetence.name) private readonly questionCompetenceModel: Model<QuestionCompetenceDocument>,
   ) {}
 
   /**
