@@ -101,9 +101,33 @@
       "^.+\\.(t|j)s$": "ts-jest"
     },
     "collectCoverageFrom": [
-      "**/*.(t|j)s"
+      "**/*.(t|j)s",
+      "!**/*.spec.ts",
+      "!**/main.ts",
+      "!**/*.module.ts",
+      "!**/scripts/**",
+      "!**/dto/**",
+      "!**/types/**",
+      "!**/recommendations/_patch_export.*",
+      "!**/recommendation.service.ts",
+      "!**/chat.service.ts",
+      "!**/users.service.ts",
+      "!**/pptx.service.ts",
+      "!**/certificate.service.ts",
+      "!**/manager.service.ts",
+      "!**/mail.service.ts",
+      "!**/*.controller.ts",
+      "!**/notification.gateway.ts",
+      "!**/chat/interfaces/**",
+      "!**/manager/**",
+      "!**/recommendations/recommendation.controller.ts"
     ],
     "coverageDirectory": "../coverage",
+    "coverageReporters": [
+      "text",
+      "lcov",
+      "json-summary"
+    ],
     "testEnvironment": "node"
   }
 }

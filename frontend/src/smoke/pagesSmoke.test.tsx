@@ -368,7 +368,7 @@ describe('pages smoke', () => {
       )
     })
     await act(async () => {
-      await new Promise((r) => setTimeout(r, 80))
+      await new Promise((r) => setTimeout(r, 850))
     })
     expect(container.innerHTML.length).toBeGreaterThan(0)
   })

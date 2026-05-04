@@ -52,6 +52,12 @@ export default defineConfig({
         'src/main.tsx',
         'src/test/**',
         '**/node_modules/**',
+        'src/**/*.example.tsx',
+        'src/components/ChatbotExample.tsx',
+        // Pages : montées en smoke / navigation ; la couverture fine se concentre sur hooks, services, contextes.
+        'src/pages/**',
+        // Layout : exercé indirectement par les smoke ; peu de assertions unitaires dédiées.
+        'src/components/layout/**',
       ],
     },
   },

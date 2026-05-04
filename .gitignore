@@ -45,3 +45,6 @@ Thumbs.db
 # Cursor / editor artifacts
 .cursor/
 terminals/
+
+# Vitest CI reports (généré par npm run test:ci)
+frontend/reports/
