@@ -59,6 +59,11 @@ export default defineConfig({
         // Layout : exercé indirectement par les smoke ; peu de assertions unitaires dédiées.
         'src/components/layout/**',
       ],
+      // Aligné Quality Gate Sonar way (new code) : viser ≥80 % lignes sur le périmètre instrumenté.
+      thresholds: {
+        lines: 80,
+        statements: 76,
+      },
     },
   },
 })
