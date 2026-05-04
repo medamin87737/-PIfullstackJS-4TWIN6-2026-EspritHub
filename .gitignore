@@ -42,9 +42,6 @@ Thumbs.db
 # Docker / local data
 *.local.yml
 
-# Cursor / editor artifacts
-.cursor/
-terminals/
 
 # Vitest CI reports (généré par npm run test:ci)
 frontend/reports/
