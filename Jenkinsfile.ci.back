@@ -10,6 +10,7 @@ pipeline {
         CD_BACK_JOB = 'CD-Back'
         // true = bloque le build si Sonar Quality Gate échoue (webhook Sonar→Jenkins requis). Défaut false = CI stable tant que tests+build OK.
         SONAR_WAIT_QUALITY_GATE = "${env.SONAR_WAIT_QUALITY_GATE ?: 'false'}"
+        GIT_REPO_URL = 'https://github.com/medamin87737/-PIfullstackJS-4TWIN6-2026-EspritHub.git'
     }
 
     options {
@@ -20,9 +21,29 @@ pipeline {
 
         stage('Checkout') {
             steps {
-                echo "🔄 CI BACK – Checkout du repository..."
-                deleteDir()
-                git branch: 'main', url: 'https://github.com/medamin87737/-PIfullstackJS-4TWIN6-2026-EspritHub.git'
+                echo "🔄 CI BACK – Checkout du repository (clone superficiel + buffer HTTP, retries)..."
+                script {
+                    if (isUnix()) {
+                        retry(3) {
+                            deleteDir()
+                            sh '''
+                                set -e
+                                git -c http.postBuffer=524288000 \\
+                                    -c http.lowSpeedLimit=1000 \\
+                                    -c http.lowSpeedTime=600 \\
+                                    clone --depth 1 --single-branch --branch main \\
+                                    "$GIT_REPO_URL" .
+                            '''
+                        }
+                    } else {
+                        retry(3) {
+                            deleteDir()
+                            bat '''
+                                git -c http.postBuffer=524288000 -c http.lowSpeedLimit=1000 -c http.lowSpeedTime=600 clone --depth 1 --single-branch --branch main %GIT_REPO_URL% .
+                            '''
+                        }
+                    }
+                }
             }
         }
 
