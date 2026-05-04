@@ -9,7 +9,7 @@ interface StatCardProps {
   className?: string
 }
 
-function StatCard({ title, value, icon, trend, className }: StatCardProps) {
+function StatCard({ title, value, icon, trend, className }: Readonly<StatCardProps>) {
   return (
     <div className={cn('group rounded-xl border border-border bg-card p-5 card-animated', className)}>
       <div className="flex items-start justify-between">

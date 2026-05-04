@@ -2,7 +2,7 @@ interface AnimatedBackdropProps {
   className?: string
 }
 
-export default function AnimatedBackdrop({ className = '' }: AnimatedBackdropProps) {
+export default function AnimatedBackdrop({ className = '' }: Readonly<AnimatedBackdropProps>) {
   return (
     <div className={`app-ambient-bg ${className}`}>
       <span className="ambient-shape ambient-shape-1" />

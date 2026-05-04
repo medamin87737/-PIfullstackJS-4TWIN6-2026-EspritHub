@@ -12,9 +12,9 @@ import {
   getGoogleConnectionStatus 
 } from '../services/googleCalendarService';
 
-interface GoogleCalendarConnectProps {
+type GoogleCalendarConnectProps = Readonly<{
   onConnectionChange?: (connected: boolean) => void;
-}
+}>
 
 export const GoogleCalendarConnect: React.FC<GoogleCalendarConnectProps> = ({ 
   onConnectionChange 

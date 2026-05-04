@@ -28,16 +28,6 @@ export const Chatbot: React.FC<ChatbotProps> = ({ activityId, onClose }) => {
   const [error, setError] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // Validation de activityId
-  if (!activityId || activityId.trim() === '') {
-    return (
-      <div className="chatbot-error">
-        <p>Erreur: Aucune activité spécifiée</p>
-        <p>Veuillez sélectionner une activité pour utiliser le chatbot.</p>
-      </div>
-    );
-  }
-
   // Scroll automatique vers le bas
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -45,7 +35,7 @@ export const Chatbot: React.FC<ChatbotProps> = ({ activityId, onClose }) => {
 
   // Fonction pour générer un ID unique
   const generateId = () => {
-    return `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    return `${Date.now()}-${Math.random().toString(36).slice(2, 11)}`;
   };
 
   // Fonction pour envoyer un message
@@ -111,12 +101,22 @@ export const Chatbot: React.FC<ChatbotProps> = ({ activityId, onClose }) => {
   };
 
   // Gérer l'envoi via la touche Entrée
-  const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleSendMessage(inputValue);
     }
   };
+
+  // Validation de activityId
+  if (!activityId || activityId.trim() === '') {
+    return (
+      <div className="chatbot-error">
+        <p>Erreur: Aucune activité spécifiée</p>
+        <p>Veuillez sélectionner une activité pour utiliser le chatbot.</p>
+      </div>
+    );
+  }
 
   // Gérer le clic sur une suggestion
   const handleSuggestionClick = (suggestion: QuickSuggestion) => {
@@ -192,7 +192,7 @@ export const Chatbot: React.FC<ChatbotProps> = ({ activityId, onClose }) => {
           placeholder="Tapez votre message..."
           value={inputValue}
           onChange={(e) => setInputValue(e.target.value)}
-          onKeyPress={handleKeyPress}
+          onKeyDown={handleKeyDown}
           disabled={isLoading}
           aria-label="Message pour le chatbot"
         />

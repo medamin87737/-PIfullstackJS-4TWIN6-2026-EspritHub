@@ -62,7 +62,7 @@ export class RecommendationService {
   private parseLatLngFromText(raw?: string): { lat: number; lng: number } | null {
     const text = String(raw ?? '').trim()
     if (!text) return null
-    const m = text.match(/^\s*(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)\s*$/)
+    const m = /^\s*(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)\s*$/.exec(text)
     if (!m) return null
     const lat = Number(m[1])
     const lng = Number(m[2])
@@ -219,7 +219,8 @@ export class RecommendationService {
   }
 
   private normalizeSkillKey(value: unknown): string {
-    return String(value ?? '')
+    const source = typeof value === 'string' ? value : String(value ?? '')
+    return source
       .normalize('NFD')
       .replaceAll(/[\u0300-\u036f]/g, '')
       .toLowerCase()
@@ -268,8 +269,8 @@ export class RecommendationService {
 
   private extractTopNFromPrompt(prompt: string): number | null {
     const text = String(prompt ?? '')
-    const m1 = text.match(/\btop[_\s-]*n\s*[:=]?\s*(\d{1,4})\b/i)?.[1]
-    const m2 = text.match(/\b(trouver|trouve|chercher|cherche|identifier|identifie)\s+(\d{1,4})\s+profils?\b/i)?.[2]
+    const m1 = /\btop[_\s-]*n\s*[:=]?\s*(\d{1,4})\b/i.exec(text)?.[1]
+    const m2 = /\b(trouver|trouve|chercher|cherche|identifier|identifie)\s+(\d{1,4})\s+profils?\b/i.exec(text)?.[2]
     const raw = Number(m1 ?? m2 ?? 0)
     if (!Number.isFinite(raw) || raw <= 0) return null
     return Math.max(1, Math.min(500, raw))
@@ -1099,59 +1100,8 @@ export class RecommendationService {
       })
     }
 
-    const approved = await this.recommendationModel
-      .find({ activityId: new Types.ObjectId(activityId), status: 'MANAGER_APPROVED' })
-      .exec()
-
-    // Note: L'envoi d'email est maintenant manuel via le bouton "Envoyer Email" du manager
-    // Le statut reste MANAGER_APPROVED jusqu'à ce que le manager envoie l'email
-    const notifiedCount = 0 // Pas d'envoi automatique
-    /*
-    let notifiedCount = 0
-    for (const rec of approved) {
-      rec.status = 'NOTIFIED'
-      rec.updated_at = new Date()
-      await rec.save()
-
-      const employee = await this.userModel.findById(rec.userId).select('name email').exec()
-      if (!employee) continue
-      notifiedCount++
-
-      const activityTitle = await this.getActivityTitle(activity)
-      const location = (activity as any).location ?? 'N/A'
-      const date = (activity as any).date ?? (activity as any).startDate ?? new Date()
-      const description = (activity as any).description ?? ''
-      const baseUrl = process.env.FRONTEND_URL ?? 'http://localhost:5173'
-      const acceptUrl = `${baseUrl}/employee/recommendations?recommendationId=${rec._id.toString()}&response=ACCEPTED`
-      const declineUrl = `${baseUrl}/employee/recommendations?recommendationId=${rec._id.toString()}&response=DECLINED`
-
-      void this.mailService.sendEmployeeInvitation(
-        employee.email,
-        employee.name,
-        activityTitle,
-        date,
-        location,
-        description,
-        acceptUrl,
-        declineUrl,
-      )
-
-      await this.notificationService.notifyEmployeeInvitation(
-        employee._id.toString(),
-        activityId,
-        activityTitle,
-        date,
-        {
-          description,
-          objectifs: (activity as any).objectifs ?? '',
-          location,
-          duration: (activity as any).duration ?? '',
-          type: (activity as any).type ?? '',
-          nb_seats: (activity as any).nb_seats ?? (activity as any).maxParticipants ?? undefined,
-        },
-      )
-    }
-    */
+    // L'envoi d'email est manuel via l'écran manager.
+    const notifiedCount = 0
 
     ;(activity as any).status = 'validated'
     await activity.save()
@@ -1350,7 +1300,9 @@ export class RecommendationService {
     }
 
     rec.updated_at = new Date()
-    rec.hr_note = `${String(rec.hr_note ?? '').trim()}${rec.hr_note ? ' | ' : ''}Score conservé${note ? ` (${String(note).trim()})` : ''}`
+    const previousNote = String(rec.hr_note ?? '').trim()
+    const noteSuffix = note ? ` (${String(note).trim()})` : ''
+    rec.hr_note = `${previousNote}${rec.hr_note ? ' | ' : ''}Score conservé${noteSuffix}`
     await rec.save()
 
     await this.auditService.logAction({
@@ -1681,7 +1633,8 @@ export class RecommendationService {
   }
 
   private normalizeSkillLabel(value: unknown): string {
-    return String(value ?? '')
+    const source = typeof value === 'string' ? value : String(value ?? '')
+    return source
       .trim()
       .normalize('NFD')
       .replaceAll(/[\u0300-\u036f]/g, '')

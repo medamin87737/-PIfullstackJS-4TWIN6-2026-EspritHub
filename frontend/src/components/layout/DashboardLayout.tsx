@@ -18,8 +18,8 @@ function DashboardLayout() {
   }, [])
 
   useEffect(() => {
-    const timer = window.setTimeout(() => setShowBackdrop(true), 900)
-    return () => window.clearTimeout(timer)
+    const timer = globalThis.setTimeout(() => setShowBackdrop(true), 900)
+    return () => globalThis.clearTimeout(timer)
   }, [])
 
   return (

@@ -70,7 +70,7 @@ export const HandGestureControl: React.FC<HandGestureControlProps> = ({
   useEffect(() => {
     if (!activeRecommendation && recommendations.length > 0) {
       setActiveRecommendation(recommendations[0]);
-    } else if (activeRecommendation && !recommendations.find(r => r.id === activeRecommendation.id)) {
+    } else if (activeRecommendation && !recommendations.some(r => r.id === activeRecommendation.id)) {
       // La recommandation active a été supprimée, sélectionner la suivante
       setActiveRecommendation(recommendations[0] || null);
     }
@@ -166,8 +166,8 @@ export const HandGestureControl: React.FC<HandGestureControlProps> = ({
         gestureValidatorRef.current.reset();
 
         // Sélectionner la prochaine recommandation
-        const nextRecommendations = recommendations.filter(r => r.id !== activeRecommendation.id);
-        setActiveRecommendation(nextRecommendations[0] || null);
+        const nextRecommendation = recommendations.find(r => r.id !== activeRecommendation.id) ?? null;
+        setActiveRecommendation(nextRecommendation);
       } else {
         // Erreur API
         setStatus('error');
@@ -176,7 +176,8 @@ export const HandGestureControl: React.FC<HandGestureControlProps> = ({
         setGestureProgress(0);
         gestureValidatorRef.current.reset();
       }
-    } catch (err) {
+    } catch (error: unknown) {
+      console.error('Unexpected gesture response error:', error);
       // Erreur inattendue
       setStatus('error');
       setStatusMessage('Erreur inattendue');
@@ -210,13 +211,14 @@ export const HandGestureControl: React.FC<HandGestureControlProps> = ({
         setStatusMessage('Recommandation acceptée');
         onRecommendationResponse(activeRecommendation.id, 'ACCEPTED');
 
-        const nextRecommendations = recommendations.filter(r => r.id !== activeRecommendation.id);
-        setActiveRecommendation(nextRecommendations[0] || null);
+        const nextRecommendation = recommendations.find(r => r.id !== activeRecommendation.id) ?? null;
+        setActiveRecommendation(nextRecommendation);
       } else {
         setStatus('error');
         setApiError(result.error || 'Erreur inconnue');
       }
-    } catch (err) {
+    } catch (error: unknown) {
+      console.error('Accept action failed:', error);
       setStatus('error');
       setApiError('Une erreur est survenue');
     }
@@ -246,13 +248,14 @@ export const HandGestureControl: React.FC<HandGestureControlProps> = ({
         setStatusMessage('Recommandation refusée');
         onRecommendationResponse(activeRecommendation.id, 'REJECTED');
 
-        const nextRecommendations = recommendations.filter(r => r.id !== activeRecommendation.id);
-        setActiveRecommendation(nextRecommendations[0] || null);
+        const nextRecommendation = recommendations.find(r => r.id !== activeRecommendation.id) ?? null;
+        setActiveRecommendation(nextRecommendation);
       } else {
         setStatus('error');
         setApiError(result.error || 'Erreur inconnue');
       }
-    } catch (err) {
+    } catch (error: unknown) {
+      console.error('Reject action failed:', error);
       setStatus('error');
       setApiError('Une erreur est survenue');
     }

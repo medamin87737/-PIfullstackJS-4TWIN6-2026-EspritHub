@@ -7,7 +7,7 @@ interface ProtectedRouteProps {
   allowedRoles?: UserRole[]
 }
 
-export default function ProtectedRoute({ children, allowedRoles }: ProtectedRouteProps) {
+export default function ProtectedRoute({ children, allowedRoles }: Readonly<ProtectedRouteProps>) {
   const { isAuthenticated, user } = useAuth()
 
   if (!isAuthenticated || !user) {

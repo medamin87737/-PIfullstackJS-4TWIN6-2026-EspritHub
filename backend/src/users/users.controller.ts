@@ -285,10 +285,16 @@ export class UsersController {
         /[A-Z]/.test(envDefaultPassword) &&
         /[a-z]/.test(envDefaultPassword) &&
         /\d/.test(envDefaultPassword)
-      dto.password =
-        row['password'] && row['password'].length >= 8
-          ? row['password']
-          : (isStrongEnvPassword ? envDefaultPassword : 'Password123!');
+      const csvPassword = row['password']
+      if (csvPassword && csvPassword.length >= 8) {
+        dto.password = csvPassword
+      } else if (isStrongEnvPassword) {
+        dto.password = envDefaultPassword
+      } else {
+        throw new BadRequestException(
+          'DEFAULT_IMPORT_PASSWORD doit etre defini (fort) si la colonne password est absente ou invalide.',
+        )
+      }
 
       if (row['status']) {
         dto.status = row['status'].toUpperCase() as any;
@@ -305,7 +311,7 @@ export class UsersController {
 
       try {
         const result = await this.usersService.create(dto as CreateUserDto);
-        const user = (result as any).user ?? result;
+        const user = result.user ?? result;
         createdUsers.push(user);
       } catch (error: any) {
         errors.push({

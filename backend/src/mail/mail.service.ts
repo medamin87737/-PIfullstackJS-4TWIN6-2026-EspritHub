@@ -16,16 +16,25 @@ export class MailService {
       : undefined,
   })
 
-  async sendEmployeeInvitation(
-    to: string,
-    employeeName: string,
-    activityTitle: string,
-    activityDate: Date,
-    activityLocation: string,
-    activityDescription: string,
-    acceptUrl: string,
-    declineUrl: string,
-  ) {
+  async sendEmployeeInvitation({
+    to,
+    employeeName,
+    activityTitle,
+    activityDate,
+    activityLocation,
+    activityDescription,
+    acceptUrl,
+    declineUrl,
+  }: {
+    to: string
+    employeeName: string
+    activityTitle: string
+    activityDate: Date
+    activityLocation: string
+    activityDescription: string
+    acceptUrl: string
+    declineUrl: string
+  }) {
     if (!process.env.MAIL_HOST || !process.env.MAIL_USER || !process.env.MAIL_PASS) {
       throw new ServiceUnavailableException(
         'Mail service not configured. Please set MAIL_HOST, MAIL_USER and MAIL_PASS in backend/.env',

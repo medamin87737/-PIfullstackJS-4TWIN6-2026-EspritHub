@@ -51,20 +51,20 @@ const roleNavItems: Record<string, NavItem[]> = {
   ],
 }
 
-interface SidebarProps {
+type SidebarProps = Readonly<{
   collapsed: boolean
   setCollapsed: (collapsed: boolean) => void
-}
+}>
 
 function Sidebar({ collapsed, setCollapsed }: SidebarProps) {
   const { user, logout } = useAuth()
   const location = useLocation()
   const [isLoggingOut, setIsLoggingOut] = useState(false)
 
-  if (!user) return null
-
-  const navItems = useMemo(() => roleNavItems[user.role] ?? [], [user.role])
-  const userInitials = useMemo(() => user.name.split(' ').map((n) => n[0]).join('').slice(0, 2), [user.name])
+  const userRole = user?.role ?? 'EMPLOYEE'
+  const userName = user?.name ?? ''
+  const navItems = useMemo(() => (user ? roleNavItems[user.role] ?? [] : []), [user, userRole])
+  const userInitials = useMemo(() => userName.split(' ').map((n) => n[0]).join('').slice(0, 2), [userName])
 
   const handleLogout = useCallback(() => {
     if (isLoggingOut) return
@@ -78,6 +78,8 @@ function Sidebar({ collapsed, setCollapsed }: SidebarProps) {
   const toggleCollapsed = useCallback(() => {
     setCollapsed(!collapsed)
   }, [collapsed, setCollapsed])
+
+  if (!user) return null
 
   return (
     <>
@@ -167,8 +169,8 @@ function Sidebar({ collapsed, setCollapsed }: SidebarProps) {
           </div>
           {!collapsed && (
             <div className="flex min-w-0 flex-1 flex-col">
-              <span className="truncate text-sm font-medium">{user.name}</span>
-              <span className="truncate text-xs text-sidebar-foreground/60">{user.role}</span>
+              <span className="truncate text-sm font-medium">{userName}</span>
+              <span className="truncate text-xs text-sidebar-foreground/60">{userRole}</span>
             </div>
           )}
           {!collapsed && (

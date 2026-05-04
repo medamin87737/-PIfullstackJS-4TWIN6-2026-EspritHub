@@ -54,9 +54,9 @@ export default function RealtimeNotifications() {
     }
 
     // Defer websocket work until after initial paint.
-    const deferredStart = window.setTimeout(() => {
-      if ('requestIdleCallback' in window) {
-        ;(window as Window & { requestIdleCallback?: (cb: () => void) => number }).requestIdleCallback?.(() => startRealtime())
+    const deferredStart = globalThis.setTimeout(() => {
+      if ('requestIdleCallback' in globalThis) {
+        ;(globalThis as Window & { requestIdleCallback?: (cb: () => void) => number }).requestIdleCallback?.(() => startRealtime())
       } else {
         startRealtime()
       }
@@ -83,7 +83,7 @@ export default function RealtimeNotifications() {
     }, 7000)
 
     return () => {
-      window.clearTimeout(deferredStart)
+      globalThis.clearTimeout(deferredStart)
       if (poll) clearInterval(poll)
       socket?.disconnect()
     }

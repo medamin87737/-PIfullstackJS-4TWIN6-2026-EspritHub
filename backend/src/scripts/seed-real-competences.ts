@@ -70,7 +70,7 @@ const BUSINESS_SKILLS: SkillTemplate[] = [
 function seedHash(input: string): number {
   let h = 0
   for (let i = 0; i < input.length; i += 1) {
-    h = (h * 31 + input.charCodeAt(i)) >>> 0
+    h = (h * 31 + (input.codePointAt(i) ?? 0)) >>> 0
   }
   return h
 }
@@ -95,7 +95,7 @@ async function ensureQuestionBank(QuestionModel: mongoose.Model<QuestionCompeten
       { $setOnInsert: q },
       { upsert: true, new: true },
     )
-    idByLabel.set(q.intitule, row._id as Types.ObjectId)
+    idByLabel.set(q.intitule, new Types.ObjectId(String(row._id)))
   }
   return idByLabel
 }
@@ -144,12 +144,12 @@ async function main() {
 
     const roleBoost = role === 'MANAGER' ? 1 : role === 'HR' ? 0 : -1
 
-    const deptSkills =
-      deptCode.includes('RH') || deptCode.includes('HR')
-        ? HR_SKILLS
-        : deptCode.includes('DT') || deptCode.includes('IT') || deptCode.includes('TECH')
-          ? TECH_SKILLS
-          : BUSINESS_SKILLS
+    let deptSkills = BUSINESS_SKILLS
+    if (deptCode.includes('RH') || deptCode.includes('HR')) {
+      deptSkills = HR_SKILLS
+    } else if (deptCode.includes('DT') || deptCode.includes('IT') || deptCode.includes('TECH')) {
+      deptSkills = TECH_SKILLS
+    }
 
     const skillSet = [...COMMON_SKILLS, ...deptSkills]
 
@@ -195,7 +195,15 @@ async function main() {
         intitule: s.intitule,
       }).exec()
 
-      if (!existing) {
+      if (existing) {
+        existing.question_competence_id = qId
+        existing.type = s.type
+        existing.auto_eval = autoEval
+        existing.hierarchie_eval = managerEval
+        existing.etat = 'validated'
+        await existing.save()
+        updatedCompetences += 1
+      } else {
         await CompetenceModel.create({
           fiches_id: fiche._id,
           question_competence_id: qId,
@@ -206,14 +214,6 @@ async function main() {
           etat: 'validated',
         })
         createdCompetences += 1
-      } else {
-        existing.question_competence_id = qId
-        existing.type = s.type
-        existing.auto_eval = autoEval
-        existing.hierarchie_eval = managerEval
-        existing.etat = 'validated'
-        await existing.save()
-        updatedCompetences += 1
       }
     }
   }

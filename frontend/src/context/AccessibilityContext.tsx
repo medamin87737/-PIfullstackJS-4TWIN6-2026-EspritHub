@@ -41,27 +41,27 @@ export function AccessibilityProvider({ children }: { children: ReactNode }) {
   const [autoReadSelection, setAutoReadSelectionState] = useState(false)
   const [voiceCommandsActive, setVoiceCommandsActive] = useState(false)
   const [colorBlindMode, setColorBlindMode] = useState(() => {
-    if (typeof window === 'undefined') return false
-    return window.localStorage.getItem('accessibility_colorblind') === 'true'
+    if (typeof globalThis === 'undefined') return false
+    return globalThis.localStorage.getItem('accessibility_colorblind') === 'true'
   })
   const [customPalette, setCustomPaletteState] = useState<CustomPalette | null>(() => {
-    if (typeof window === 'undefined') return null
+    if (typeof globalThis === 'undefined') return null
     try {
-      const raw = window.localStorage.getItem('accessibility_custom_palette')
+      const raw = globalThis.localStorage.getItem('accessibility_custom_palette')
       return raw ? (JSON.parse(raw) as CustomPalette) : null
     } catch {
       return null
     }
   })
   const [contrastPercent, setContrastPercentState] = useState<number>(() => {
-    if (typeof window === 'undefined') return 100
-    const raw = window.localStorage.getItem('accessibility_contrast_percent')
-    const parsed = raw ? parseInt(raw, 10) : 100
+    if (typeof globalThis === 'undefined') return 100
+    const raw = globalThis.localStorage.getItem('accessibility_contrast_percent')
+    const parsed = raw ? Number.parseInt(raw, 10) : 100
     return Number.isFinite(parsed) ? parsed : 100
   })
   const [visualFatigueMode, setVisualFatigueMode] = useState(() => {
-    if (typeof window === 'undefined') return false
-    return window.localStorage.getItem('accessibility_visual_fatigue') === 'true'
+    if (typeof globalThis === 'undefined') return false
+    return globalThis.localStorage.getItem('accessibility_visual_fatigue') === 'true'
   })
 
   const recognitionRef = useRef<any>(null)
@@ -70,7 +70,7 @@ export function AccessibilityProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (typeof document === 'undefined') return
     document.documentElement.classList.toggle('colorblind', colorBlindMode)
-    window.localStorage.setItem('accessibility_colorblind', String(colorBlindMode))
+    globalThis.localStorage.setItem('accessibility_colorblind', String(colorBlindMode))
   }, [colorBlindMode])
 
   const toggleColorBlindMode = useCallback(() => {
@@ -86,9 +86,9 @@ export function AccessibilityProvider({ children }: { children: ReactNode }) {
       filters.push('sepia(18%)', 'hue-rotate(-12deg)', 'saturate(88%)', 'brightness(96%)')
     }
     document.documentElement.style.filter = filters.join(' ')
-    if (typeof window !== 'undefined') {
-      window.localStorage.setItem('accessibility_contrast_percent', String(contrastPercent))
-      window.localStorage.setItem('accessibility_visual_fatigue', String(visualFatigueMode))
+    if (typeof globalThis !== 'undefined') {
+      globalThis.localStorage.setItem('accessibility_contrast_percent', String(contrastPercent))
+      globalThis.localStorage.setItem('accessibility_visual_fatigue', String(visualFatigueMode))
     }
   }, [contrastPercent, visualFatigueMode])
 
@@ -123,15 +123,15 @@ export function AccessibilityProvider({ children }: { children: ReactNode }) {
 
   const setCustomPalette = useCallback((palette: CustomPalette) => {
     setCustomPaletteState(palette)
-    if (typeof window !== 'undefined') {
-      window.localStorage.setItem('accessibility_custom_palette', JSON.stringify(palette))
+    if (typeof globalThis !== 'undefined') {
+      globalThis.localStorage.setItem('accessibility_custom_palette', JSON.stringify(palette))
     }
   }, [])
 
   const resetCustomPalette = useCallback(() => {
     setCustomPaletteState(null)
-    if (typeof window !== 'undefined') {
-      window.localStorage.removeItem('accessibility_custom_palette')
+    if (typeof globalThis !== 'undefined') {
+      globalThis.localStorage.removeItem('accessibility_custom_palette')
     }
     if (typeof document !== 'undefined') {
       const root = document.documentElement
@@ -163,8 +163,8 @@ export function AccessibilityProvider({ children }: { children: ReactNode }) {
 
   const speak = useCallback(
     (text: string) => {
-      if (typeof window === 'undefined') return
-      const synth = window.speechSynthesis
+      if (typeof globalThis === 'undefined') return
+      const synth = globalThis.speechSynthesis
       if (!synth) {
         alert("La synthese vocale n'est pas supportee par ce navigateur.")
         return
@@ -179,15 +179,15 @@ export function AccessibilityProvider({ children }: { children: ReactNode }) {
   )
 
   const speakSelection = useCallback(() => {
-    if (typeof window === 'undefined') return
-    const selection = window.getSelection()?.toString().trim()
+    if (typeof globalThis === 'undefined') return
+    const selection = globalThis.getSelection()?.toString().trim()
     if (!selection) return
     speak(selection)
   }, [speak])
 
   const stopSpeaking = useCallback(() => {
-    if (typeof window === 'undefined') return
-    const synth = window.speechSynthesis
+    if (typeof globalThis === 'undefined') return
+    const synth = globalThis.speechSynthesis
     if (!synth) return
     synth.cancel()
   }, [])
@@ -200,7 +200,7 @@ export function AccessibilityProvider({ children }: { children: ReactNode }) {
     let lastSelection = ''
 
     const handler = () => {
-      const selection = window.getSelection()?.toString().trim() ?? ''
+      const selection = globalThis.getSelection()?.toString().trim() ?? ''
       if (!selection || selection === lastSelection) return
       lastSelection = selection
       speakSelection()
@@ -225,8 +225,8 @@ export function AccessibilityProvider({ children }: { children: ReactNode }) {
       const unknownMessage = "Je ne comprends pas votre commande vocale."
 
       const dispatchDetail = () => {
-        if (typeof window !== 'undefined') {
-          window.dispatchEvent(
+        if (typeof globalThis !== 'undefined') {
+          globalThis.dispatchEvent(
             new CustomEvent('skillup-voice-command', {
               detail,
             }),
@@ -286,10 +286,10 @@ export function AccessibilityProvider({ children }: { children: ReactNode }) {
   )
 
   const toggleVoiceCommands = useCallback(() => {
-    if (typeof window === 'undefined') return
+    if (typeof globalThis === 'undefined') return
 
     const SpeechRecognition =
-      (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition
+      (globalThis as any).SpeechRecognition || (globalThis as any).webkitSpeechRecognition
 
     if (!SpeechRecognition) {
       alert('Les commandes vocales ne sont pas supportees par ce navigateur.')

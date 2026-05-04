@@ -497,7 +497,7 @@ export class UsersService {
       throw new BadRequestException('Intitulé de compétence requis');
     }
 
-    const escaped = intitule.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const escaped = intitule.replaceAll(/[.*+?^${}()|[\]\\]/g, String.raw`\$&`);
     const exists = await this.questionCompetenceModel
       .findOne({ intitule: { $regex: `^${escaped}$`, $options: 'i' } })
       .exec();

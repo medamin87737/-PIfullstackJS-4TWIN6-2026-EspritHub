@@ -11,12 +11,12 @@ Icon.Default.mergeOptions({
   shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
 });
 
-interface LocationPickerProps {
+type LocationPickerProps = Readonly<{
   onLocationSelect: (lat: number, lng: number, address: string) => void;
   initialLocation?: { lat: number; lng: number };
-}
+}>
 
-function LocationMarker({ onLocationSelect }: { onLocationSelect: (lat: number, lng: number, address: string) => void }) {
+function LocationMarker({ onLocationSelect }: Readonly<{ onLocationSelect: (lat: number, lng: number, address: string) => void }>) {
   const [position, setPosition] = useState<[number, number] | null>(null);
 
   useMapEvents({
@@ -63,11 +63,11 @@ export default function LocationPicker({ onLocationSelect, initialLocation }: Lo
 
   return (
     <div className="space-y-2">
-      <label className="text-sm font-medium">Localisation de l'activité</label>
+      <label htmlFor="location-picker-map" className="text-sm font-medium">Localisation de l'activité</label>
       <div className="text-xs text-muted-foreground mb-2">
         Cliquez sur la carte pour définir la localisation de l'activité
       </div>
-      <div className="h-64 rounded-lg overflow-hidden border">
+      <div id="location-picker-map" className="h-64 rounded-lg overflow-hidden border">
         <MapContainer
           center={[defaultCenter.lat, defaultCenter.lng]}
           zoom={13}

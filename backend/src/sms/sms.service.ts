@@ -20,7 +20,7 @@ export class SmsService {
 
     if (validSid && validToken && validFrom) {
       try {
-        this.client = twilio.default(accountSid!, authToken!)
+        this.client = twilio.default(accountSid, authToken)
         this.logger.log('Twilio SMS service initialized')
       } catch (err: any) {
         this.logger.warn(`Twilio init failed — SMS disabled: ${String(err?.message ?? err)}`)
@@ -84,7 +84,7 @@ export class SmsService {
   private normalizePhone(raw: string): string | null {
     if (!raw) return null
     // Supprimer espaces, tirets, parenthèses
-    let cleaned = raw.replace(/[\s\-().]/g, '')
+    let cleaned = raw.replaceAll(/[\s\-().]/g, '')
     // Numéro tunisien local (8 chiffres) → +216XXXXXXXX
     if (/^\d{8}$/.test(cleaned)) return `+216${cleaned}`
     // Déjà en E.164

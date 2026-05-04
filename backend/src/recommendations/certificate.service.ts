@@ -103,9 +103,10 @@ export class CertificateService {
   async markActivityCompleted(activityId: string): Promise<{ completed: boolean }> {
     const activity = await this.activityModel.findById(activityId)
     if (!activity) throw new HttpException('Activité introuvable', HttpStatus.NOT_FOUND)
-    ;(activity as any).completed = !(activity as any).completed
+    const completed = !(activity as any).completed
+    ;(activity as any).completed = completed
     await activity.save()
-    return { completed: (activity as any).completed }
+    return { completed }
   }
 
   async setPresence(recommendationId: string, presence: boolean): Promise<{ presence: boolean }> {
@@ -186,7 +187,7 @@ export class CertificateService {
     const navyDark  = rgb(0.059, 0.122, 0.239)   // sidebar bg  #0F1F3D
     const navy      = rgb(0.118, 0.227, 0.431)   // secondary   #1E3A6E
     const orange    = rgb(0.976, 0.451, 0.086)   // primary     #F97316
-    const orangeLight = rgb(1.0,  0.82,  0.65)   // accent clair
+    const orangeLight = rgb(1,  0.82,  0.65)   // accent clair
     const white     = rgb(1, 1, 1)
     const offWhite  = rgb(0.94, 0.96, 0.99)
     const slate     = rgb(0.65, 0.73, 0.84)
@@ -247,10 +248,8 @@ export class CertificateService {
 
     // Nom Maghrebia
     const maghrebiaSize = 22
-    const maghrebiaW = fontBold.widthOfTextAtSize('Maghrebia', maghrebiaSize)
     page.drawText('Maghrebia', { x: cx - 50, y: H - 68, size: maghrebiaSize, font: fontBold, color: orange })
     // Sous-titre plateforme
-    const subPlatW = fontRegular.widthOfTextAtSize('SkillUp Platform', 9)
     page.drawText('SkillUp Platform', { x: cx - 50, y: H - 80, size: 9, font: fontRegular, color: slate })
 
     // Ligne séparatrice orange sous le logo

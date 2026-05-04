@@ -44,13 +44,13 @@
 }
 
 .hgc-camera-toggle:hover {
-  background: #007bff;
+  background: #0056b3;
   color: white;
 }
 
 .hgc-camera-toggle.active {
-  background: #28a745;
-  border-color: #28a745;
+  background: #1f7a1f;
+  border-color: #1f7a1f;
   color: white;
 }
 
@@ -311,23 +311,23 @@
 }
 
 .hgc-btn-accept {
-  background: #28a745;
+  background: #1f7a1f;
   color: white;
 }
 
 .hgc-btn-accept:hover:not(:disabled) {
-  background: #218838;
+  background: #166534;
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(40, 167, 69, 0.3);
 }
 
 .hgc-btn-reject {
-  background: #dc3545;
+  background: #b42318;
   color: white;
 }
 
 .hgc-btn-reject:hover:not(:disabled) {
-  background: #c82333;
+  background: #991b1b;
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(220, 53, 69, 0.3);
 }

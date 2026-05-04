@@ -360,34 +360,8 @@
 /* Accessibilité - Contraste des couleurs */
 /* Ratio de contraste respectant WCAG AA (4.5:1) */
 
-/* Contraste message utilisateur: blanc sur violet foncé */
-.message-user .message-content {
-  /* Couleur de fond déjà définie avec gradient violet */
-  color: #ffffff; /* Contraste > 4.5:1 */
-}
-
-/* Contraste message bot: texte foncé sur fond blanc */
-.message-bot .message-content {
-  background-color: #ffffff;
-  color: #1f2937; /* Gris très foncé, contraste > 7:1 */
-}
-
-/* Contraste boutons de suggestion */
-.suggestion-btn {
-  background-color: #f3f4f6;
-  color: #374151; /* Gris foncé, contraste > 4.5:1 */
-  border: 1px solid #d1d5db;
-}
-
-/* Contraste input */
-.chatbot-input {
-  color: #1f2937;
-  border: 1px solid #d1d5db;
-}
-
-.chatbot-input::placeholder {
-  color: #6b7280; /* Contraste suffisant pour placeholder */
-}
+/* Contraste message utilisateur/bot, suggestions et input:
+   déjà défini plus haut avec des couleurs WCAG AA. */
 
 /* Focus visible pour accessibilité clavier - Palette bleu */
 .chatbot-input:focus,

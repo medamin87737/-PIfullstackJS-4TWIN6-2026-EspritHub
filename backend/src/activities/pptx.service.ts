@@ -73,7 +73,7 @@ export class PptxService {
 
     // Titre principal
     s1.addText(activity.title, {
-      x: 0.5, y: 1.0, w: 12.3, h: 1.8,
+      x: 0.5, y: 1, w: 12.3, h: 1.8,
       fontSize: 36, bold: true, color: WHITE,
       align: 'left', valign: 'middle',
       wrap: true,
@@ -103,13 +103,13 @@ export class PptxService {
       fontSize: 20, bold: true, color: WHITE, valign: 'middle',
     })
 
-    s2.addShape(pptx.ShapeType.rect, { x: 0.4, y: 1.0, w: 0.08, h: 1.2, fill: { color: ORANGE } })
+    s2.addShape(pptx.ShapeType.rect, { x: 0.4, y: 1, w: 0.08, h: 1.2, fill: { color: ORANGE } })
     s2.addText('Description', {
-      x: 0.7, y: 1.0, w: 3, h: 0.4,
+      x: 0.7, y: 1, w: 3, h: 0.4,
       fontSize: 13, bold: true, color: DARK_BLUE,
     })
     s2.addText(activity.description || 'Aucune description fournie.', {
-      x: 0.7, y: 1.4, w: 12, h: 1.0,
+      x: 0.7, y: 1.4, w: 12, h: 1,
       fontSize: 12, color: TEXT_DARK, wrap: true,
     })
 
@@ -161,9 +161,9 @@ export class PptxService {
       })
 
       // En-tête tableau
-      s4.addShape(pptx.ShapeType.rect, { x: 0.4, y: 1.0, w: 12.5, h: 0.5, fill: { color: ORANGE } })
-      s4.addText('Compétence', { x: 0.6, y: 1.0, w: 8, h: 0.5, fontSize: 12, bold: true, color: WHITE, valign: 'middle' })
-      s4.addText('Niveau requis', { x: 9.0, y: 1.0, w: 3.5, h: 0.5, fontSize: 12, bold: true, color: WHITE, valign: 'middle', align: 'center' })
+      s4.addShape(pptx.ShapeType.rect, { x: 0.4, y: 1, w: 12.5, h: 0.5, fill: { color: ORANGE } })
+      s4.addText('Compétence', { x: 0.6, y: 1, w: 8, h: 0.5, fontSize: 12, bold: true, color: WHITE, valign: 'middle' })
+      s4.addText('Niveau requis', { x: 9, y: 1, w: 3.5, h: 0.5, fontSize: 12, bold: true, color: WHITE, valign: 'middle', align: 'center' })
 
       activity.requiredSkills.slice(0, 10).forEach((skill, i) => {
         const y = 1.55 + i * 0.52
@@ -171,10 +171,14 @@ export class PptxService {
         s4.addShape(pptx.ShapeType.rect, { x: 0.4, y, w: 12.5, h: 0.48, fill: { color: bg } })
         s4.addText(skill.skill_name, { x: 0.6, y, w: 8, h: 0.48, fontSize: 11, color: TEXT_DARK, valign: 'middle' })
 
-        const levelColor = skill.desired_level === 'expert' ? 'DC2626'
-          : skill.desired_level === 'high' ? '2563EB'
-          : skill.desired_level === 'medium' ? 'D97706'
-          : '16A34A'
+        let levelColor = '16A34A'
+        if (skill.desired_level === 'expert') {
+          levelColor = 'DC2626'
+        } else if (skill.desired_level === 'high') {
+          levelColor = '2563EB'
+        } else if (skill.desired_level === 'medium') {
+          levelColor = 'D97706'
+        }
         s4.addShape(pptx.ShapeType.roundRect, { x: 9.2, y: y + 0.06, w: 2.8, h: 0.34, fill: { color: levelColor }, rectRadius: 0.08 })
         s4.addText(LEVEL_LABELS[skill.desired_level] ?? skill.desired_level, {
           x: 9.2, y: y + 0.06, w: 2.8, h: 0.34,
@@ -237,6 +241,9 @@ export class PptxService {
         }
       } catch (err) {
         // Si extraction échoue, continuer sans texte supplémentaire
+        // et tracer l'erreur pour diagnostic.
+        // eslint-disable-next-line no-console
+        console.warn('Unable to extract attachment text for PPTX enrichment:', err)
         extraText = ''
       }
     }
@@ -287,7 +294,7 @@ export class PptxService {
 
     // ── Slides supplémentaires : contenu du fichier joint avec mise en forme ──
     // Découper le texte en sections basées sur les titres (lignes en majuscules ou avec ===)
-    const cleanText = extraText.replaceAll(/\r\n/g, '\n').replaceAll(/\n{3,}/g, '\n\n').trim()
+    const cleanText = extraText.replaceAll('\r\n', '\n').replaceAll(/\n{3,}/g, '\n\n').trim()
 
     // Détecter les sections : ligne tout en majuscules ou ligne suivie de === ou ---
     const isSectionTitle = (line: string): boolean => {
@@ -295,7 +302,7 @@ export class PptxService {
       if (!t) return false
       if (/^={3,}$/.test(t) || /^-{3,}$/.test(t)) return false
       // Titre si : tout en majuscules, ou ligne suivie de === dans le texte original
-      return /^[A-ZÀÂÄÉÈÊËÎÏÔÙÛÜÇ\s\d\-—:()]{4,}$/.test(t) || t.endsWith('---') || t.endsWith('===')
+      return /^[A-ZÀÂÄÉÈÊËÎÏÔÙÛÜÇ\s\d-—:()]{4,}$/.test(t) || t.endsWith('---') || t.endsWith('===')
     }
 
     const isSubTitle = (line: string): boolean => {
@@ -366,7 +373,10 @@ export class PptxService {
             title: section.items.length > MAX_ITEMS ? `${section.title} (suite)` : section.title,
             items: section.items.slice(i, i + MAX_ITEMS),
           })
-          if (i === 0) allSlideData[allSlideData.length - 1].title = section.title
+          if (i === 0) {
+            const lastSlide = allSlideData.at(-1)
+            if (lastSlide) lastSlide.title = section.title
+          }
         }
       }
     }
@@ -390,7 +400,7 @@ export class PptxService {
       slide.addShape(pptx.ShapeType.rect, { x: 0, y: 0.75, w: '100%', h: 0.04, fill: { color: ORANGE } })
 
       // Contenu avec mise en forme par type
-      let yPos = 1.0
+      let yPos = 1
       for (const item of section.items) {
         if (yPos > 5.4) break // Sécurité débordement
 

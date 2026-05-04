@@ -1,5 +1,5 @@
 import 'reflect-metadata'
-import mongoose, { Types } from 'mongoose'
+import mongoose from 'mongoose'
 import * as bcrypt from 'bcrypt'
 
 import { User, UserRole, UserSchema, UserStatus } from '../users/schemas/user.schema'
@@ -49,7 +49,7 @@ async function main() {
         email: 'manager@rh.com',
         password: passwordHash,
         date_embauche: new Date('2021-06-15'),
-        department_id: hrDepartment._id as Types.ObjectId,
+        department_id: hrDepartment._id,
         status: UserStatus.ACTIVE,
         role: UserRole.MANAGER,
         en_ligne: false,
@@ -68,8 +68,8 @@ async function main() {
         email: 'rh@rh.com',
         password: passwordHash,
         date_embauche: new Date('2022-01-10'),
-        department_id: hrDepartment._id as Types.ObjectId,
-        manager_id: managerUser._id as Types.ObjectId,
+        department_id: hrDepartment._id,
+        manager_id: managerUser._id,
         status: UserStatus.ACTIVE,
         role: UserRole.HR,
         en_ligne: false,
@@ -88,8 +88,8 @@ async function main() {
         email: 'employee@dt.com',
         password: passwordHash,
         date_embauche: new Date('2023-11-01'),
-        department_id: techDepartment._id as Types.ObjectId,
-        manager_id: managerUser._id as Types.ObjectId,
+        department_id: techDepartment._id,
+        manager_id: managerUser._id,
         status: UserStatus.ACTIVE,
         role: UserRole.EMPLOYEE,
         en_ligne: false,
@@ -109,8 +109,8 @@ async function main() {
         email: 'rh-employee1@rh.com',
         password: passwordHash,
         date_embauche: new Date('2024-01-15'),
-        department_id: hrDepartment._id as Types.ObjectId,
-        manager_id: managerUser._id as Types.ObjectId,
+        department_id: hrDepartment._id,
+        manager_id: managerUser._id,
         status: UserStatus.ACTIVE,
         role: UserRole.EMPLOYEE,
         en_ligne: false,

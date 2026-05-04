@@ -90,16 +90,16 @@ export async function rewritePrompt(req: RewritePromptRequest): Promise<RewriteP
     try {
       const data = await res.json()
       if (typeof data?.message === 'string') {
-        throw new Error(data.message)
+        throw new TypeError(data.message)
       }
       if (Array.isArray(data?.message) && data.message.length > 0) {
-        throw new Error(String(data.message[0]))
+        throw new TypeError(String(data.message[0]))
       }
-      throw new Error(`Erreur serveur: ${res.status}`)
+      throw new TypeError(`Erreur serveur: ${res.status}`)
     } catch (e: any) {
       if (e instanceof Error) throw e
       const text = await res.text().catch(() => '')
-      throw new Error(text || `Erreur serveur: ${res.status}`)
+      throw new TypeError(text || `Erreur serveur: ${res.status}`)
     }
   }
 
@@ -142,16 +142,16 @@ export async function askWebsiteGuide(req: WebsiteGuideRequest): Promise<Website
     try {
       const data = await res.json()
       if (typeof data?.message === 'string') {
-        throw new Error(data.message)
+        throw new TypeError(data.message)
       }
       if (Array.isArray(data?.message) && data.message.length > 0) {
-        throw new Error(String(data.message[0]))
+        throw new TypeError(String(data.message[0]))
       }
-      throw new Error(`Erreur serveur: ${res.status}`)
+      throw new TypeError(`Erreur serveur: ${res.status}`)
     } catch (e: any) {
       if (e instanceof Error) throw e
       const text = await res.text().catch(() => '')
-      throw new Error(text || `Erreur serveur: ${res.status}`)
+      throw new TypeError(text || `Erreur serveur: ${res.status}`)
     }
   }
 

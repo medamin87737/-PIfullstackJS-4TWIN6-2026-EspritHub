@@ -43,7 +43,7 @@ function createId() {
 }
 
 function extractUniqueMatches(text: string, regex: RegExp): string[] {
-  const matches = text.match(regex) ?? []
+  const matches = Array.from(text.matchAll(regex)).map((m) => m[0])
   return Array.from(new Set(matches.map((m) => m.trim())))
 }
 

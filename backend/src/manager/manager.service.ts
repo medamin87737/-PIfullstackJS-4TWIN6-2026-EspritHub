@@ -137,25 +137,26 @@ export class ManagerService {
         status: 'draft',
         created_by: hrId,
       } as any);
-      request.created_activity_id = createdActivity._id as Types.ObjectId;
+      request.created_activity_id = createdActivity._id;
     }
 
     await request.save();
 
+    const isApproved = dto.status === 'APPROVED'
+    const statusTitle = isApproved ? 'Demande activité approuvée' : 'Demande activité rejetée'
+    const rejectionReason = dto.hr_note ? ` Motif: ${dto.hr_note}` : ''
+    const statusMessage = isApproved
+      ? `Votre demande "${request.title}" a été approuvée par RH.`
+      : `Votre demande "${request.title}" a été rejetée.${rejectionReason}`
+    const notificationType = isApproved
+      ? NotificationType.MANAGER_ACTIVITY_REQUEST_APPROVED
+      : NotificationType.MANAGER_ACTIVITY_REQUEST_REJECTED
+
     await this.notificationsService.create({
       userId: request.manager_id.toString(),
-      type:
-        dto.status === 'APPROVED'
-          ? NotificationType.MANAGER_ACTIVITY_REQUEST_APPROVED
-          : NotificationType.MANAGER_ACTIVITY_REQUEST_REJECTED,
-      title:
-        dto.status === 'APPROVED'
-          ? 'Demande activité approuvée'
-          : 'Demande activité rejetée',
-      message:
-        dto.status === 'APPROVED'
-          ? `Votre demande "${request.title}" a été approuvée par RH.`
-          : `Votre demande "${request.title}" a été rejetée.${dto.hr_note ? ` Motif: ${dto.hr_note}` : ''}`,
+      type: notificationType,
+      title: statusTitle,
+      message: statusMessage,
       data: {
         requestId: request._id.toString(),
         activityId: createdActivity?._id?.toString(),
@@ -163,10 +164,7 @@ export class ManagerService {
     });
 
     return {
-      message:
-        dto.status === 'APPROVED'
-          ? 'Demande approuvée et activité créée'
-          : 'Demande rejetée',
+      message: isApproved ? 'Demande approuvée et activité créée' : 'Demande rejetée',
       request,
       activity: createdActivity,
     };
@@ -579,16 +577,16 @@ return {
     const declineUrl = `${frontendUrl}/employee/recommendations?recommendationId=${recommendation._id.toString()}&response=DECLINED`;
 
     // Envoyer l'email
-    await this.mailService.sendEmployeeInvitation(
-      employee.email,
-      employee.name,
-      activity.title || activity.titre || 'Activité',
-      activity.startDate || activity.date,
-      activity.location || 'À définir',
-      activity.description || '',
+    await this.mailService.sendEmployeeInvitation({
+      to: employee.email,
+      employeeName: employee.name,
+      activityTitle: activity.title || activity.titre || 'Activité',
+      activityDate: activity.startDate || activity.date,
+      activityLocation: activity.location || 'À définir',
+      activityDescription: activity.description || '',
       acceptUrl,
       declineUrl,
-    );
+    });
 
     // Mettre à jour le statut en NOTIFIED après l'envoi
     recommendation.status = 'NOTIFIED';

@@ -9,8 +9,8 @@ interface Column<T> {
 }
 
 interface DataTableProps<T> {
-  columns: Column<T>[]
-  data: T[]
+  columns: ReadonlyArray<Column<T>>
+  data: ReadonlyArray<T>
   onRowClick?: (item: T) => void
   emptyMessage?: string
 }

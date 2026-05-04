@@ -39,7 +39,7 @@ interface WeatherWidgetProps {
   lng?: number;
 }
 
-function WeatherWidget({ collapsed, city = 'Tunis', lat = 36.8065, lng = 10.1815 }: WeatherWidgetProps) {
+function WeatherWidget({ collapsed, city = 'Tunis', lat = 36.8065, lng = 10.1815 }: Readonly<WeatherWidgetProps>) {
   const [weather, setWeather] = useState<WeatherData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -71,7 +71,8 @@ function WeatherWidget({ collapsed, city = 'Tunis', lat = 36.8065, lng = 10.1815
           city: city,
         });
         setError(null);
-      } catch (err) {
+      } catch (error: unknown) {
+        console.error('Weather widget fetch failed:', error);
         setError('Impossible de charger la météo');
       } finally {
         setLoading(false);
@@ -95,6 +96,13 @@ function WeatherWidget({ collapsed, city = 'Tunis', lat = 36.8065, lng = 10.1815
     () => weatherCodes[weather?.weatherCode ?? -1] || { icon: <Cloud className="h-4 w-4" />, description: 'Inconnu', color: 'text-gray-500' },
     [weather?.weatherCode],
   );
+  const collapsedIcon = weather ? (
+    <span className={weatherCodes[weather.weatherCode]?.color || 'text-gray-500'}>
+      {weatherCodes[weather.weatherCode]?.icon || <Cloud className="h-4 w-4" />}
+    </span>
+  ) : (
+    <Cloud className="h-4 w-4" />
+  )
 
   if (collapsed) {
     return (
@@ -103,15 +111,7 @@ function WeatherWidget({ collapsed, city = 'Tunis', lat = 36.8065, lng = 10.1815
           onClick={handleClick}
           className="flex h-9 w-9 items-center justify-center rounded-lg border border-border bg-card text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
         >
-          {loading ? (
-            <div className="h-4 w-4 animate-pulse rounded-full bg-muted" />
-          ) : weather ? (
-            <span className={weatherCodes[weather.weatherCode]?.color || 'text-gray-500'}>
-              {weatherCodes[weather.weatherCode]?.icon || <Cloud className="h-4 w-4" />}
-            </span>
-          ) : (
-            <Cloud className="h-4 w-4" />
-          )}
+          {loading ? <div className="h-4 w-4 animate-pulse rounded-full bg-muted" /> : collapsedIcon}
         </button>
         <WeatherModal 
           isOpen={isModalOpen} 

@@ -15,12 +15,16 @@ function Header() {
   const [showNotifications, setShowNotifications] = useState(false)
   const [showDeferredTools, setShowDeferredTools] = useState(false)
 
-  if (!user) return null
-
-  const userNotifications = useMemo(() => getUserNotifications(user.id), [getUserNotifications, user.id])
+  const userId = user?.id ?? ''
+  const userRole = user?.role ?? 'EMPLOYEE'
+  const userName = user?.name ?? ''
+  const userNotifications = useMemo(() => (user ? getUserNotifications(user.id) : []), [getUserNotifications, user, userId])
   const topNotifications = useMemo(() => userNotifications.slice(0, 6), [userNotifications])
   const unreadCount = useMemo(() => userNotifications.filter((n) => !n.read).length, [userNotifications])
-  const userInitials = useMemo(() => user.name.split(' ').map((n) => n[0]).join('').slice(0, 2), [user.name])
+  const userInitials = useMemo(
+    () => userName.split(' ').map((n) => n[0]).join('').slice(0, 2),
+    [userName],
+  )
 
   const toggleDarkMode = useCallback(() => {
     setDarkMode(!darkMode)
@@ -28,6 +32,10 @@ function Header() {
   }, [darkMode])
 
   const goToNotificationTarget = useCallback((n: { rawType?: string; activity_id?: string; data?: Record<string, any> }) => {
+    if (!user) {
+      navigate('/login')
+      return
+    }
     if (n.rawType === 'CERTIFICATE_ISSUED') {
       navigate('/employee/notifications')
       return
@@ -59,7 +67,7 @@ function Header() {
       return
     }
     navigate('/admin/dashboard')
-  }, [navigate, user.role])
+  }, [navigate, user, userRole])
 
   const handleToggleNotifications = useCallback(() => {
     const next = !showNotifications
@@ -72,9 +80,11 @@ function Header() {
   }, [])
 
   useEffect(() => {
-    const timer = window.setTimeout(() => setShowDeferredTools(true), 900)
-    return () => window.clearTimeout(timer)
+    const timer = globalThis.setTimeout(() => setShowDeferredTools(true), 900)
+    return () => globalThis.clearTimeout(timer)
   }, [])
+
+  if (!user) return null
 
   return (
     <header className="reveal sticky top-0 z-30 flex h-16 items-center justify-between gap-4 border-b border-border/70 bg-card/85 px-4 sm:px-6 backdrop-blur-xl">
@@ -119,7 +129,17 @@ function Header() {
 
           {showNotifications && (
             <>
-              <div className="fixed inset-0 z-40" onClick={closeNotifications} />
+              <button
+                type="button"
+                className="fixed inset-0 z-40"
+                onClick={closeNotifications}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    closeNotifications()
+                  }
+                }}
+                aria-label="Fermer les notifications"
+              />
               <div className="absolute right-0 top-full z-50 mt-2 w-80 rounded-xl border border-border bg-card shadow-lg animate-fade-in">
                 <div className="flex items-center justify-between border-b border-border px-4 py-3">
                   <h3 className="text-sm font-semibold text-card-foreground">Notifications</h3>
@@ -173,7 +193,13 @@ function Header() {
                   <button
                     onClick={() => {
                       closeNotifications()
-                      navigate(user.role === 'EMPLOYEE' ? '/employee/notifications' : user.role === 'MANAGER' ? '/manager/activities' : '/hr/activities')
+                      let notificationsPath = '/hr/activities'
+                      if (userRole === 'EMPLOYEE') {
+                        notificationsPath = '/employee/notifications'
+                      } else if (userRole === 'MANAGER') {
+                        notificationsPath = '/manager/activities'
+                      }
+                      navigate(notificationsPath)
                     }}
                     className="w-full text-center text-xs text-primary hover:underline"
                   >
@@ -190,8 +216,8 @@ function Header() {
             {userInitials}
           </div>
           <div className="hidden flex-col sm:flex">
-            <span className="text-xs font-medium text-card-foreground">{user.name}</span>
-            <span className="text-[10px] text-muted-foreground">{user.role}</span>
+            <span className="text-xs font-medium text-card-foreground">{userName}</span>
+            <span className="text-[10px] text-muted-foreground">{userRole}</span>
           </div>
         </div>
       </div>

@@ -1,8 +1,8 @@
 import { useEffect, useState, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { 
-  X, Search, Cloud, Sun, CloudRain, CloudSnow, CloudLightning, 
-  Wind, Droplets, Thermometer, MapPin, Calendar, Minimize2,
+  Search, Cloud, Sun, CloudRain, CloudSnow, CloudLightning, 
+  Wind, Droplets, MapPin, Calendar, Minimize2,
   CloudSun, CloudFog
 } from 'lucide-react';
 
@@ -151,7 +151,18 @@ export default function WeatherModal({ isOpen, onClose, initialCity = 'Tunis', i
   const weatherInfo = selectedDayData ? weatherCodes[selectedDayData.weatherCode] || weatherCodes[0] : weatherCodes[0];
 
   return createPortal(
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm overflow-y-auto" onClick={onClose}>
+    <div
+      className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm overflow-y-auto"
+      onClick={onClose}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          onClose()
+        }
+      }}
+      role="button"
+      tabIndex={0}
+      aria-label="Fermer la modal météo"
+    >
       <div 
         className="relative w-full max-w-2xl max-h-[85vh] overflow-y-auto rounded-2xl bg-white shadow-2xl dark:bg-gray-900 my-auto" 
         onClick={(e) => e.stopPropagation()}
@@ -235,9 +246,9 @@ export default function WeatherModal({ isOpen, onClose, initialCity = 'Tunis', i
             {/* Search Results */}
             {cities.length > 0 && (
               <div className="absolute z-10 mt-1 w-full max-w-lg rounded-lg border border-gray-200 bg-white shadow-lg dark:border-gray-700 dark:bg-gray-800">
-                {cities.map((city, index) => (
+                {cities.map((city) => (
                   <button
-                    key={index}
+                    key={`${city.name}-${city.latitude}-${city.longitude}`}
                     onClick={() => {
                       setSelectedCity(city);
                       setCities([]);

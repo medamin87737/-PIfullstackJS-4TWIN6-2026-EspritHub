@@ -1,9 +1,10 @@
 // auth/jwt-auth.guard.ts
-import { Injectable, CanActivate, ExecutionContext } from '@nestjs/common';
+import { Injectable, CanActivate, ExecutionContext, Logger } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 
 @Injectable()
 export class JwtAuthGuard implements CanActivate {
+    private readonly logger = new Logger(JwtAuthGuard.name);
     constructor(private readonly jwtService: JwtService) {}
 
     canActivate(context: ExecutionContext): boolean {
@@ -16,7 +17,9 @@ export class JwtAuthGuard implements CanActivate {
             const decoded = this.jwtService.verify(token);
             request.user = decoded;
             return true;
-        } catch (e) {
+        } catch (error: unknown) {
+            const message = error instanceof Error ? error.message : String(error);
+            this.logger.warn(`JWT verification failed: ${message}`);
             return false;
         }
     }

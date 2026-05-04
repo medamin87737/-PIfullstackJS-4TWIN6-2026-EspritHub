@@ -52,7 +52,7 @@ const EmployeeProfile = lazy(() => import('./pages/employee/EmployeeProfile'))
 const EmployeeSkillUpdates = lazy(() => import('./pages/employee/EmployeeSkillUpdates'))
 const EmployeeCertificates = lazy(() => import('./pages/employee/EmployeeCertificates'))
 
-function RouteTransition({ children }: { children: React.ReactNode }) {
+function RouteTransition({ children }: Readonly<{ children: React.ReactNode }>) {
   const location = useLocation()
   return <div key={location.pathname} className="route-fade-in">{children}</div>
 }
@@ -81,16 +81,16 @@ function AnimationBootstrap() {
     const isPublicRoute = location.pathname.startsWith('/login') || location.pathname.startsWith('/auth/google/callback')
     if (isPublicRoute) return
 
-    const id = window.setTimeout(() => {
+    const id = globalThis.setTimeout(() => {
       void import('./initAnimations').then((mod) => mod.initGlobalAnimations())
     }, 0)
-    return () => window.clearTimeout(id)
+    return () => globalThis.clearTimeout(id)
   }, [location.pathname])
 
   return null
 }
 
-function LazySection({ children }: { children: React.ReactNode }) {
+function LazySection({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
     <Suspense fallback={<div className="p-4 text-sm text-muted-foreground">Chargement...</div>}>
       {children}

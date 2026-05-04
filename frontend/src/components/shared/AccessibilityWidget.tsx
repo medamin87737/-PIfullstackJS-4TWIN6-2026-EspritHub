@@ -27,14 +27,14 @@ export default function AccessibilityWidget() {
 
   const [open, setOpen] = useState(false)
   const [toastSoundEnabled, setToastSoundEnabled] = useState(() => {
-    if (typeof window === 'undefined') return true
-    return window.localStorage.getItem(TOAST_SOUND_ENABLED_KEY) !== 'false'
+    if (typeof globalThis === 'undefined') return true
+    return globalThis.localStorage.getItem(TOAST_SOUND_ENABLED_KEY) !== 'false'
   })
 
   const toggleToastSound = () => {
     const next = !toastSoundEnabled
     setToastSoundEnabled(next)
-    if (typeof window !== 'undefined') window.localStorage.setItem(TOAST_SOUND_ENABLED_KEY, String(next))
+    if (typeof globalThis !== 'undefined') globalThis.localStorage.setItem(TOAST_SOUND_ENABLED_KEY, String(next))
   }
 
   const handleLanguageChange = (lang: string) => {
@@ -113,7 +113,7 @@ export default function AccessibilityWidget() {
             {/* Lecture vocale */}
           <div className="mb-3">
             <p className="mb-1 text-xs font-medium text-muted-foreground">Lecture vocale automatique</p>
-            <label className="inline-flex cursor-pointer items-center gap-2 text-xs text-muted-foreground">
+            <div className="inline-flex cursor-pointer items-center gap-2 text-xs text-muted-foreground">
               <span>Off</span>
                 <button type="button" onClick={() => setAutoReadSelection(!autoReadSelection)}
                   className={`relative h-5 w-9 rounded-full border transition-colors ${autoReadSelection ? 'bg-primary border-primary' : 'bg-background border-input'}`}
@@ -121,7 +121,7 @@ export default function AccessibilityWidget() {
                   <span className={`absolute left-0.5 top-0.5 h-4 w-4 rounded-full bg-white shadow transition-transform ${autoReadSelection ? 'translate-x-4' : ''}`} />
               </button>
               <span>On</span>
-            </label>
+            </div>
             <p className="mt-1 text-[11px] text-muted-foreground">
               Quand c&apos;est active, tout texte que vous selectionnez est lu automatiquement.
             </p>
@@ -142,7 +142,7 @@ export default function AccessibilityWidget() {
             {/* Son des popups */}
           <div className="mb-2">
             <p className="mb-1 text-xs font-medium text-muted-foreground">Son des popups</p>
-            <label className="inline-flex cursor-pointer items-center gap-2 text-xs text-muted-foreground">
+            <div className="inline-flex cursor-pointer items-center gap-2 text-xs text-muted-foreground">
               <span>Off</span>
                 <button type="button" onClick={toggleToastSound}
                   className={`relative h-5 w-9 rounded-full border transition-colors ${toastSoundEnabled ? 'bg-primary border-primary' : 'bg-background border-input'}`}
@@ -150,7 +150,7 @@ export default function AccessibilityWidget() {
                   <span className={`absolute left-0.5 top-0.5 h-4 w-4 rounded-full bg-white shadow transition-transform ${toastSoundEnabled ? 'translate-x-4' : ''}`} />
               </button>
               <span>On</span>
-            </label>
+            </div>
             <p className="mt-1 text-[11px] text-muted-foreground">
               Active ou desactive le son des notifications de succes/erreur.
             </p>
@@ -208,7 +208,7 @@ export default function AccessibilityWidget() {
                       value={(customPalette as any)?.[item.key] ?? item.fallback}
                       onChange={(e) =>
                         setCustomPalette({
-                          ...(customPalette ?? {}),
+                          ...(customPalette || {}),
                           [item.key]: e.target.value,
                         } as any)
                       }

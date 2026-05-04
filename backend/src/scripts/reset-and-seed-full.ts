@@ -74,7 +74,7 @@ const DEPARTMENTS = [
 
 function hashSeed(input: string): number {
   let h = 0
-  for (let i = 0; i < input.length; i += 1) h = (h * 31 + input.charCodeAt(i)) >>> 0
+  for (let i = 0; i < input.length; i += 1) h = (h * 31 + (input.codePointAt(i) ?? 0)) >>> 0
   return h
 }
 
@@ -192,8 +192,10 @@ async function main() {
   const allUsers = [adminUser, hrUser, ...managerDocs, ...employeeDocs]
   const fichePayload: Array<{ _id: Types.ObjectId; user_id: Types.ObjectId; saisons: string; etat: string }> = []
   allUsers.forEach((u: any) => {
-    fichePayload.push({ _id: new Types.ObjectId(), user_id: u._id, saisons: currentYear, etat: 'validated' })
-    fichePayload.push({ _id: new Types.ObjectId(), user_id: u._id, saisons: previousYear, etat: 'completed' })
+    fichePayload.push(
+      { _id: new Types.ObjectId(), user_id: u._id, saisons: currentYear, etat: 'validated' },
+      { _id: new Types.ObjectId(), user_id: u._id, saisons: previousYear, etat: 'completed' },
+    )
   })
   const fiches = await FicheModel.insertMany(fichePayload)
 
@@ -218,9 +220,18 @@ async function main() {
     const ficheId = currentFicheByUser.get(String(u._id))
     if (!ficheId) return
 
-    const roleBoost = String(u.role) === 'MANAGER' ? 1 : String(u.role) === 'HR' ? 1 : 0
+    const role = String(u.role)
+    let roleBoost = 0
+    if (role === 'MANAGER' || role === 'HR') {
+      roleBoost = 1
+    }
     for (const s of skillSet) {
-      const qId = s.type === 'soft_skills' ? qSoft : s.type === 'knowledge' ? qHard : qTech
+      let qId = qTech
+      if (s.type === 'soft_skills') {
+        qId = qSoft
+      } else if (s.type === 'knowledge') {
+        qId = qHard
+      }
       const base = seededRange(`${u._id}:${s.intitule}`, 3, 8)
       const auto = Math.max(1, Math.min(10, base + roleBoost))
       const hier = Math.max(1, Math.min(10, auto + seededRange(`${u._id}:delta:${s.intitule}`, -1, 1)))
@@ -243,7 +254,11 @@ async function main() {
     return {
       title: `${activityTitles[i % activityTitles.length]} ${i + 1}`,
       description: 'Programme de formation cible pour progression des competences.',
-      type: i % 3 === 0 ? 'training' : i % 3 === 1 ? 'workshop' : 'coaching',
+      type: (() => {
+        if (i % 3 === 0) return 'training'
+        if (i % 3 === 1) return 'workshop'
+        return 'coaching'
+      })(),
       departmentId: String(dept._id),
       created_by: 'HR',
       requiredSkills: chooseSkillsByDept(String(dept.code)).slice(0, 3).map((s) => ({
