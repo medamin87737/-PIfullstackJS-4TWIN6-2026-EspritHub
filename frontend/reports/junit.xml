@@ -1,117 +1,438 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<testsuites name="vitest tests" tests="49" failures="0" errors="0" time="0.3148458">
-    <testsuite name="src/api/chat.test.ts" timestamp="2026-05-04T18:56:09.894Z" hostname="DESKTOP-2E08CL5" tests="8" failures="0" errors="0" skipped="0" time="0.0212206">
-        <testcase classname="src/api/chat.test.ts" name="chat api &gt; rewritePrompt succeeds with existing auth token" time="0.0083069">
+<testsuites name="vitest tests" tests="79" failures="0" errors="0" time="0.5640272">
+    <testsuite name="src/api/chat.test.ts" timestamp="2026-05-04T19:08:08.633Z" hostname="DESKTOP-2E08CL5" tests="8" failures="0" errors="0" skipped="0" time="0.0249999">
+        <testcase classname="src/api/chat.test.ts" name="chat api &gt; rewritePrompt succeeds with existing auth token" time="0.0096625">
         </testcase>
-        <testcase classname="src/api/chat.test.ts" name="chat api &gt; rewritePrompt refreshes token when missing and retries 401" time="0.0011299">
+        <testcase classname="src/api/chat.test.ts" name="chat api &gt; rewritePrompt refreshes token when missing and retries 401" time="0.001306">
         </testcase>
-        <testcase classname="src/api/chat.test.ts" name="chat api &gt; rewritePrompt throws server message when backend returns message" time="0.0038316">
+        <testcase classname="src/api/chat.test.ts" name="chat api &gt; rewritePrompt throws server message when backend returns message" time="0.0037671">
         </testcase>
-        <testcase classname="src/api/chat.test.ts" name="chat api &gt; rewritePrompt throws first item when backend returns message array" time="0.0007529">
+        <testcase classname="src/api/chat.test.ts" name="chat api &gt; rewritePrompt throws first item when backend returns message array" time="0.0017705">
         </testcase>
-        <testcase classname="src/api/chat.test.ts" name="chat api &gt; rewritePrompt surfaces parsing error when json parsing fails" time="0.0007532">
+        <testcase classname="src/api/chat.test.ts" name="chat api &gt; rewritePrompt surfaces parsing error when json parsing fails" time="0.0015646">
         </testcase>
-        <testcase classname="src/api/chat.test.ts" name="chat api &gt; askWebsiteGuide throws unauthenticated when no tokens available" time="0.0009588">
+        <testcase classname="src/api/chat.test.ts" name="chat api &gt; askWebsiteGuide throws unauthenticated when no tokens available" time="0.0010338">
         </testcase>
-        <testcase classname="src/api/chat.test.ts" name="chat api &gt; askWebsiteGuide succeeds after refresh flow" time="0.0006477">
+        <testcase classname="src/api/chat.test.ts" name="chat api &gt; askWebsiteGuide succeeds after refresh flow" time="0.0007026">
         </testcase>
-        <testcase classname="src/api/chat.test.ts" name="chat api &gt; askWebsiteGuide handles 403 and retries with new token" time="0.0005541">
-        </testcase>
-    </testsuite>
-    <testsuite name="src/test/mediapipe-setup.test.ts" timestamp="2026-05-04T18:56:09.900Z" hostname="DESKTOP-2E08CL5" tests="3" failures="0" errors="0" skipped="0" time="0.0243911">
-        <testcase classname="src/test/mediapipe-setup.test.ts" name="MediaPipe and fast-check setup &gt; should have fast-check available" time="0.0052953">
-        </testcase>
-        <testcase classname="src/test/mediapipe-setup.test.ts" name="MediaPipe and fast-check setup &gt; should verify fast-check works with a simple property" time="0.0137118">
-        </testcase>
-        <testcase classname="src/test/mediapipe-setup.test.ts" name="MediaPipe and fast-check setup &gt; should have MediaPipe types available" time="0.0003986">
+        <testcase classname="src/api/chat.test.ts" name="chat api &gt; askWebsiteGuide handles 403 and retries with new token" time="0.0007391">
         </testcase>
     </testsuite>
-    <testsuite name="src/utils/color.test.ts" timestamp="2026-05-04T18:56:09.901Z" hostname="DESKTOP-2E08CL5" tests="2" failures="0" errors="0" skipped="0" time="0.0118133">
-        <testcase classname="src/utils/color.test.ts" name="hexToHsl &gt; converts full hex values" time="0.0063772">
+    <testsuite name="src/context/AuthContext.test.tsx" timestamp="2026-05-04T19:08:08.639Z" hostname="DESKTOP-2E08CL5" tests="4" failures="0" errors="0" skipped="0" time="0.0779446">
+        <testcase classname="src/context/AuthContext.test.tsx" name="AuthContext &gt; loads persisted user from storage and normalizes role" time="0.0373581">
+            <system-err>
+Warning: The current testing environment is not configured to support act(...)
+
+            </system-err>
         </testcase>
-        <testcase classname="src/utils/color.test.ts" name="hexToHsl &gt; converts short hex values and trims input" time="0.0006356">
+        <testcase classname="src/context/AuthContext.test.tsx" name="AuthContext &gt; login succeeds and stores tokens in chosen storage" time="0.0066383">
+            <system-err>
+Warning: The current testing environment is not configured to support act(...)
+
+            </system-err>
         </testcase>
-    </testsuite>
-    <testsuite name="src/utils/gestureDetector.test.ts" timestamp="2026-05-04T18:56:09.902Z" hostname="DESKTOP-2E08CL5" tests="15" failures="0" errors="0" skipped="0" time="0.0209456">
-        <testcase classname="src/utils/gestureDetector.test.ts" name="gestureDetector &gt; euclideanDistance &gt; should calculate distance between two identical points as 0" time="0.0056869">
+        <testcase classname="src/context/AuthContext.test.tsx" name="AuthContext &gt; login handles backend error payloads and network errors" time="0.0204527">
+            <system-err>
+Warning: The current testing environment is not configured to support act(...)
+
+Login error: Error: network
+    at C:/Users/amin/Desktop/EspritHubPi/SkillUpTnFrontBack/frontend/src/context/AuthContext.test.tsx:97:37
+    at file:///C:/Users/amin/Desktop/EspritHubPi/SkillUpTnFrontBack/frontend/node_modules/@vitest/runner/dist/chunk-artifact.js:1903:20
+
+            </system-err>
         </testcase>
-        <testcase classname="src/utils/gestureDetector.test.ts" name="gestureDetector &gt; euclideanDistance &gt; should calculate distance in 2D (z=0)" time="0.000604">
-        </testcase>
-        <testcase classname="src/utils/gestureDetector.test.ts" name="gestureDetector &gt; euclideanDistance &gt; should calculate distance in 3D" time="0.0004991">
-        </testcase>
-        <testcase classname="src/utils/gestureDetector.test.ts" name="gestureDetector &gt; euclideanDistance &gt; should calculate distance with normalized coordinates (0-1)" time="0.0003117">
-        </testcase>
-        <testcase classname="src/utils/gestureDetector.test.ts" name="gestureDetector &gt; euclideanDistance &gt; should be symmetric (distance(p1,p2) = distance(p2,p1))" time="0.0002747">
-        </testcase>
-        <testcase classname="src/utils/gestureDetector.test.ts" name="gestureDetector &gt; calculateReferenceDistance &gt; should calculate distance between wrist (0) and middle MCP (9)" time="0.0005544">
-        </testcase>
-        <testcase classname="src/utils/gestureDetector.test.ts" name="gestureDetector &gt; calculateReferenceDistance &gt; should calculate reference distance in 3D" time="0.0003779">
-        </testcase>
-        <testcase classname="src/utils/gestureDetector.test.ts" name="gestureDetector &gt; calculateReferenceDistance &gt; should work with realistic hand landmarks" time="0.0009884">
-        </testcase>
-        <testcase classname="src/utils/gestureDetector.test.ts" name="gestureDetector &gt; normalizedDistance &gt; should normalize distance by reference distance" time="0.0008749">
-        </testcase>
-        <testcase classname="src/utils/gestureDetector.test.ts" name="gestureDetector &gt; normalizedDistance &gt; should return value &gt; 1 when distance exceeds reference" time="0.0007757">
-        </testcase>
-        <testcase classname="src/utils/gestureDetector.test.ts" name="gestureDetector &gt; normalizedDistance &gt; should return value &lt; 1 when distance is less than reference" time="0.0003364">
-        </testcase>
-        <testcase classname="src/utils/gestureDetector.test.ts" name="gestureDetector &gt; normalizedDistance &gt; should detect extended finger (normalized distance &gt; 0.6)" time="0.0004628">
-        </testcase>
-        <testcase classname="src/utils/gestureDetector.test.ts" name="gestureDetector &gt; normalizedDistance &gt; should detect closed finger (normalized distance &lt; 0.3)" time="0.0005132">
-        </testcase>
-        <testcase classname="src/utils/gestureDetector.test.ts" name="gestureDetector &gt; normalizedDistance &gt; should be independent of hand size with proper reference" time="0.0004985">
-        </testcase>
-        <testcase classname="src/utils/gestureDetector.test.ts" name="gestureDetector &gt; Integration - Complete gesture detection flow &gt; should correctly normalize distances for gesture detection" time="0.0005966">
+        <testcase classname="src/context/AuthContext.test.tsx" name="AuthContext &gt; logout clears storages and auth state" time="0.0088415">
+            <system-err>
+Warning: The current testing environment is not configured to support act(...)
+
+Warning: The current testing environment is not configured to support act(...)
+
+            </system-err>
         </testcase>
     </testsuite>
-    <testsuite name="src/utils/gestureValidator.test.ts" timestamp="2026-05-04T18:56:09.905Z" hostname="DESKTOP-2E08CL5" tests="4" failures="0" errors="0" skipped="0" time="0.0174244">
-        <testcase classname="src/utils/gestureValidator.test.ts" name="GestureValidator &gt; starts validation with progress 0" time="0.0101409">
+    <testsuite name="src/context/DataContext.test.tsx" timestamp="2026-05-04T19:08:08.642Z" hostname="DESKTOP-2E08CL5" tests="4" failures="0" errors="0" skipped="0" time="0.0847711">
+        <testcase classname="src/context/DataContext.test.tsx" name="DataContext &gt; loads initial data and notifications" time="0.0504136">
+            <system-err>
+Warning: The current testing environment is not configured to support act(...)
+
+Warning: The current testing environment is not configured to support act(...)
+
+Warning: The current testing environment is not configured to support act(...)
+
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+
+            </system-err>
         </testcase>
-        <testcase classname="src/utils/gestureValidator.test.ts" name="GestureValidator &gt; validates gesture after stability duration then enters cooldown" time="0.0012567">
+        <testcase classname="src/context/DataContext.test.tsx" name="DataContext &gt; fetchWithAuth adds authorization and handles mutation toasts" time="0.0100403">
+            <system-err>
+Warning: The current testing environment is not configured to support act(...)
+
+Warning: The current testing environment is not configured to support act(...)
+
+Warning: The current testing environment is not configured to support act(...)
+
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+
+            </system-err>
         </testcase>
-        <testcase classname="src/utils/gestureValidator.test.ts" name="GestureValidator &gt; returns unstable when gesture changes too many times" time="0.0010429">
+        <testcase classname="src/context/DataContext.test.tsx" name="DataContext &gt; fetchWithAuth refreshes token on 401 and retries" time="0.0106089">
+            <system-err>
+Warning: The current testing environment is not configured to support act(...)
+
+Warning: The current testing environment is not configured to support act(...)
+
+Warning: The current testing environment is not configured to support act(...)
+
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+
+            </system-err>
         </testcase>
-        <testcase classname="src/utils/gestureValidator.test.ts" name="GestureValidator &gt; resets internal state" time="0.0006072">
+        <testcase classname="src/context/DataContext.test.tsx" name="DataContext &gt; helpers update local state" time="0.009686">
+            <system-err>
+Warning: The current testing environment is not configured to support act(...)
+
+Warning: The current testing environment is not configured to support act(...)
+
+Warning: The current testing environment is not configured to support act(...)
+
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+
+            </system-err>
         </testcase>
     </testsuite>
-    <testsuite name="src/utils/i18n.test.ts" timestamp="2026-05-04T18:56:09.906Z" hostname="DESKTOP-2E08CL5" tests="4" failures="0" errors="0" skipped="0" time="0.0123576">
-        <testcase classname="src/utils/i18n.test.ts" name="i18n utils &gt; translates known keys for explicit language" time="0.0054325">
+    <testsuite name="src/context/TranslationContext.test.tsx" timestamp="2026-05-04T19:08:08.645Z" hostname="DESKTOP-2E08CL5" tests="2" failures="0" errors="0" skipped="0" time="0.0572958">
+        <testcase classname="src/context/TranslationContext.test.tsx" name="TranslationContext &gt; exposes supported languages and identity t()" time="0.0368816">
+            <system-err>
+Warning: The current testing environment is not configured to support act(...)
+
+            </system-err>
         </testcase>
-        <testcase classname="src/utils/i18n.test.ts" name="i18n utils &gt; falls back to french for auto/fr and key when missing" time="0.0005824">
-        </testcase>
-        <testcase classname="src/utils/i18n.test.ts" name="i18n utils &gt; checks translation existence" time="0.0004195">
-        </testcase>
-        <testcase classname="src/utils/i18n.test.ts" name="i18n utils &gt; returns supported language metadata" time="0.0018618">
+        <testcase classname="src/context/TranslationContext.test.tsx" name="TranslationContext &gt; translates root text nodes then restores on fr" time="0.0169995">
+            <system-err>
+Warning: The current testing environment is not configured to support act(...)
+
+Warning: The current testing environment is not configured to support act(...)
+Warning: The current testing environment is not configured to support act(...)
+
+Warning: The current testing environment is not configured to support act(...)
+
+Warning: The current testing environment is not configured to support act(...)
+
+            </system-err>
         </testcase>
     </testsuite>
-    <testsuite name="src/utils/locationUtils.test.ts" timestamp="2026-05-04T18:56:09.907Z" hostname="DESKTOP-2E08CL5" tests="5" failures="0" errors="0" skipped="0" time="0.0152797">
-        <testcase classname="src/utils/locationUtils.test.ts" name="locationUtils &gt; returns defaults when location is missing" time="0.0074522">
+    <testsuite name="src/services/chatService.test.ts" timestamp="2026-05-04T19:08:08.646Z" hostname="DESKTOP-2E08CL5" tests="3" failures="0" errors="0" skipped="0" time="0.0205591">
+        <testcase classname="src/services/chatService.test.ts" name="chatService &gt; returns message on success" time="0.009981">
+            <system-out>
+🔍 ChatService - Envoi de la requête: {
+  url: &apos;http://localhost:3000/chat&apos;,
+  payload: { message: &apos;hi&apos;, activityId: &apos;a1&apos; }
+}
+
+📥 ChatService - Réponse reçue: { status: 200, ok: true }
+
+            </system-out>
         </testcase>
-        <testcase classname="src/utils/locationUtils.test.ts" name="locationUtils &gt; resolves known cities" time="0.0007973">
+        <testcase classname="src/services/chatService.test.ts" name="chatService &gt; maps 400/404/503 and generic errors" time="0.0058738">
+            <system-out>
+🔍 ChatService - Envoi de la requête: {
+  url: &apos;http://localhost:3000/chat&apos;,
+  payload: { message: &apos;x&apos;, activityId: &apos;1&apos; }
+}
+
+📥 ChatService - Réponse reçue: { status: 400, ok: false }
+
+🔍 ChatService - Envoi de la requête: {
+  url: &apos;http://localhost:3000/chat&apos;,
+  payload: { message: &apos;x&apos;, activityId: &apos;1&apos; }
+}
+
+📥 ChatService - Réponse reçue: { status: 404, ok: false }
+
+🔍 ChatService - Envoi de la requête: {
+  url: &apos;http://localhost:3000/chat&apos;,
+  payload: { message: &apos;x&apos;, activityId: &apos;1&apos; }
+}
+
+📥 ChatService - Réponse reçue: { status: 503, ok: false }
+
+🔍 ChatService - Envoi de la requête: {
+  url: &apos;http://localhost:3000/chat&apos;,
+  payload: { message: &apos;x&apos;, activityId: &apos;1&apos; }
+}
+
+📥 ChatService - Réponse reçue: { status: 500, ok: false }
+
+            </system-out>
         </testcase>
-        <testcase classname="src/utils/locationUtils.test.ts" name="locationUtils &gt; parses raw coordinates from text" time="0.0010219">
-        </testcase>
-        <testcase classname="src/utils/locationUtils.test.ts" name="locationUtils &gt; formats location object to persistent string" time="0.0009766">
-        </testcase>
-        <testcase classname="src/utils/locationUtils.test.ts" name="locationUtils &gt; extracts address from encoded location" time="0.0007371">
+        <testcase classname="src/services/chatService.test.ts" name="chatService &gt; throws generic connection error for non-Error throws" time="0.0009797">
+            <system-out>
+🔍 ChatService - Envoi de la requête: {
+  url: &apos;http://localhost:3000/chat&apos;,
+  payload: { message: &apos;x&apos;, activityId: &apos;1&apos; }
+}
+
+            </system-out>
         </testcase>
     </testsuite>
-    <testsuite name="src/pages/hr/activityChatParse.spec.ts" timestamp="2026-05-04T18:56:09.909Z" hostname="DESKTOP-2E08CL5" tests="8" failures="0" errors="0" skipped="0" time="0.1914135">
-        <testcase classname="src/pages/hr/activityChatParse.spec.ts" name="activityChatParse &gt; parseActivityFromText &gt; détecte une formation et le titre après le mot formation" time="0.0086547">
+    <testsuite name="src/services/deeplService.test.ts" timestamp="2026-05-04T19:08:08.649Z" hostname="DESKTOP-2E08CL5" tests="5" failures="0" errors="0" skipped="0" time="0.0276966">
+        <testcase classname="src/services/deeplService.test.ts" name="deeplService &gt; returns original text for fr/auto target" time="0.0076405">
         </testcase>
-        <testcase classname="src/pages/hr/activityChatParse.spec.ts" name="activityChatParse &gt; parseActivityFromText &gt; détecte certification et priorité haute" time="0.0010369">
+        <testcase classname="src/services/deeplService.test.ts" name="deeplService &gt; translates with API when available" time="0.0025191">
         </testcase>
-        <testcase classname="src/pages/hr/activityChatParse.spec.ts" name="activityChatParse &gt; parseActivityFromText &gt; extrait une compétence présente dans le texte" time="0.000521">
+        <testcase classname="src/services/deeplService.test.ts" name="deeplService &gt; falls back on API errors" time="0.0097704">
+            <system-err>
+DeepL API error: bad request
+
+DeepL translation error: Error: network
+    at C:/Users/amin/Desktop/EspritHubPi/SkillUpTnFrontBack/frontend/src/services/deeplService.test.ts:43:37
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at file:///C:/Users/amin/Desktop/EspritHubPi/SkillUpTnFrontBack/frontend/node_modules/@vitest/runner/dist/chunk-artifact.js:1903:20
+
+            </system-err>
         </testcase>
-        <testcase classname="src/pages/hr/activityChatParse.spec.ts" name="activityChatParse &gt; generateRecommendations &gt; ajoute une reco pour gros groupe" time="0.0004974">
+        <testcase classname="src/services/deeplService.test.ts" name="deeplService &gt; detectLanguage uses FR fallback on errors" time="0.0010917">
         </testcase>
-        <testcase classname="src/pages/hr/activityChatParse.spec.ts" name="activityChatParse &gt; generateRecommendations &gt; ajoute une reco pour formation" time="0.0004569">
+        <testcase classname="src/services/deeplService.test.ts" name="deeplService &gt; translateBatch handles success and fallback" time="0.0027513">
         </testcase>
-        <testcase classname="src/pages/hr/activityChatParse.spec.ts" name="activityChatParse &gt; generateManagerMessage &gt; produit sujet et corps" time="0.172813">
+    </testsuite>
+    <testsuite name="src/services/puterService.test.ts" timestamp="2026-05-04T19:08:08.651Z" hostname="DESKTOP-2E08CL5" tests="7" failures="0" errors="0" skipped="0" time="0.0300624">
+        <testcase classname="src/services/puterService.test.ts" name="puterService &gt; detects availability" time="0.0051391">
         </testcase>
-        <testcase classname="src/pages/hr/activityChatParse.spec.ts" name="activityChatParse &gt; parseFieldCompletion &gt; parse champ: valeur" time="0.0014179">
+        <testcase classname="src/services/puterService.test.ts" name="puterService &gt; returns original for fr/auto/empty" time="0.0025826">
         </testcase>
-        <testcase classname="src/pages/hr/activityChatParse.spec.ts" name="activityChatParse &gt; parseFieldCompletion &gt; retourne null si pas de préfixe attendu" time="0.0003249">
+        <testcase classname="src/services/puterService.test.ts" name="puterService &gt; returns original when puter is unavailable" time="0.0031027">
+            <system-err>
+Puter.js not available, falling back to original text
+
+            </system-err>
+        </testcase>
+        <testcase classname="src/services/puterService.test.ts" name="puterService &gt; translates with puter and strips wrapping quotes" time="0.0019454">
+            <system-out>
+[Puter.js] Sending translation request...
+
+[Puter.js] Translation result: &quot;hello&quot;
+
+            </system-out>
+        </testcase>
+        <testcase classname="src/services/puterService.test.ts" name="puterService &gt; falls back to MyMemory when puter throws" time="0.0070046">
+            <system-out>
+[Puter.js] Sending translation request...
+
+[Puter.js] Falling back to MyMemory API...
+[MyMemory] Fallback translation...
+
+            </system-out>
+            <system-err>
+[Puter.js] Translation error details: {
+  message: &apos;boom&apos;,
+  stack: &apos;Error: boom\n&apos; +
+    &apos;    at C:/Users/amin/Desktop/EspritHubPi/SkillUpTnFrontBack/frontend/src/services/puterService.test.ts:42:41\n&apos; +
+    &apos;    at file:///C:/Users/amin/Desktop/EspritHubPi/SkillUpTnFrontBack/frontend/node_modules/@vitest/runner/dist/chunk-artifact.js:302:11\n&apos; +
+    &apos;    at file:///C:/Users/amin/Desktop/EspritHubPi/SkillUpTnFrontBack/frontend/node_modules/@vitest/runner/dist/chunk-artifact.js:1903:26\n&apos; +
+    &apos;    at file:///C:/Users/amin/Desktop/EspritHubPi/SkillUpTnFrontBack/frontend/node_modules/@vitest/runner/dist/chunk-artifact.js:2326:20\n&apos; +
+    &apos;    at new Promise (&lt;anonymous&gt;)\n&apos; +
+    &apos;    at runWithCancel (file:///C:/Users/amin/Desktop/EspritHubPi/SkillUpTnFrontBack/frontend/node_modules/@vitest/runner/dist/chunk-artifact.js:2323:10)\n&apos; +
+    &apos;    at file:///C:/Users/amin/Desktop/EspritHubPi/SkillUpTnFrontBack/frontend/node_modules/@vitest/runner/dist/chunk-artifact.js:2305:20\n&apos; +
+    &apos;    at new Promise (&lt;anonymous&gt;)\n&apos; +
+    &apos;    at runWithTimeout (file:///C:/Users/amin/Desktop/EspritHubPi/SkillUpTnFrontBack/frontend/node_modules/@vitest/runner/dist/chunk-artifact.js:2272:10)\n&apos; +
+    &apos;    at file:///C:/Users/amin/Desktop/EspritHubPi/SkillUpTnFrontBack/frontend/node_modules/@vitest/runner/dist/chunk-artifact.js:2955:64&apos;,
+  name: &apos;Error&apos;,
+  error: Error: boom
+      at C:/Users/amin/Desktop/EspritHubPi/SkillUpTnFrontBack/frontend/src/services/puterService.test.ts:42:41
+      at file:///C:/Users/amin/Desktop/EspritHubPi/SkillUpTnFrontBack/frontend/node_modules/@vitest/runner/dist/chunk-artifact.js:302:11
+      at file:///C:/Users/amin/Desktop/EspritHubPi/SkillUpTnFrontBack/frontend/node_modules/@vitest/runner/dist/chunk-artifact.js:1903:26
+      at file:///C:/Users/amin/Desktop/EspritHubPi/SkillUpTnFrontBack/frontend/node_modules/@vitest/runner/dist/chunk-artifact.js:2326:20
+      at new Promise (&lt;anonymous&gt;)
+      at runWithCancel (file:///C:/Users/amin/Desktop/EspritHubPi/SkillUpTnFrontBack/frontend/node_modules/@vitest/runner/dist/chunk-artifact.js:2323:10)
+      at file:///C:/Users/amin/Desktop/EspritHubPi/SkillUpTnFrontBack/frontend/node_modules/@vitest/runner/dist/chunk-artifact.js:2305:20
+      at new Promise (&lt;anonymous&gt;)
+      at runWithTimeout (file:///C:/Users/amin/Desktop/EspritHubPi/SkillUpTnFrontBack/frontend/node_modules/@vitest/runner/dist/chunk-artifact.js:2272:10)
+      at file:///C:/Users/amin/Desktop/EspritHubPi/SkillUpTnFrontBack/frontend/node_modules/@vitest/runner/dist/chunk-artifact.js:2955:64
+}
+
+            </system-err>
+        </testcase>
+        <testcase classname="src/services/puterService.test.ts" name="puterService &gt; translateWithFallback catches unexpected failures" time="0.00256">
+            <system-out>
+[Puter.js] Sending translation request...
+
+[Puter.js] Falling back to MyMemory API...
+[MyMemory] Fallback translation...
+
+            </system-out>
+            <system-err>
+[Puter.js] Translation error details: {
+  message: &apos;boom&apos;,
+  stack: &apos;Error: boom\n&apos; +
+    &apos;    at C:/Users/amin/Desktop/EspritHubPi/SkillUpTnFrontBack/frontend/src/services/puterService.test.ts:55:41\n&apos; +
+    &apos;    at file:///C:/Users/amin/Desktop/EspritHubPi/SkillUpTnFrontBack/frontend/node_modules/@vitest/runner/dist/chunk-artifact.js:302:11\n&apos; +
+    &apos;    at file:///C:/Users/amin/Desktop/EspritHubPi/SkillUpTnFrontBack/frontend/node_modules/@vitest/runner/dist/chunk-artifact.js:1903:26\n&apos; +
+    &apos;    at file:///C:/Users/amin/Desktop/EspritHubPi/SkillUpTnFrontBack/frontend/node_modules/@vitest/runner/dist/chunk-artifact.js:2326:20\n&apos; +
+    &apos;    at new Promise (&lt;anonymous&gt;)\n&apos; +
+    &apos;    at runWithCancel (file:///C:/Users/amin/Desktop/EspritHubPi/SkillUpTnFrontBack/frontend/node_modules/@vitest/runner/dist/chunk-artifact.js:2323:10)\n&apos; +
+    &apos;    at file:///C:/Users/amin/Desktop/EspritHubPi/SkillUpTnFrontBack/frontend/node_modules/@vitest/runner/dist/chunk-artifact.js:2305:20\n&apos; +
+    &apos;    at new Promise (&lt;anonymous&gt;)\n&apos; +
+    &apos;    at runWithTimeout (file:///C:/Users/amin/Desktop/EspritHubPi/SkillUpTnFrontBack/frontend/node_modules/@vitest/runner/dist/chunk-artifact.js:2272:10)\n&apos; +
+    &apos;    at file:///C:/Users/amin/Desktop/EspritHubPi/SkillUpTnFrontBack/frontend/node_modules/@vitest/runner/dist/chunk-artifact.js:2955:64&apos;,
+  name: &apos;Error&apos;,
+  error: Error: boom
+      at C:/Users/amin/Desktop/EspritHubPi/SkillUpTnFrontBack/frontend/src/services/puterService.test.ts:55:41
+      at file:///C:/Users/amin/Desktop/EspritHubPi/SkillUpTnFrontBack/frontend/node_modules/@vitest/runner/dist/chunk-artifact.js:302:11
+      at file:///C:/Users/amin/Desktop/EspritHubPi/SkillUpTnFrontBack/frontend/node_modules/@vitest/runner/dist/chunk-artifact.js:1903:26
+      at file:///C:/Users/amin/Desktop/EspritHubPi/SkillUpTnFrontBack/frontend/node_modules/@vitest/runner/dist/chunk-artifact.js:2326:20
+      at new Promise (&lt;anonymous&gt;)
+      at runWithCancel (file:///C:/Users/amin/Desktop/EspritHubPi/SkillUpTnFrontBack/frontend/node_modules/@vitest/runner/dist/chunk-artifact.js:2323:10)
+      at file:///C:/Users/amin/Desktop/EspritHubPi/SkillUpTnFrontBack/frontend/node_modules/@vitest/runner/dist/chunk-artifact.js:2305:20
+      at new Promise (&lt;anonymous&gt;)
+      at runWithTimeout (file:///C:/Users/amin/Desktop/EspritHubPi/SkillUpTnFrontBack/frontend/node_modules/@vitest/runner/dist/chunk-artifact.js:2272:10)
+      at file:///C:/Users/amin/Desktop/EspritHubPi/SkillUpTnFrontBack/frontend/node_modules/@vitest/runner/dist/chunk-artifact.js:2955:64
+}
+
+[MyMemory] Error: Error: network
+    at C:/Users/amin/Desktop/EspritHubPi/SkillUpTnFrontBack/frontend/src/services/puterService.test.ts:58:37
+    at file:///C:/Users/amin/Desktop/EspritHubPi/SkillUpTnFrontBack/frontend/node_modules/@vitest/runner/dist/chunk-artifact.js:302:11
+    at file:///C:/Users/amin/Desktop/EspritHubPi/SkillUpTnFrontBack/frontend/node_modules/@vitest/runner/dist/chunk-artifact.js:1903:26
+    at file:///C:/Users/amin/Desktop/EspritHubPi/SkillUpTnFrontBack/frontend/node_modules/@vitest/runner/dist/chunk-artifact.js:2326:20
+    at new Promise (&lt;anonymous&gt;)
+    at runWithCancel (file:///C:/Users/amin/Desktop/EspritHubPi/SkillUpTnFrontBack/frontend/node_modules/@vitest/runner/dist/chunk-artifact.js:2323:10)
+    at file:///C:/Users/amin/Desktop/EspritHubPi/SkillUpTnFrontBack/frontend/node_modules/@vitest/runner/dist/chunk-artifact.js:2305:20
+    at new Promise (&lt;anonymous&gt;)
+    at runWithTimeout (file:///C:/Users/amin/Desktop/EspritHubPi/SkillUpTnFrontBack/frontend/node_modules/@vitest/runner/dist/chunk-artifact.js:2272:10)
+    at file:///C:/Users/amin/Desktop/EspritHubPi/SkillUpTnFrontBack/frontend/node_modules/@vitest/runner/dist/chunk-artifact.js:2955:64
+
+            </system-err>
+        </testcase>
+        <testcase classname="src/services/puterService.test.ts" name="puterService &gt; translateBatch returns originals in fr/unavailable and loops otherwise" time="0.003278">
+            <system-out>
+[Puter.js] Sending translation request...
+
+[Puter.js] Translation result: ok
+
+[Puter.js] Sending translation request...
+
+[Puter.js] Translation result: ok
+
+            </system-out>
+        </testcase>
+    </testsuite>
+    <testsuite name="src/services/recommendationService.test.ts" timestamp="2026-05-04T19:08:08.655Z" hostname="DESKTOP-2E08CL5" tests="5" failures="0" errors="0" skipped="0" time="0.0202842">
+        <testcase classname="src/services/recommendationService.test.ts" name="RecommendationService &gt; updates token and posts response successfully" time="0.0096652">
+        </testcase>
+        <testcase classname="src/services/recommendationService.test.ts" name="RecommendationService &gt; handles network error (no response)" time="0.0012357">
+        </testcase>
+        <testcase classname="src/services/recommendationService.test.ts" name="RecommendationService &gt; handles 404/500/default errors" time="0.0039569">
+        </testcase>
+        <testcase classname="src/services/recommendationService.test.ts" name="RecommendationService &gt; retries on 401 when refresh succeeds" time="0.0012291">
+        </testcase>
+        <testcase classname="src/services/recommendationService.test.ts" name="RecommendationService &gt; returns session expired on 401 when refresh fails and redirects" time="0.0007364">
+        </testcase>
+    </testsuite>
+    <testsuite name="src/utils/color.test.ts" timestamp="2026-05-04T19:08:08.656Z" hostname="DESKTOP-2E08CL5" tests="2" failures="0" errors="0" skipped="0" time="0.0065687">
+        <testcase classname="src/utils/color.test.ts" name="hexToHsl &gt; converts full hex values" time="0.0037827">
+        </testcase>
+        <testcase classname="src/utils/color.test.ts" name="hexToHsl &gt; converts short hex values and trims input" time="0.0003052">
+        </testcase>
+    </testsuite>
+    <testsuite name="src/utils/gestureDetector.test.ts" timestamp="2026-05-04T19:08:08.657Z" hostname="DESKTOP-2E08CL5" tests="15" failures="0" errors="0" skipped="0" time="0.0130977">
+        <testcase classname="src/utils/gestureDetector.test.ts" name="gestureDetector &gt; euclideanDistance &gt; should calculate distance between two identical points as 0" time="0.0038515">
+        </testcase>
+        <testcase classname="src/utils/gestureDetector.test.ts" name="gestureDetector &gt; euclideanDistance &gt; should calculate distance in 2D (z=0)" time="0.0003632">
+        </testcase>
+        <testcase classname="src/utils/gestureDetector.test.ts" name="gestureDetector &gt; euclideanDistance &gt; should calculate distance in 3D" time="0.0003629">
+        </testcase>
+        <testcase classname="src/utils/gestureDetector.test.ts" name="gestureDetector &gt; euclideanDistance &gt; should calculate distance with normalized coordinates (0-1)" time="0.000253">
+        </testcase>
+        <testcase classname="src/utils/gestureDetector.test.ts" name="gestureDetector &gt; euclideanDistance &gt; should be symmetric (distance(p1,p2) = distance(p2,p1))" time="0.0002242">
+        </testcase>
+        <testcase classname="src/utils/gestureDetector.test.ts" name="gestureDetector &gt; calculateReferenceDistance &gt; should calculate distance between wrist (0) and middle MCP (9)" time="0.000401">
+        </testcase>
+        <testcase classname="src/utils/gestureDetector.test.ts" name="gestureDetector &gt; calculateReferenceDistance &gt; should calculate reference distance in 3D" time="0.0003142">
+        </testcase>
+        <testcase classname="src/utils/gestureDetector.test.ts" name="gestureDetector &gt; calculateReferenceDistance &gt; should work with realistic hand landmarks" time="0.0005281">
+        </testcase>
+        <testcase classname="src/utils/gestureDetector.test.ts" name="gestureDetector &gt; normalizedDistance &gt; should normalize distance by reference distance" time="0.0003891">
+        </testcase>
+        <testcase classname="src/utils/gestureDetector.test.ts" name="gestureDetector &gt; normalizedDistance &gt; should return value &gt; 1 when distance exceeds reference" time="0.0002746">
+        </testcase>
+        <testcase classname="src/utils/gestureDetector.test.ts" name="gestureDetector &gt; normalizedDistance &gt; should return value &lt; 1 when distance is less than reference" time="0.0002574">
+        </testcase>
+        <testcase classname="src/utils/gestureDetector.test.ts" name="gestureDetector &gt; normalizedDistance &gt; should detect extended finger (normalized distance &gt; 0.6)" time="0.0004044">
+        </testcase>
+        <testcase classname="src/utils/gestureDetector.test.ts" name="gestureDetector &gt; normalizedDistance &gt; should detect closed finger (normalized distance &lt; 0.3)" time="0.0003592">
+        </testcase>
+        <testcase classname="src/utils/gestureDetector.test.ts" name="gestureDetector &gt; normalizedDistance &gt; should be independent of hand size with proper reference" time="0.0003403">
+        </testcase>
+        <testcase classname="src/utils/gestureDetector.test.ts" name="gestureDetector &gt; Integration - Complete gesture detection flow &gt; should correctly normalize distances for gesture detection" time="0.0007144">
+        </testcase>
+    </testsuite>
+    <testsuite name="src/utils/gestureValidator.test.ts" timestamp="2026-05-04T19:08:08.661Z" hostname="DESKTOP-2E08CL5" tests="4" failures="0" errors="0" skipped="0" time="0.0155059">
+        <testcase classname="src/utils/gestureValidator.test.ts" name="GestureValidator &gt; starts validation with progress 0" time="0.0082529">
+        </testcase>
+        <testcase classname="src/utils/gestureValidator.test.ts" name="GestureValidator &gt; validates gesture after stability duration then enters cooldown" time="0.0012324">
+        </testcase>
+        <testcase classname="src/utils/gestureValidator.test.ts" name="GestureValidator &gt; returns unstable when gesture changes too many times" time="0.0012084">
+        </testcase>
+        <testcase classname="src/utils/gestureValidator.test.ts" name="GestureValidator &gt; resets internal state" time="0.0007855">
+        </testcase>
+    </testsuite>
+    <testsuite name="src/utils/i18n.test.ts" timestamp="2026-05-04T19:08:08.662Z" hostname="DESKTOP-2E08CL5" tests="4" failures="0" errors="0" skipped="0" time="0.0107369">
+        <testcase classname="src/utils/i18n.test.ts" name="i18n utils &gt; translates known keys for explicit language" time="0.0044765">
+        </testcase>
+        <testcase classname="src/utils/i18n.test.ts" name="i18n utils &gt; falls back to french for auto/fr and key when missing" time="0.0003891">
+        </testcase>
+        <testcase classname="src/utils/i18n.test.ts" name="i18n utils &gt; checks translation existence" time="0.0003593">
+        </testcase>
+        <testcase classname="src/utils/i18n.test.ts" name="i18n utils &gt; returns supported language metadata" time="0.002118">
+        </testcase>
+    </testsuite>
+    <testsuite name="src/utils/locationUtils.test.ts" timestamp="2026-05-04T19:08:08.664Z" hostname="DESKTOP-2E08CL5" tests="5" failures="0" errors="0" skipped="0" time="0.0101647">
+        <testcase classname="src/utils/locationUtils.test.ts" name="locationUtils &gt; returns defaults when location is missing" time="0.0042918">
+        </testcase>
+        <testcase classname="src/utils/locationUtils.test.ts" name="locationUtils &gt; resolves known cities" time="0.0004908">
+        </testcase>
+        <testcase classname="src/utils/locationUtils.test.ts" name="locationUtils &gt; parses raw coordinates from text" time="0.0003736">
+        </testcase>
+        <testcase classname="src/utils/locationUtils.test.ts" name="locationUtils &gt; formats location object to persistent string" time="0.000794">
+        </testcase>
+        <testcase classname="src/utils/locationUtils.test.ts" name="locationUtils &gt; extracts address from encoded location" time="0.0005814">
+        </testcase>
+    </testsuite>
+    <testsuite name="src/test/mediapipe-setup.test.ts" timestamp="2026-05-04T19:08:08.666Z" hostname="DESKTOP-2E08CL5" tests="3" failures="0" errors="0" skipped="0" time="0.0221794">
+        <testcase classname="src/test/mediapipe-setup.test.ts" name="MediaPipe and fast-check setup &gt; should have fast-check available" time="0.0045831">
+        </testcase>
+        <testcase classname="src/test/mediapipe-setup.test.ts" name="MediaPipe and fast-check setup &gt; should verify fast-check works with a simple property" time="0.0113784">
+        </testcase>
+        <testcase classname="src/test/mediapipe-setup.test.ts" name="MediaPipe and fast-check setup &gt; should have MediaPipe types available" time="0.0003311">
+        </testcase>
+    </testsuite>
+    <testsuite name="src/pages/hr/activityChatParse.spec.ts" timestamp="2026-05-04T19:08:08.667Z" hostname="DESKTOP-2E08CL5" tests="8" failures="0" errors="0" skipped="0" time="0.1421602">
+        <testcase classname="src/pages/hr/activityChatParse.spec.ts" name="activityChatParse &gt; parseActivityFromText &gt; détecte une formation et le titre après le mot formation" time="0.0052233">
+        </testcase>
+        <testcase classname="src/pages/hr/activityChatParse.spec.ts" name="activityChatParse &gt; parseActivityFromText &gt; détecte certification et priorité haute" time="0.0009976">
+        </testcase>
+        <testcase classname="src/pages/hr/activityChatParse.spec.ts" name="activityChatParse &gt; parseActivityFromText &gt; extrait une compétence présente dans le texte" time="0.0006005">
+        </testcase>
+        <testcase classname="src/pages/hr/activityChatParse.spec.ts" name="activityChatParse &gt; generateRecommendations &gt; ajoute une reco pour gros groupe" time="0.000605">
+        </testcase>
+        <testcase classname="src/pages/hr/activityChatParse.spec.ts" name="activityChatParse &gt; generateRecommendations &gt; ajoute une reco pour formation" time="0.0004893">
+        </testcase>
+        <testcase classname="src/pages/hr/activityChatParse.spec.ts" name="activityChatParse &gt; generateManagerMessage &gt; produit sujet et corps" time="0.1274484">
+        </testcase>
+        <testcase classname="src/pages/hr/activityChatParse.spec.ts" name="activityChatParse &gt; parseFieldCompletion &gt; parse champ: valeur" time="0.001556">
+        </testcase>
+        <testcase classname="src/pages/hr/activityChatParse.spec.ts" name="activityChatParse &gt; parseFieldCompletion &gt; retourne null si pas de préfixe attendu" time="0.0005434">
         </testcase>
     </testsuite>
 </testsuites>
