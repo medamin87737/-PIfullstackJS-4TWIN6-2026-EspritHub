@@ -55,8 +55,11 @@ export default function RealtimeNotifications() {
 
     // Defer websocket work until after initial paint.
     const deferredStart = globalThis.setTimeout(() => {
-      if ('requestIdleCallback' in globalThis) {
-        ;(globalThis as Window & { requestIdleCallback?: (cb: () => void) => number }).requestIdleCallback?.(() => startRealtime())
+      const requestIdle = (
+        globalThis as typeof globalThis & { requestIdleCallback?: (cb: () => void) => number }
+      ).requestIdleCallback
+      if (typeof requestIdle === 'function') {
+        requestIdle(() => startRealtime())
       } else {
         startRealtime()
       }
