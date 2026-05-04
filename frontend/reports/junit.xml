@@ -1,99 +1,117 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<testsuites name="vitest tests" tests="41" failures="0" errors="0" time="0.1069895">
-    <testsuite name="src/test/mediapipe-setup.test.ts" timestamp="2026-05-04T18:46:20.196Z" hostname="DESKTOP-2E08CL5" tests="3" failures="0" errors="0" skipped="0" time="0.0163017">
-        <testcase classname="src/test/mediapipe-setup.test.ts" name="MediaPipe and fast-check setup &gt; should have fast-check available" time="0.0035544">
+<testsuites name="vitest tests" tests="49" failures="0" errors="0" time="0.3148458">
+    <testsuite name="src/api/chat.test.ts" timestamp="2026-05-04T18:56:09.894Z" hostname="DESKTOP-2E08CL5" tests="8" failures="0" errors="0" skipped="0" time="0.0212206">
+        <testcase classname="src/api/chat.test.ts" name="chat api &gt; rewritePrompt succeeds with existing auth token" time="0.0083069">
         </testcase>
-        <testcase classname="src/test/mediapipe-setup.test.ts" name="MediaPipe and fast-check setup &gt; should verify fast-check works with a simple property" time="0.0091085">
+        <testcase classname="src/api/chat.test.ts" name="chat api &gt; rewritePrompt refreshes token when missing and retries 401" time="0.0011299">
         </testcase>
-        <testcase classname="src/test/mediapipe-setup.test.ts" name="MediaPipe and fast-check setup &gt; should have MediaPipe types available" time="0.000312">
+        <testcase classname="src/api/chat.test.ts" name="chat api &gt; rewritePrompt throws server message when backend returns message" time="0.0038316">
         </testcase>
-    </testsuite>
-    <testsuite name="src/utils/color.test.ts" timestamp="2026-05-04T18:46:20.200Z" hostname="DESKTOP-2E08CL5" tests="2" failures="0" errors="0" skipped="0" time="0.0124054">
-        <testcase classname="src/utils/color.test.ts" name="hexToHsl &gt; converts full hex values" time="0.0080416">
+        <testcase classname="src/api/chat.test.ts" name="chat api &gt; rewritePrompt throws first item when backend returns message array" time="0.0007529">
         </testcase>
-        <testcase classname="src/utils/color.test.ts" name="hexToHsl &gt; converts short hex values and trims input" time="0.0005541">
+        <testcase classname="src/api/chat.test.ts" name="chat api &gt; rewritePrompt surfaces parsing error when json parsing fails" time="0.0007532">
         </testcase>
-    </testsuite>
-    <testsuite name="src/utils/gestureDetector.test.ts" timestamp="2026-05-04T18:46:20.201Z" hostname="DESKTOP-2E08CL5" tests="15" failures="0" errors="0" skipped="0" time="0.0141857">
-        <testcase classname="src/utils/gestureDetector.test.ts" name="gestureDetector &gt; euclideanDistance &gt; should calculate distance between two identical points as 0" time="0.0044205">
+        <testcase classname="src/api/chat.test.ts" name="chat api &gt; askWebsiteGuide throws unauthenticated when no tokens available" time="0.0009588">
         </testcase>
-        <testcase classname="src/utils/gestureDetector.test.ts" name="gestureDetector &gt; euclideanDistance &gt; should calculate distance in 2D (z=0)" time="0.0004091">
+        <testcase classname="src/api/chat.test.ts" name="chat api &gt; askWebsiteGuide succeeds after refresh flow" time="0.0006477">
         </testcase>
-        <testcase classname="src/utils/gestureDetector.test.ts" name="gestureDetector &gt; euclideanDistance &gt; should calculate distance in 3D" time="0.0004276">
-        </testcase>
-        <testcase classname="src/utils/gestureDetector.test.ts" name="gestureDetector &gt; euclideanDistance &gt; should calculate distance with normalized coordinates (0-1)" time="0.000339">
-        </testcase>
-        <testcase classname="src/utils/gestureDetector.test.ts" name="gestureDetector &gt; euclideanDistance &gt; should be symmetric (distance(p1,p2) = distance(p2,p1))" time="0.0003016">
-        </testcase>
-        <testcase classname="src/utils/gestureDetector.test.ts" name="gestureDetector &gt; calculateReferenceDistance &gt; should calculate distance between wrist (0) and middle MCP (9)" time="0.0004778">
-        </testcase>
-        <testcase classname="src/utils/gestureDetector.test.ts" name="gestureDetector &gt; calculateReferenceDistance &gt; should calculate reference distance in 3D" time="0.0003157">
-        </testcase>
-        <testcase classname="src/utils/gestureDetector.test.ts" name="gestureDetector &gt; calculateReferenceDistance &gt; should work with realistic hand landmarks" time="0.0005182">
-        </testcase>
-        <testcase classname="src/utils/gestureDetector.test.ts" name="gestureDetector &gt; normalizedDistance &gt; should normalize distance by reference distance" time="0.000372">
-        </testcase>
-        <testcase classname="src/utils/gestureDetector.test.ts" name="gestureDetector &gt; normalizedDistance &gt; should return value &gt; 1 when distance exceeds reference" time="0.0002609">
-        </testcase>
-        <testcase classname="src/utils/gestureDetector.test.ts" name="gestureDetector &gt; normalizedDistance &gt; should return value &lt; 1 when distance is less than reference" time="0.0002712">
-        </testcase>
-        <testcase classname="src/utils/gestureDetector.test.ts" name="gestureDetector &gt; normalizedDistance &gt; should detect extended finger (normalized distance &gt; 0.6)" time="0.0003214">
-        </testcase>
-        <testcase classname="src/utils/gestureDetector.test.ts" name="gestureDetector &gt; normalizedDistance &gt; should detect closed finger (normalized distance &lt; 0.3)" time="0.0003505">
-        </testcase>
-        <testcase classname="src/utils/gestureDetector.test.ts" name="gestureDetector &gt; normalizedDistance &gt; should be independent of hand size with proper reference" time="0.0003414">
-        </testcase>
-        <testcase classname="src/utils/gestureDetector.test.ts" name="gestureDetector &gt; Integration - Complete gesture detection flow &gt; should correctly normalize distances for gesture detection" time="0.0004981">
+        <testcase classname="src/api/chat.test.ts" name="chat api &gt; askWebsiteGuide handles 403 and retries with new token" time="0.0005541">
         </testcase>
     </testsuite>
-    <testsuite name="src/utils/gestureValidator.test.ts" timestamp="2026-05-04T18:46:20.204Z" hostname="DESKTOP-2E08CL5" tests="4" failures="0" errors="0" skipped="0" time="0.0089044">
-        <testcase classname="src/utils/gestureValidator.test.ts" name="GestureValidator &gt; starts validation with progress 0" time="0.005166">
+    <testsuite name="src/test/mediapipe-setup.test.ts" timestamp="2026-05-04T18:56:09.900Z" hostname="DESKTOP-2E08CL5" tests="3" failures="0" errors="0" skipped="0" time="0.0243911">
+        <testcase classname="src/test/mediapipe-setup.test.ts" name="MediaPipe and fast-check setup &gt; should have fast-check available" time="0.0052953">
         </testcase>
-        <testcase classname="src/utils/gestureValidator.test.ts" name="GestureValidator &gt; validates gesture after stability duration then enters cooldown" time="0.000576">
+        <testcase classname="src/test/mediapipe-setup.test.ts" name="MediaPipe and fast-check setup &gt; should verify fast-check works with a simple property" time="0.0137118">
         </testcase>
-        <testcase classname="src/utils/gestureValidator.test.ts" name="GestureValidator &gt; returns unstable when gesture changes too many times" time="0.0005226">
-        </testcase>
-        <testcase classname="src/utils/gestureValidator.test.ts" name="GestureValidator &gt; resets internal state" time="0.0003271">
+        <testcase classname="src/test/mediapipe-setup.test.ts" name="MediaPipe and fast-check setup &gt; should have MediaPipe types available" time="0.0003986">
         </testcase>
     </testsuite>
-    <testsuite name="src/utils/i18n.test.ts" timestamp="2026-05-04T18:46:20.205Z" hostname="DESKTOP-2E08CL5" tests="4" failures="0" errors="0" skipped="0" time="0.0122536">
-        <testcase classname="src/utils/i18n.test.ts" name="i18n utils &gt; translates known keys for explicit language" time="0.0053267">
+    <testsuite name="src/utils/color.test.ts" timestamp="2026-05-04T18:56:09.901Z" hostname="DESKTOP-2E08CL5" tests="2" failures="0" errors="0" skipped="0" time="0.0118133">
+        <testcase classname="src/utils/color.test.ts" name="hexToHsl &gt; converts full hex values" time="0.0063772">
         </testcase>
-        <testcase classname="src/utils/i18n.test.ts" name="i18n utils &gt; falls back to french for auto/fr and key when missing" time="0.0004971">
-        </testcase>
-        <testcase classname="src/utils/i18n.test.ts" name="i18n utils &gt; checks translation existence" time="0.0003634">
-        </testcase>
-        <testcase classname="src/utils/i18n.test.ts" name="i18n utils &gt; returns supported language metadata" time="0.0016564">
+        <testcase classname="src/utils/color.test.ts" name="hexToHsl &gt; converts short hex values and trims input" time="0.0006356">
         </testcase>
     </testsuite>
-    <testsuite name="src/utils/locationUtils.test.ts" timestamp="2026-05-04T18:46:20.206Z" hostname="DESKTOP-2E08CL5" tests="5" failures="0" errors="0" skipped="0" time="0.0109558">
-        <testcase classname="src/utils/locationUtils.test.ts" name="locationUtils &gt; returns defaults when location is missing" time="0.0055634">
+    <testsuite name="src/utils/gestureDetector.test.ts" timestamp="2026-05-04T18:56:09.902Z" hostname="DESKTOP-2E08CL5" tests="15" failures="0" errors="0" skipped="0" time="0.0209456">
+        <testcase classname="src/utils/gestureDetector.test.ts" name="gestureDetector &gt; euclideanDistance &gt; should calculate distance between two identical points as 0" time="0.0056869">
         </testcase>
-        <testcase classname="src/utils/locationUtils.test.ts" name="locationUtils &gt; resolves known cities" time="0.0004614">
+        <testcase classname="src/utils/gestureDetector.test.ts" name="gestureDetector &gt; euclideanDistance &gt; should calculate distance in 2D (z=0)" time="0.000604">
         </testcase>
-        <testcase classname="src/utils/locationUtils.test.ts" name="locationUtils &gt; parses raw coordinates from text" time="0.0003608">
+        <testcase classname="src/utils/gestureDetector.test.ts" name="gestureDetector &gt; euclideanDistance &gt; should calculate distance in 3D" time="0.0004991">
         </testcase>
-        <testcase classname="src/utils/locationUtils.test.ts" name="locationUtils &gt; formats location object to persistent string" time="0.0004678">
+        <testcase classname="src/utils/gestureDetector.test.ts" name="gestureDetector &gt; euclideanDistance &gt; should calculate distance with normalized coordinates (0-1)" time="0.0003117">
         </testcase>
-        <testcase classname="src/utils/locationUtils.test.ts" name="locationUtils &gt; extracts address from encoded location" time="0.0002825">
+        <testcase classname="src/utils/gestureDetector.test.ts" name="gestureDetector &gt; euclideanDistance &gt; should be symmetric (distance(p1,p2) = distance(p2,p1))" time="0.0002747">
+        </testcase>
+        <testcase classname="src/utils/gestureDetector.test.ts" name="gestureDetector &gt; calculateReferenceDistance &gt; should calculate distance between wrist (0) and middle MCP (9)" time="0.0005544">
+        </testcase>
+        <testcase classname="src/utils/gestureDetector.test.ts" name="gestureDetector &gt; calculateReferenceDistance &gt; should calculate reference distance in 3D" time="0.0003779">
+        </testcase>
+        <testcase classname="src/utils/gestureDetector.test.ts" name="gestureDetector &gt; calculateReferenceDistance &gt; should work with realistic hand landmarks" time="0.0009884">
+        </testcase>
+        <testcase classname="src/utils/gestureDetector.test.ts" name="gestureDetector &gt; normalizedDistance &gt; should normalize distance by reference distance" time="0.0008749">
+        </testcase>
+        <testcase classname="src/utils/gestureDetector.test.ts" name="gestureDetector &gt; normalizedDistance &gt; should return value &gt; 1 when distance exceeds reference" time="0.0007757">
+        </testcase>
+        <testcase classname="src/utils/gestureDetector.test.ts" name="gestureDetector &gt; normalizedDistance &gt; should return value &lt; 1 when distance is less than reference" time="0.0003364">
+        </testcase>
+        <testcase classname="src/utils/gestureDetector.test.ts" name="gestureDetector &gt; normalizedDistance &gt; should detect extended finger (normalized distance &gt; 0.6)" time="0.0004628">
+        </testcase>
+        <testcase classname="src/utils/gestureDetector.test.ts" name="gestureDetector &gt; normalizedDistance &gt; should detect closed finger (normalized distance &lt; 0.3)" time="0.0005132">
+        </testcase>
+        <testcase classname="src/utils/gestureDetector.test.ts" name="gestureDetector &gt; normalizedDistance &gt; should be independent of hand size with proper reference" time="0.0004985">
+        </testcase>
+        <testcase classname="src/utils/gestureDetector.test.ts" name="gestureDetector &gt; Integration - Complete gesture detection flow &gt; should correctly normalize distances for gesture detection" time="0.0005966">
         </testcase>
     </testsuite>
-    <testsuite name="src/pages/hr/activityChatParse.spec.ts" timestamp="2026-05-04T18:46:20.207Z" hostname="DESKTOP-2E08CL5" tests="8" failures="0" errors="0" skipped="0" time="0.0319829">
-        <testcase classname="src/pages/hr/activityChatParse.spec.ts" name="activityChatParse &gt; parseActivityFromText &gt; détecte une formation et le titre après le mot formation" time="0.0040855">
+    <testsuite name="src/utils/gestureValidator.test.ts" timestamp="2026-05-04T18:56:09.905Z" hostname="DESKTOP-2E08CL5" tests="4" failures="0" errors="0" skipped="0" time="0.0174244">
+        <testcase classname="src/utils/gestureValidator.test.ts" name="GestureValidator &gt; starts validation with progress 0" time="0.0101409">
         </testcase>
-        <testcase classname="src/pages/hr/activityChatParse.spec.ts" name="activityChatParse &gt; parseActivityFromText &gt; détecte certification et priorité haute" time="0.000531">
+        <testcase classname="src/utils/gestureValidator.test.ts" name="GestureValidator &gt; validates gesture after stability duration then enters cooldown" time="0.0012567">
         </testcase>
-        <testcase classname="src/pages/hr/activityChatParse.spec.ts" name="activityChatParse &gt; parseActivityFromText &gt; extrait une compétence présente dans le texte" time="0.0002524">
+        <testcase classname="src/utils/gestureValidator.test.ts" name="GestureValidator &gt; returns unstable when gesture changes too many times" time="0.0010429">
         </testcase>
-        <testcase classname="src/pages/hr/activityChatParse.spec.ts" name="activityChatParse &gt; generateRecommendations &gt; ajoute une reco pour gros groupe" time="0.0002464">
+        <testcase classname="src/utils/gestureValidator.test.ts" name="GestureValidator &gt; resets internal state" time="0.0006072">
         </testcase>
-        <testcase classname="src/pages/hr/activityChatParse.spec.ts" name="activityChatParse &gt; generateRecommendations &gt; ajoute une reco pour formation" time="0.0003203">
+    </testsuite>
+    <testsuite name="src/utils/i18n.test.ts" timestamp="2026-05-04T18:56:09.906Z" hostname="DESKTOP-2E08CL5" tests="4" failures="0" errors="0" skipped="0" time="0.0123576">
+        <testcase classname="src/utils/i18n.test.ts" name="i18n utils &gt; translates known keys for explicit language" time="0.0054325">
         </testcase>
-        <testcase classname="src/pages/hr/activityChatParse.spec.ts" name="activityChatParse &gt; generateManagerMessage &gt; produit sujet et corps" time="0.0226128">
+        <testcase classname="src/utils/i18n.test.ts" name="i18n utils &gt; falls back to french for auto/fr and key when missing" time="0.0005824">
         </testcase>
-        <testcase classname="src/pages/hr/activityChatParse.spec.ts" name="activityChatParse &gt; parseFieldCompletion &gt; parse champ: valeur" time="0.0007783">
+        <testcase classname="src/utils/i18n.test.ts" name="i18n utils &gt; checks translation existence" time="0.0004195">
         </testcase>
-        <testcase classname="src/pages/hr/activityChatParse.spec.ts" name="activityChatParse &gt; parseFieldCompletion &gt; retourne null si pas de préfixe attendu" time="0.0002113">
+        <testcase classname="src/utils/i18n.test.ts" name="i18n utils &gt; returns supported language metadata" time="0.0018618">
+        </testcase>
+    </testsuite>
+    <testsuite name="src/utils/locationUtils.test.ts" timestamp="2026-05-04T18:56:09.907Z" hostname="DESKTOP-2E08CL5" tests="5" failures="0" errors="0" skipped="0" time="0.0152797">
+        <testcase classname="src/utils/locationUtils.test.ts" name="locationUtils &gt; returns defaults when location is missing" time="0.0074522">
+        </testcase>
+        <testcase classname="src/utils/locationUtils.test.ts" name="locationUtils &gt; resolves known cities" time="0.0007973">
+        </testcase>
+        <testcase classname="src/utils/locationUtils.test.ts" name="locationUtils &gt; parses raw coordinates from text" time="0.0010219">
+        </testcase>
+        <testcase classname="src/utils/locationUtils.test.ts" name="locationUtils &gt; formats location object to persistent string" time="0.0009766">
+        </testcase>
+        <testcase classname="src/utils/locationUtils.test.ts" name="locationUtils &gt; extracts address from encoded location" time="0.0007371">
+        </testcase>
+    </testsuite>
+    <testsuite name="src/pages/hr/activityChatParse.spec.ts" timestamp="2026-05-04T18:56:09.909Z" hostname="DESKTOP-2E08CL5" tests="8" failures="0" errors="0" skipped="0" time="0.1914135">
+        <testcase classname="src/pages/hr/activityChatParse.spec.ts" name="activityChatParse &gt; parseActivityFromText &gt; détecte une formation et le titre après le mot formation" time="0.0086547">
+        </testcase>
+        <testcase classname="src/pages/hr/activityChatParse.spec.ts" name="activityChatParse &gt; parseActivityFromText &gt; détecte certification et priorité haute" time="0.0010369">
+        </testcase>
+        <testcase classname="src/pages/hr/activityChatParse.spec.ts" name="activityChatParse &gt; parseActivityFromText &gt; extrait une compétence présente dans le texte" time="0.000521">
+        </testcase>
+        <testcase classname="src/pages/hr/activityChatParse.spec.ts" name="activityChatParse &gt; generateRecommendations &gt; ajoute une reco pour gros groupe" time="0.0004974">
+        </testcase>
+        <testcase classname="src/pages/hr/activityChatParse.spec.ts" name="activityChatParse &gt; generateRecommendations &gt; ajoute une reco pour formation" time="0.0004569">
+        </testcase>
+        <testcase classname="src/pages/hr/activityChatParse.spec.ts" name="activityChatParse &gt; generateManagerMessage &gt; produit sujet et corps" time="0.172813">
+        </testcase>
+        <testcase classname="src/pages/hr/activityChatParse.spec.ts" name="activityChatParse &gt; parseFieldCompletion &gt; parse champ: valeur" time="0.0014179">
+        </testcase>
+        <testcase classname="src/pages/hr/activityChatParse.spec.ts" name="activityChatParse &gt; parseFieldCompletion &gt; retourne null si pas de préfixe attendu" time="0.0003249">
         </testcase>
     </testsuite>
 </testsuites>
