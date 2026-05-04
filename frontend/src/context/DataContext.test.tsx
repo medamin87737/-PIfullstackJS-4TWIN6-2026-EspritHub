@@ -52,9 +52,9 @@ describe('DataContext', () => {
     sessionStorage.clear()
     localStorage.setItem('auth_token', 'tok')
     localStorage.setItem('auth_remember_me', 'true')
-    if (globalThis.crypto?.randomUUID) {
-      vi.spyOn(globalThis.crypto, 'randomUUID').mockReturnValue('uuid-1')
-    }
+    vi.spyOn(globalThis.crypto, 'randomUUID').mockReturnValue(
+      '00000000-0000-4000-8000-000000000001' as ReturnType<Crypto['randomUUID']>,
+    )
 
     container = document.createElement('div')
     document.body.appendChild(container)
@@ -117,7 +117,7 @@ describe('DataContext', () => {
         date: new Date().toISOString(),
         duration: '1d',
         location: 'Tunis',
-        priority: 'high',
+        priority: 'consolidate_medium',
         status: 'open',
         created_by: 'HR',
         created_at: new Date().toISOString(),

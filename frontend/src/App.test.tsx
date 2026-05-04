@@ -16,7 +16,7 @@ function mkJson(body: unknown): Response {
 
 describe('App', () => {
   beforeEach(() => {
-    vi.stubEnv('DEV', 'false')
+    vi.stubEnv('DEV', false)
     vi.stubEnv('MODE', 'production')
     vi.stubGlobal(
       'fetch',
