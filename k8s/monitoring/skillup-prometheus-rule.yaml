@@ -1,12 +1,11 @@
-# Règle d’alerte exemple — nécessite Prometheus Operator (kube-prometheus-stack).
-# Ajuster metadata.labels pour correspondre au sélecteur du Prometheus dans ton namespace monitoring.
+# PrometheusRule — skillup namespace (requires kube-prometheus-stack + kube-state-metrics).
+# Label release must match Helm release name (install scripts use "kube-prom").
 apiVersion: monitoring.coreos.com/v1
 kind: PrometheusRule
 metadata:
-  name: skillup-backend-health
+  name: skillup-app-health
   namespace: monitoring
   labels:
-    # À aligner avec ton installation Helm (ex. release: kube-prom)
     release: kube-prom
     app: kube-prometheus-stack
 spec:
@@ -23,6 +22,31 @@ spec:
             severity: warning
             team: skillup
           annotations:
-            summary: 'Backend SkillUp sans suffisamment de pods disponibles'
-            description: |
-              Le deployment backend dans skillup n’a pas tous ses replicas Ready.
+            summary: Backend SkillUp — replicas non disponibles
+            description: Le deployment backend dans skillup n’a pas tous ses pods Ready.
+
+        - alert: SkillUpFrontendReplicasUnavailable
+          expr: |
+            kube_deployment_spec_replicas{namespace="skillup",deployment="frontend"}
+            - kube_deployment_status_replicas_available{namespace="skillup",deployment="frontend"}
+            > 0
+          for: 2m
+          labels:
+            severity: warning
+            team: skillup
+          annotations:
+            summary: Frontend SkillUp — replicas non disponibles
+            description: Le deployment frontend dans skillup n’a pas tous ses pods Ready.
+
+        - alert: SkillUpMongoReplicasUnavailable
+          expr: |
+            kube_deployment_spec_replicas{namespace="skillup",deployment="mongo"}
+            - kube_deployment_status_replicas_available{namespace="skillup",deployment="mongo"}
+            > 0
+          for: 2m
+          labels:
+            severity: critical
+            team: skillup
+          annotations:
+            summary: Mongo SkillUp — replicas non disponibles
+            description: Le deployment mongo dans skillup n’a pas tous ses pods Ready.

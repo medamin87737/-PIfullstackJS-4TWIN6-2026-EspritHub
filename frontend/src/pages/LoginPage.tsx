@@ -225,16 +225,18 @@ export default function LoginPage() {
               </div>
             </div>
             <div className="flex justify-end">
-              <a
-                href="#"
+              <button
+                type="button"
+                onClick={() => setError('Veuillez contacter l administrateur pour reinitialiser le mot de passe.')}
                 className="inline-flex items-center gap-2 text-xs font-medium text-muted-foreground transition-all hover:text-primary hover:underline"
+                aria-label="Aide mot de passe oublie"
               >
                 <span className="relative flex h-6 w-6 items-center justify-center rounded-md bg-muted">
                   <span className="absolute inset-0 rounded-md border border-primary/40 animate-pulse" />
                   <KeyRound className="relative z-10 h-3.5 w-3.5 text-primary" />
                 </span>
                 <span>Mot de passe oublie ?</span>
-              </a>
+              </button>
             </div>
 
             <label className="flex items-center gap-2 text-sm text-muted-foreground">

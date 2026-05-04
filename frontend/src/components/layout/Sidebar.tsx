@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { memo, useCallback, useMemo, useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import {
@@ -56,23 +56,28 @@ interface SidebarProps {
   setCollapsed: (collapsed: boolean) => void
 }
 
-export default function Sidebar({ collapsed, setCollapsed }: SidebarProps) {
+function Sidebar({ collapsed, setCollapsed }: SidebarProps) {
   const { user, logout } = useAuth()
   const location = useLocation()
   const [isLoggingOut, setIsLoggingOut] = useState(false)
 
   if (!user) return null
 
-  const navItems = roleNavItems[user.role] ?? []
+  const navItems = useMemo(() => roleNavItems[user.role] ?? [], [user.role])
+  const userInitials = useMemo(() => user.name.split(' ').map((n) => n[0]).join('').slice(0, 2), [user.name])
 
-  const handleLogout = () => {
+  const handleLogout = useCallback(() => {
     if (isLoggingOut) return
     setIsLoggingOut(true)
     setTimeout(() => {
       logout()
       setIsLoggingOut(false)
     }, 1200)
-  }
+  }, [isLoggingOut, logout])
+
+  const toggleCollapsed = useCallback(() => {
+    setCollapsed(!collapsed)
+  }, [collapsed, setCollapsed])
 
   return (
     <>
@@ -158,7 +163,7 @@ export default function Sidebar({ collapsed, setCollapsed }: SidebarProps) {
       <div className="border-t border-sidebar-border p-3">
         <div className={cn('flex items-center gap-3', collapsed && 'justify-center')}>
           <div className="user-avatar-dynamic flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-xs font-semibold text-white">
-            {user.name.split(' ').map(n => n[0]).join('').slice(0, 2)}
+            {userInitials}
           </div>
           {!collapsed && (
             <div className="flex min-w-0 flex-1 flex-col">
@@ -176,7 +181,7 @@ export default function Sidebar({ collapsed, setCollapsed }: SidebarProps) {
 
       {/* Collapse toggle */}
       <button
-        onClick={() => setCollapsed(!collapsed)}
+        onClick={toggleCollapsed}
         className="absolute -right-3 top-20 flex h-6 w-6 items-center justify-center rounded-full border border-border bg-card text-muted-foreground shadow-sm transition-colors hover:bg-accent"
       >
         {collapsed ? <ChevronRight className="h-3 w-3" /> : <ChevronLeft className="h-3 w-3" />}
@@ -185,3 +190,5 @@ export default function Sidebar({ collapsed, setCollapsed }: SidebarProps) {
     </>
   )
 }
+
+export default memo(Sidebar)

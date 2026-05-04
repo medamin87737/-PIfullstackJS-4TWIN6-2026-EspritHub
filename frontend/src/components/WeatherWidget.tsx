@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { memo, useCallback, useEffect, useMemo, useState } from 'react';
 import { Cloud, Sun, CloudRain, CloudSnow, CloudLightning, Wind, Droplets } from 'lucide-react';
 import WeatherModal from './WeatherModal';
 
@@ -39,7 +39,7 @@ interface WeatherWidgetProps {
   lng?: number;
 }
 
-export default function WeatherWidget({ collapsed, city = 'Tunis', lat = 36.8065, lng = 10.1815 }: WeatherWidgetProps) {
+function WeatherWidget({ collapsed, city = 'Tunis', lat = 36.8065, lng = 10.1815 }: WeatherWidgetProps) {
   const [weather, setWeather] = useState<WeatherData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -83,9 +83,18 @@ export default function WeatherWidget({ collapsed, city = 'Tunis', lat = 36.8065
     return () => clearInterval(interval);
   }, [lat, lng, city]);
 
-  const handleClick = () => {
+  const handleClick = useCallback(() => {
     setIsModalOpen(!isModalOpen);
-  };
+  }, [isModalOpen]);
+
+  const closeModal = useCallback(() => {
+    setIsModalOpen(false);
+  }, []);
+
+  const weatherInfo = useMemo(
+    () => weatherCodes[weather?.weatherCode ?? -1] || { icon: <Cloud className="h-4 w-4" />, description: 'Inconnu', color: 'text-gray-500' },
+    [weather?.weatherCode],
+  );
 
   if (collapsed) {
     return (
@@ -106,7 +115,7 @@ export default function WeatherWidget({ collapsed, city = 'Tunis', lat = 36.8065
         </button>
         <WeatherModal 
           isOpen={isModalOpen} 
-          onClose={() => setIsModalOpen(false)}
+          onClose={closeModal}
           initialCity={city}
           initialLat={lat}
           initialLng={lng}
@@ -129,7 +138,7 @@ export default function WeatherWidget({ collapsed, city = 'Tunis', lat = 36.8065
         </div>
         <WeatherModal 
           isOpen={isModalOpen} 
-          onClose={() => setIsModalOpen(false)}
+          onClose={closeModal}
           initialCity={city}
           initialLat={lat}
           initialLng={lng}
@@ -152,7 +161,7 @@ export default function WeatherWidget({ collapsed, city = 'Tunis', lat = 36.8065
         </div>
         <WeatherModal 
           isOpen={isModalOpen} 
-          onClose={() => setIsModalOpen(false)}
+          onClose={closeModal}
           initialCity={city}
           initialLat={lat}
           initialLng={lng}
@@ -160,8 +169,6 @@ export default function WeatherWidget({ collapsed, city = 'Tunis', lat = 36.8065
       </>
     );
   }
-
-  const weatherInfo = weatherCodes[weather.weatherCode] || { icon: <Cloud className="h-4 w-4" />, description: 'Inconnu', color: 'text-gray-500' };
 
   return (
     <>
@@ -197,7 +204,7 @@ export default function WeatherWidget({ collapsed, city = 'Tunis', lat = 36.8065
       </div>
       <WeatherModal 
         isOpen={isModalOpen} 
-        onClose={() => setIsModalOpen(false)}
+        onClose={closeModal}
         initialCity={city}
         initialLat={lat}
         initialLng={lng}
@@ -205,3 +212,5 @@ export default function WeatherWidget({ collapsed, city = 'Tunis', lat = 36.8065
     </>
   );
 }
+
+export default memo(WeatherWidget);

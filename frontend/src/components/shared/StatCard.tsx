@@ -1,3 +1,4 @@
+import { memo } from 'react'
 import { cn } from '../../../lib/utils'
 
 interface StatCardProps {
@@ -8,7 +9,7 @@ interface StatCardProps {
   className?: string
 }
 
-export default function StatCard({ title, value, icon, trend, className }: StatCardProps) {
+function StatCard({ title, value, icon, trend, className }: StatCardProps) {
   return (
     <div className={cn('group rounded-xl border border-border bg-card p-5 card-animated', className)}>
       <div className="flex items-start justify-between">
@@ -28,3 +29,5 @@ export default function StatCard({ title, value, icon, trend, className }: StatC
     </div>
   )
 }
+
+export default memo(StatCard)

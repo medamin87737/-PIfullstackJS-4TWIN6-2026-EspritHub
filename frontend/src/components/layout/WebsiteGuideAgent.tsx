@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { memo, useEffect, useMemo, useRef, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { createPortal } from 'react-dom'
 import {
@@ -76,7 +76,7 @@ function getPathIcon(path: string) {
   return Sparkles
 }
 
-export default function WebsiteGuideAgent() {
+function WebsiteGuideAgent() {
   const { user } = useAuth()
   const { pathname } = useLocation()
   const navigate = useNavigate()
@@ -543,4 +543,6 @@ export default function WebsiteGuideAgent() {
     </div>
   )
 }
+
+export default memo(WebsiteGuideAgent)
 

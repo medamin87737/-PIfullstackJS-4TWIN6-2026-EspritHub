@@ -2,7 +2,6 @@ import { useMemo, useRef, useState } from 'react'
 import {
   FileText, Download, Eraser, Bold, Italic, Underline, List, ListOrdered, CalendarDays, Wand2, SendHorizontal, X,
 } from 'lucide-react'
-import { jsPDF } from 'jspdf'
 import { useToast } from '../../../hooks/use-toast'
 import { rewritePrompt } from '../../api/chat'
 
@@ -92,8 +91,9 @@ export default function HRReports() {
     }
   }
 
-  const handleExportPdf = () => {
+  const handleExportPdf = async () => {
     try {
+      const { jsPDF } = await import('jspdf')
       const safeTitle = sanitizeFilename(title)
       const text = editorRef.current?.innerText?.trim() ?? ''
       const lines = text

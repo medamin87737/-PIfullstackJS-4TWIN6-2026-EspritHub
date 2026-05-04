@@ -1,30 +1,33 @@
-import { useState } from 'react'
+import { lazy, memo, Suspense, useCallback, useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import { useData } from '../../context/DataContext'
 import { Bell, Sun, Moon, Award } from 'lucide-react'
 import { cn } from '../../../lib/utils'
-import WeatherWidget from '../WeatherWidget'
-import WebsiteGuideAgent from './WebsiteGuideAgent'
+const WeatherWidget = lazy(() => import('../WeatherWidget'))
+const WebsiteGuideAgent = lazy(() => import('./WebsiteGuideAgent'))
 
-export default function Header() {
+function Header() {
   const { user } = useAuth()
   const { getUserNotifications, markNotificationRead, refreshNotifications } = useData()
   const navigate = useNavigate()
   const [darkMode, setDarkMode] = useState(false)
   const [showNotifications, setShowNotifications] = useState(false)
+  const [showDeferredTools, setShowDeferredTools] = useState(false)
 
   if (!user) return null
 
-  const userNotifications = getUserNotifications(user.id)
-  const unreadCount = userNotifications.filter(n => !n.read).length
+  const userNotifications = useMemo(() => getUserNotifications(user.id), [getUserNotifications, user.id])
+  const topNotifications = useMemo(() => userNotifications.slice(0, 6), [userNotifications])
+  const unreadCount = useMemo(() => userNotifications.filter((n) => !n.read).length, [userNotifications])
+  const userInitials = useMemo(() => user.name.split(' ').map((n) => n[0]).join('').slice(0, 2), [user.name])
 
-  const toggleDarkMode = () => {
+  const toggleDarkMode = useCallback(() => {
     setDarkMode(!darkMode)
     document.documentElement.classList.toggle('dark')
-  }
+  }, [darkMode])
 
-  const goToNotificationTarget = (n: { rawType?: string; activity_id?: string; data?: Record<string, any> }) => {
+  const goToNotificationTarget = useCallback((n: { rawType?: string; activity_id?: string; data?: Record<string, any> }) => {
     if (n.rawType === 'CERTIFICATE_ISSUED') {
       navigate('/employee/notifications')
       return
@@ -56,16 +59,41 @@ export default function Header() {
       return
     }
     navigate('/admin/dashboard')
-  }
+  }, [navigate, user.role])
+
+  const handleToggleNotifications = useCallback(() => {
+    const next = !showNotifications
+    setShowNotifications(next)
+    if (next) void refreshNotifications()
+  }, [refreshNotifications, showNotifications])
+
+  const closeNotifications = useCallback(() => {
+    setShowNotifications(false)
+  }, [])
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => setShowDeferredTools(true), 900)
+    return () => window.clearTimeout(timer)
+  }, [])
 
   return (
     <header className="reveal sticky top-0 z-30 flex h-16 items-center justify-between gap-4 border-b border-border/70 bg-card/85 px-4 sm:px-6 backdrop-blur-xl">
       <div className="flex items-center">
-        <WeatherWidget collapsed={false} />
+        {showDeferredTools ? (
+          <Suspense fallback={<div className="h-9 w-24 rounded-lg border border-border bg-card/50" />}>
+            <WeatherWidget collapsed={false} />
+          </Suspense>
+        ) : (
+          <div className="h-9 w-24 rounded-lg border border-border bg-card/50" />
+        )}
       </div>
 
       <div className="flex items-center gap-2">
-        <WebsiteGuideAgent />
+        {showDeferredTools && (
+          <Suspense fallback={null}>
+            <WebsiteGuideAgent />
+          </Suspense>
+        )}
 
         <button
           onClick={toggleDarkMode}
@@ -77,11 +105,7 @@ export default function Header() {
 
         <div className="relative">
           <button
-            onClick={() => {
-              const next = !showNotifications
-              setShowNotifications(next)
-              if (next) void refreshNotifications()
-            }}
+            onClick={handleToggleNotifications}
             className="button-micro relative flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground hover:bg-accent hover:text-accent-foreground"
             aria-label="Notifications"
           >
@@ -95,7 +119,7 @@ export default function Header() {
 
           {showNotifications && (
             <>
-              <div className="fixed inset-0 z-40" onClick={() => setShowNotifications(false)} />
+              <div className="fixed inset-0 z-40" onClick={closeNotifications} />
               <div className="absolute right-0 top-full z-50 mt-2 w-80 rounded-xl border border-border bg-card shadow-lg animate-fade-in">
                 <div className="flex items-center justify-between border-b border-border px-4 py-3">
                   <h3 className="text-sm font-semibold text-card-foreground">Notifications</h3>
@@ -110,7 +134,7 @@ export default function Header() {
                   {userNotifications.length === 0 ? (
                     <p className="px-4 py-6 text-center text-sm text-muted-foreground">Aucune notification</p>
                   ) : (
-                    userNotifications.slice(0, 6).map((n) => (
+                    topNotifications.map((n) => (
                       <button
                         key={n.id}
                         className={cn(
@@ -120,7 +144,7 @@ export default function Header() {
                         )}
                         onClick={() => {
                           markNotificationRead(n.id)
-                          setShowNotifications(false)
+                          closeNotifications()
                           goToNotificationTarget(n)
                         }}
                       >
@@ -148,7 +172,7 @@ export default function Header() {
                 <div className="border-t border-border px-4 py-2">
                   <button
                     onClick={() => {
-                      setShowNotifications(false)
+                      closeNotifications()
                       navigate(user.role === 'EMPLOYEE' ? '/employee/notifications' : user.role === 'MANAGER' ? '/manager/activities' : '/hr/activities')
                     }}
                     className="w-full text-center text-xs text-primary hover:underline"
@@ -163,7 +187,7 @@ export default function Header() {
 
         <div className="flex items-center gap-2 rounded-lg border border-border px-3 py-1.5">
           <div className="flex h-7 w-7 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground">
-            {user.name.split(' ').map(n => n[0]).join('').slice(0, 2)}
+            {userInitials}
           </div>
           <div className="hidden flex-col sm:flex">
             <span className="text-xs font-medium text-card-foreground">{user.name}</span>
@@ -174,3 +198,5 @@ export default function Header() {
     </header>
   )
 }
+
+export default memo(Header)

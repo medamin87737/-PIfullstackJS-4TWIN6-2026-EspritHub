@@ -187,16 +187,20 @@ export default function HRActivities() {
             to={`/hr/recommendations/${a.id}`}
             className="flex items-center justify-center rounded-lg bg-emerald-600 p-2 text-white hover:bg-emerald-700"
             title="Confirmer l'activité"
+            aria-label={`Confirmer l activite ${a.title}`}
           >
             <Check className="h-4 w-4" />
+            <span className="sr-only">Confirmer l activité</span>
           </Link>
           <a
             href={`http://localhost:3000/activities/${a.id}/export-pptx`}
             download
             title="Télécharger la présentation PPTX"
+            aria-label={`Telecharger la presentation PPTX de ${a.title}`}
             className="flex items-center justify-center rounded-lg border border-violet-500 bg-violet-50 p-2 text-violet-700 hover:bg-violet-100 dark:bg-violet-950/30 dark:text-violet-400"
           >
             <Presentation className="h-4 w-4" />
+            <span className="sr-only">Télécharger la présentation PPTX</span>
           </a>
           <button
             type="button"

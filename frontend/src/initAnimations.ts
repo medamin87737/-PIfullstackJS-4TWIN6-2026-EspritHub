@@ -25,13 +25,6 @@ function initScrollReveal(): void {
     return
   }
 
-  const candidates = document.querySelectorAll(
-    'section, .card, .card-animated, h2, h3, .glass-card, img, p, table',
-  )
-  candidates.forEach((el) => {
-    if (!el.classList.contains('reveal')) el.classList.add('reveal')
-  })
-
   const observer = new IntersectionObserver(
     (entries) => {
       entries.forEach((entry, i) => {

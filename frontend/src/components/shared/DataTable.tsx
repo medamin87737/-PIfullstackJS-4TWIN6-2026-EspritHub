@@ -1,3 +1,4 @@
+import { memo } from 'react'
 import { cn } from '../../../lib/utils'
 
 interface Column<T> {
@@ -14,7 +15,7 @@ interface DataTableProps<T> {
   emptyMessage?: string
 }
 
-export default function DataTable<T extends { id: string }>({
+function DataTableComponent<T extends { id: string }>({
   columns,
   data,
   onRowClick,
@@ -78,3 +79,7 @@ export default function DataTable<T extends { id: string }>({
     </div>
   )
 }
+
+const DataTable = memo(DataTableComponent) as typeof DataTableComponent
+
+export default DataTable

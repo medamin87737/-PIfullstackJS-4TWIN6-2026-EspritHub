@@ -1,62 +1,82 @@
-# Monitoring (Prometheus / Grafana / Alertmanager)
+# Monitoring — Prometheus & Grafana (SkillUp)
 
-Répond au besoin cours : surveiller **le cluster**, les **outils CI/CD** (via métriques Jenkins exporter ou node exporters — optionnel), et les **applications** SkillUp.
+Stack : **kube-prometheus-stack** (Prometheus Operator, Prometheus, Grafana, Alertmanager, node-exporter, kube-state-metrics).
 
-## 1. Installer la stack (sur le cluster kubeadm)
+## Installation rapide
 
-Une fois `kubectl` configuré vers ton cluster :
-
-```bash
-helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
-helm repo update
-
-kubectl create namespace monitoring --dry-run=client -o yaml | kubectl apply -f -
-
-helm upgrade --install kube-prom prometheus-community/kube-prometheus-stack \
-  --namespace monitoring \
-  --set prometheus.prometheusSpec.retention=15d
-```
-
-Récupère le mot de passe Grafana :
+### Linux (VM avec `kubectl` + Helm 3)
 
 ```bash
-kubectl get secret -n monitoring kube-prom-grafana -o jsonpath="{.data.admin-password}" | base64 -d
-echo
+chmod +x k8s/monitoring/install-monitoring.sh
+./k8s/monitoring/install-monitoring.sh
 ```
 
-Port-forward (machine avec kubectl) :
+### Windows (PowerShell)
+
+```powershell
+cd C:\Users\amin\Desktop\EspritHubPi\SkillUpTnFrontBack
+powershell -ExecutionPolicy Bypass -File .\k8s\monitoring\install-monitoring.ps1
+```
+
+Helm non installé sur la VM :
+
+```bash
+curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+```
+
+Le script utilise le release Helm **`kube-prom`** (obligatoire pour que les labels des `PrometheusRule` correspondent).
+
+## Accès
+
+| Service     | Mode      | URL |
+|------------|-----------|-----|
+| **Grafana** | NodePort | `http://<IP_DU_NODE>:30300` — user `admin`, mot de passe affiché fin de script |
+| **Prometheus** | NodePort | `http://<IP_DU_NODE>:30301` |
+
+Sur **VMware** + PC Windows : ouvre aussi **30300** et **30301** (NAT + pare-feu Windows) comme pour 30081/30080.
+
+Sans NodePort (déjà en ClusterIP si tu overrides) :
 
 ```bash
 kubectl port-forward -n monitoring svc/kube-prom-grafana 32000:80
 kubectl port-forward -n monitoring svc/kube-prom-kube-prometheus-prometheus 32010:9090
-kubectl port-forward -n monitoring svc/kube-prom-kube-prometheus-alertmanager 32011:9093
 ```
 
-- Grafana : http://localhost:32000  
-- Prometheus : http://localhost:32010  
-- Alertmanager : http://localhost:32011  
+## Fichiers
 
-## 2. Alertes applicatives SkillUp
+| Fichier | Rôle |
+|---------|------|
+| `helm-values-skillup.yaml` | NodePorts, rétention 15j, limites mémoire pour petit cluster |
+| `skillup-prometheus-rule.yaml` | Alertes **backend** / **frontend** / **mongo** (replicas non Ready) dans `skillup` |
+| `install-monitoring.sh` / `.ps1` | Install + apply des règles |
 
-Le fichier `skillup-prometheus-rule.yaml` définit une alerte exemple lorsque le déploiement **backend** n’a pas les replicas disponibles.
+## Grafana — premier dashboard
 
-**Important :** après `helm install`, récupère le label attendu par ton Prometheus Operator :
+1. Connecte-toi Grafana (admin + mot de passe secret).
+2. **Explore** ou **Dashboards** → importe un dashboard Kubernetes (ID **6417** ou **315** selon besoin) ou utilise **Home** → métriques node / pod.
+
+## Si le `PrometheusRule` n’apparaît pas dans Prometheus
+
+Vérifie le label attendu :
 
 ```bash
-kubectl get prometheus -n monitoring -o yaml | grep ruleNamespaceSelector -A5
+kubectl get prometheus -n monitoring -o yaml | grep -A5 ruleSelector
 ```
 
-Adapte les labels du `PrometheusRule` pour qu’il soit sélectionné (souvent `release: kube-prom` ou le nom que tu as donné au chart).
+Si ton release Helm n’est pas `kube-prom`, édite `metadata.labels.release` dans `skillup-prometheus-rule.yaml` pour qu’il matche.
 
-Application :
+Ancienne ressource `skillup-backend-health` (nom obsolète) :
 
 ```bash
+kubectl delete prometheusrule skillup-backend-health -n monitoring --ignore-not-found
 kubectl apply -f k8s/monitoring/skillup-prometheus-rule.yaml
 ```
 
-## 3. Alertmanager — routing minimal
+## Alertmanager (démo)
 
-Depuis Grafana → Alerting ou directement dans l’UI Alertmanager (`:32011`), configure un **receiver** (email, webhook Slack/Discord, etc.).  
-Pour une démo cours, un **receiver webhook** vers `https://webhook.site/...` permet de prouver la chaîne **Prometheus → Alertmanager → notification**.
+UI (souvent port-forward `kube-prom-kube-prometheus-alertmanager:9093`) ou **Grafana → Alerting**.  
+Pour valider une chaîne : receiver **webhook** vers `https://webhook.site/...`.
 
-Pour une config GitOps, utilise une ressource **AlertmanagerConfig** (operator v0.40+) ou les valeurs Helm `alertmanager.config` — voir doc du chart `kube-prometheus-stack`.
+## Ressources
+
+Un cluster très petit peut manquer de RAM ; baisse les réplicas ou les `limits` dans `helm-values-skillup.yaml` si les pods restent **Pending**.
