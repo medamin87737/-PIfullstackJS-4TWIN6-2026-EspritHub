@@ -7,19 +7,19 @@
 # URLs (NodePort) : Grafana :30300  Prometheus :30301
 # Forward VMware / routeur → VM (or single-node) comme pour 30080/30081.
 
+# Sur une VM 2 vCPU / 4 GiB, préférez ne pas installer cette stack (voir scripts/fit-small-node-2c4g.sh).
 grafana:
   enabled: true
   service:
     type: NodePort
     nodePort: 30300
-  # Lighter default for pet clusters
   resources:
     requests:
-      cpu: 50m
-      memory: 128Mi
+      cpu: 25m
+      memory: 64Mi
     limits:
-      cpu: 500m
-      memory: 256Mi
+      cpu: 200m
+      memory: 192Mi
 
 prometheus:
   enabled: true
@@ -27,15 +27,15 @@ prometheus:
     type: NodePort
     nodePort: 30301
   prometheusSpec:
-    retention: 15d
-    scrapeInterval: 30s
+    retention: 7d
+    scrapeInterval: 60s
     resources:
       requests:
-        cpu: 200m
-        memory: 768Mi
+        cpu: 100m
+        memory: 384Mi
       limits:
-        cpu: "1"
-        memory: 2Gi
+        cpu: 400m
+        memory: 1Gi
     # Scrape kube-state-metrics + node-exporter (chart defaults)
 
 alertmanager:
@@ -43,11 +43,11 @@ alertmanager:
   alertmanagerSpec:
     resources:
       requests:
-        cpu: 50m
-        memory: 64Mi
+        cpu: 25m
+        memory: 32Mi
       limits:
-        cpu: 200m
-        memory: 128Mi
+        cpu: 100m
+        memory: 96Mi
 
 defaultRules:
   create: true
@@ -55,11 +55,11 @@ defaultRules:
 kube-state-metrics:
   resources:
     requests:
-      cpu: 50m
-      memory: 64Mi
+      cpu: 25m
+      memory: 32Mi
 
 prometheus-node-exporter:
   resources:
     requests:
-      cpu: 50m
-      memory: 64Mi
+      cpu: 25m
+      memory: 32Mi
