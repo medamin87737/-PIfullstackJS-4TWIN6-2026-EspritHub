@@ -7,13 +7,18 @@ pipeline {
 
     environment {
         CD_FRONT_JOB = 'CD-Front'
-        // true = bloque si Quality Gate Sonar échoue. Défaut false pour CI vert sans webhook ni gate verte.
-        SONAR_WAIT_QUALITY_GATE = "${env.SONAR_WAIT_QUALITY_GATE ?: 'false'}"
+        // true = bloque si Quality Gate Sonar échoue (webhook Sonar->Jenkins requis).
+        SONAR_WAIT_QUALITY_GATE = "${env.SONAR_WAIT_QUALITY_GATE ?: 'true'}"
         GIT_REPO_URL = 'https://github.com/medamin87737/-PIfullstackJS-4TWIN6-2026-EspritHub.git'
     }
 
     options {
         skipDefaultCheckout(true)
+        disableConcurrentBuilds()
+    }
+
+    triggers {
+        githubPush()
     }
 
     stages {
@@ -128,6 +133,7 @@ pipeline {
     post {
         always {
             archiveArtifacts artifacts: 'frontend/coverage/**, frontend/reports/**', allowEmptyArchive: true
+            junit testResults: 'frontend/reports/junit.xml', allowEmptyResults: true, keepLongStdio: true
         }
         success {
             echo "✅ CI FRONT terminé avec succès"

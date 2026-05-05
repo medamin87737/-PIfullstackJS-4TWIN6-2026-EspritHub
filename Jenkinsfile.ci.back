@@ -8,13 +8,18 @@ pipeline {
     environment {
         // Must match the Jenkins pipeline job name exactly (dashboard: CD-Back).
         CD_BACK_JOB = 'CD-Back'
-        // true = bloque le build si Sonar Quality Gate échoue (webhook Sonar→Jenkins requis). Défaut false = CI stable tant que tests+build OK.
-        SONAR_WAIT_QUALITY_GATE = "${env.SONAR_WAIT_QUALITY_GATE ?: 'false'}"
+        // true = bloque le build si Sonar Quality Gate échoue (webhook Sonar→Jenkins requis).
+        SONAR_WAIT_QUALITY_GATE = "${env.SONAR_WAIT_QUALITY_GATE ?: 'true'}"
         GIT_REPO_URL = 'https://github.com/medamin87737/-PIfullstackJS-4TWIN6-2026-EspritHub.git'
     }
 
     options {
         skipDefaultCheckout(true)
+        disableConcurrentBuilds()
+    }
+
+    triggers {
+        githubPush()
     }
 
     stages {
@@ -128,6 +133,7 @@ pipeline {
     post {
         always {
             archiveArtifacts artifacts: 'backend/coverage/**', allowEmptyArchive: true
+            junit testResults: 'backend/reports/junit.xml', allowEmptyResults: true, keepLongStdio: true
         }
         success {
             echo "✅ CI BACK terminé avec succès"
