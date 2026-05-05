@@ -138,6 +138,39 @@ pipeline {
                 }
             }
         }
+
+        stage('Test (Post-deploy Smoke Backend)') {
+            steps {
+                echo "🧪 Smoke test backend: vérifier que le déploiement a au moins 1 replica Ready..."
+                withCredentials([file(credentialsId: "${KUBE_CONFIG_CREDENTIAL}", variable: 'KCFG')]) {
+                    script {
+                        if (isUnix()) {
+                            sh """
+                                set -e
+                                KUBECTL_LOCAL="${env.WORKSPACE}/.jenkins-kubectl/kubectl"
+                                if [ ! -x "\$KUBECTL_LOCAL" ]; then
+                                  echo "kubectl local introuvable. Le stage Deploy doit s'exécuter avant ce test."
+                                  exit 1
+                                fi
+                                export KUBECONFIG="${env.KCFG}"
+                                ready=\$("\$KUBECTL_LOCAL" -n ${K8S_NAMESPACE} get deploy backend -o jsonpath='{.status.readyReplicas}')
+                                ready=\${ready:-0}
+                                echo "Backend readyReplicas=\$ready"
+                                [ "\$ready" -ge 1 ]
+                            """
+                        } else {
+                            bat """
+                                set KUBECONFIG=%KCFG%
+                                for /f %%i in ('kubectl -n ${K8S_NAMESPACE} get deploy backend -o jsonpath="{.status.readyReplicas}"') do set READY=%%i
+                                if "%READY%"=="" set READY=0
+                                echo Backend readyReplicas=%READY%
+                                if %READY% LSS 1 exit /b 1
+                            """
+                        }
+                    }
+                }
+            }
+        }
     }
 
     post {
