@@ -6,9 +6,8 @@ import re
 from pathlib import Path
 from typing import Dict, List
 
-from sentence_transformers import SentenceTransformer
-
 from app.models.ai_models import ExtractedSkill, NLPResult, PriorityContext
+from app.services.model_registry import get_embedding_model
 
 try:
   import spacy
@@ -19,15 +18,27 @@ except Exception:
 class NLPExtractor:
   def __init__(self, ontology_path: str | None = None):
     self.ontology = self._load_ontology(ontology_path or "data/skills_ontology.json")
-    self.embedder = SentenceTransformer(
-      os.getenv("AI_EMBEDDING_MODEL", "paraphrase-multilingual-mpnet-base-v2")
-    )
+    self.embedder = None
     self.nlp = None
-    if spacy is not None:
-      try:
-        self.nlp = spacy.load(os.getenv("AI_SPACY_MODEL", "fr_core_news_lg"))
-      except Exception:
-        self.nlp = None
+
+  def _get_embedder(self):
+    if self.embedder is None:
+      self.embedder = get_embedding_model()
+    return self.embedder
+
+  def _get_nlp(self):
+    if self.nlp is not None:
+      return self.nlp
+    if os.getenv("AI_DISABLE_SPACY", "true").strip().lower() in {"1", "true", "yes", "on"}:
+      return None
+    if spacy is None:
+      return None
+    try:
+      # Prefer a smaller model by default on low-memory deploys.
+      self.nlp = spacy.load(os.getenv("AI_SPACY_MODEL", "fr_core_news_sm"))
+    except Exception:
+      self.nlp = None
+    return self.nlp
 
   def _load_ontology(self, path: str) -> Dict:
     p = Path(path)
@@ -65,9 +76,10 @@ class NLPExtractor:
 
   def _extract_tokens(self, text: str) -> List[str]:
     clean = self._preprocess(text)
-    if self.nlp is None:
+    nlp_obj = self._get_nlp()
+    if nlp_obj is None:
       return [x for x in clean.split() if len(x) > 2]
-    doc = self.nlp(clean)
+    doc = nlp_obj(clean)
     return [t.lemma_.lower() for t in doc if not t.is_stop and t.is_alpha]
 
   def _detect_level(self, window: str) -> int:
@@ -124,7 +136,13 @@ class NLPExtractor:
   def extract(self, description: str) -> NLPResult:
     tokens = self._extract_tokens(description)
     extracted = self._match_ontology(description, tokens)
-    emb = self.embedder.encode(description, normalize_embeddings=True).tolist()
+    emb = []
+    embedder = self._get_embedder()
+    if embedder is not None:
+      try:
+        emb = embedder.encode(description, normalize_embeddings=True).tolist()
+      except Exception:
+        emb = []
     return NLPResult(
       skills=extracted,
       activity_type=self._classify_activity(description),

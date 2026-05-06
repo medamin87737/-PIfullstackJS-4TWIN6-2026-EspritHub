@@ -12,8 +12,6 @@ from typing import Dict, List, Tuple
 from difflib import SequenceMatcher
 
 import numpy as np
-from sentence_transformers import SentenceTransformer
-
 from app.models.ai_models import (
   ActivityInput,
   EmployeeProfile,
@@ -22,15 +20,21 @@ from app.models.ai_models import (
   ScoreBreakdown,
   SkillDetail,
 )
+from app.services.model_registry import get_embedding_model
 from app.services.vector_cache import VectorCache
 
 
 class ScoringEngine:
   def __init__(self, weights: Dict[str, float]):
     self.weights = weights
-    self.embedder = SentenceTransformer("paraphrase-multilingual-mpnet-base-v2")
+    self.embedder = None
     self.cache = VectorCache()
     self.calibrator = self._load_calibrator()
+
+  def _get_embedder(self):
+    if self.embedder is None:
+      self.embedder = get_embedding_model()
+    return self.embedder
 
   @staticmethod
   def _load_calibrator():
@@ -46,6 +50,8 @@ class ScoringEngine:
 
   @staticmethod
   def _cosine(a: np.ndarray, b: np.ndarray) -> float:
+    if a.size == 0 or b.size == 0 or a.shape != b.shape:
+      return 0.0
     if np.linalg.norm(a) == 0 or np.linalg.norm(b) == 0:
       return 0.0
     return float(np.dot(a, b) / (np.linalg.norm(a) * np.linalg.norm(b)))
@@ -183,16 +189,26 @@ class ScoringEngine:
 
   def score_all(self, activity: ActivityInput, nlp_embedding: List[float], extracted_skills: List[ExtractedSkill], employees: List[EmployeeProfile]) -> List[EmployeeRec]:
     act_vec = np.array(nlp_embedding, dtype=float)
+    semantic_enabled = act_vec.size > 0
     scored: List[EmployeeRec] = []
     for e in employees:
       job_text = e.job_description or " ".join([f"{c.intitule} {c.hierarchie_eval}" for c in e.competences])
-      cached = self.cache.get(e.id)
-      if cached is not None:
-        job_vec = np.array(cached, dtype=float)
-      else:
-        job_vec = np.array(self.embedder.encode(job_text, normalize_embeddings=True), dtype=float)
-        self.cache.set(e.id, job_vec.tolist())
-      semantic = self._cosine(job_vec, act_vec)
+      semantic = 0.0
+      if semantic_enabled:
+        cached = self.cache.get(e.id)
+        if cached is not None:
+          job_vec = np.array(cached, dtype=float)
+        else:
+          embedder = self._get_embedder()
+          if embedder is not None:
+            try:
+              job_vec = np.array(embedder.encode(job_text, normalize_embeddings=True), dtype=float)
+              self.cache.set(e.id, job_vec.tolist())
+            except Exception:
+              job_vec = np.array([], dtype=float)
+          else:
+            job_vec = np.array([], dtype=float)
+        semantic = self._cosine(job_vec, act_vec)
       skill_match, details = self._skill_match(e, extracted_skills, activity.context)
       prog = self._progression(e)
       hist = self._history(e, activity.type)

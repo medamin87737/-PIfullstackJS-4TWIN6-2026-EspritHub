@@ -8,9 +8,29 @@ services:
     envVars:
       - key: ANTHROPIC_API_KEY
         sync: false
+      - key: AI_EMBEDDING_MODEL
+        value: paraphrase-multilingual-MiniLM-L12-v2
+      - key: AI_DISABLE_SPACY
+        value: "true"
+      - key: AI_MAX_SEQ_LENGTH
+        value: "128"
       - key: AI_MODEL_DIR
         value: /tmp/models
       - key: AI_FEEDBACK_FILE
         value: /tmp/feedback_events.jsonl
       - key: PYTHONUNBUFFERED
         value: "1"
+      - key: OMP_NUM_THREADS
+        value: "1"
+      - key: MKL_NUM_THREADS
+        value: "1"
+      - key: TOKENIZERS_PARALLELISM
+        value: "false"
+      - key: MALLOC_ARENA_MAX
+        value: "2"
+      - key: HF_HOME
+        value: /tmp/hf
+      - key: TRANSFORMERS_CACHE
+        value: /tmp/hf
+      - key: SENTENCE_TRANSFORMERS_HOME
+        value: /tmp/hf

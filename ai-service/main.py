@@ -1,7 +1,6 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-from sentence_transformers import SentenceTransformer
 from sklearn.metrics.pairwise import cosine_similarity
 from sklearn.linear_model import LogisticRegression
 import json
@@ -16,6 +15,7 @@ from typing import List
 from dotenv import load_dotenv
 from app.routes.recommendations import router as recommendations_router
 from app.routes.recommendations import build_recommendation_output, record_feedback_event, run_retrain_policy
+from app.services.model_registry import get_embedding_model, is_embedding_model_loaded
 from app.models.ai_models import GenerateRequest as ModularGenerateRequest
 from app.models.ai_models import EmployeeProfile as ModularEmployeeProfile
 from app.models.ai_models import CompetenceScore as ModularCompetenceScore
@@ -37,13 +37,7 @@ _sbert_model = None
 def get_sbert_model():
   global _sbert_model
   if _sbert_model is None:
-    import torch
-    _sbert_model = SentenceTransformer(
-      "paraphrase-multilingual-MiniLM-L12-v2",
-      device="cpu"
-    )
-    # Force CPU and reduce memory
-    torch.set_num_threads(1)
+    _sbert_model = get_embedding_model()
   return _sbert_model
 
 
@@ -461,7 +455,6 @@ def seniority_factor(emp: Employee) -> float:
 @app.post("/recommend", response_model=RecommendResponse)
 async def recommend(req: RecommendRequest):
   try:
-    get_sbert_model()
     if not req.employees:
       return RecommendResponse(
         parsed_activity=parse_hr_prompt_local(req.hr_prompt),
@@ -577,7 +570,7 @@ def health():
   return {
     "status": "ok",
     "model": "paraphrase-multilingual-MiniLM-L12-v2",
-    "model_loaded": _sbert_model is not None,
+    "model_loaded": is_embedding_model_loaded(),
     "claude_available": claude_client is not None
   }
 
