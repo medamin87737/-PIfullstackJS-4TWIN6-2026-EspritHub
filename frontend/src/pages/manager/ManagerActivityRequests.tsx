@@ -3,8 +3,7 @@ import { useData } from '../../context/DataContext'
 import { useToast } from '../../../hooks/use-toast'
 import { ClipboardPlus, Plus, Trash2, MapPin } from 'lucide-react'
 import type { RequiredSkill } from '../../types'
-
-const API_BASE_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:3000'
+import { API_BASE_URL } from '@/config/apiBase'
 
 const LocationPicker = lazy(() => import('../../components/LocationPicker'))
 

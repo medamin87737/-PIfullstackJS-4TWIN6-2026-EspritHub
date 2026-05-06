@@ -3,8 +3,7 @@ import { io, type Socket } from 'socket.io-client'
 import { useAuth } from '../../context/AuthContext'
 import { useData } from '../../context/DataContext'
 import { useToast } from '../../../hooks/use-toast'
-
-const API_BASE_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:3000'
+import { API_BASE_URL, getRealtimeBaseUrl } from '@/config/apiBase'
 
 export default function RealtimeNotifications() {
   const { user } = useAuth()
@@ -24,7 +23,7 @@ export default function RealtimeNotifications() {
     }
 
     const startRealtime = () => {
-      socket = io(API_BASE_URL, {
+      socket = io(getRealtimeBaseUrl(), {
         transports: ['websocket', 'polling'],
         reconnection: true,
         reconnectionAttempts: Infinity,

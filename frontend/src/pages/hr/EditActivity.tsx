@@ -5,6 +5,7 @@ import { useAuth } from '../../context/AuthContext';
 import { Plus, Trash2, ArrowLeft } from 'lucide-react';
 import type { RequiredSkill } from '../../types';
 import { useToast } from '../../../hooks/use-toast';
+import { API_BASE_URL } from '@/config/apiBase'
 
 type SkillOption = { intitule: string; type?: string };
 
@@ -14,7 +15,6 @@ export default function EditActivity() {
   const { id } = useParams<{ id: string }>();
   const { users, departments, updateActivity, fetchWithAuth } = useData();
   const { toast } = useToast();
-  const API_BASE_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:3000';
 
   const managers = users.filter(u => u.role === 'MANAGER');
 

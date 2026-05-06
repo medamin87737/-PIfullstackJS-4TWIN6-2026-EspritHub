@@ -9,8 +9,7 @@ import { GoogleCalendarConnect } from '../../components/GoogleCalendarConnect'
 import { Chatbot } from '../../components/Chatbot'
 import { useRewrite } from '../../hooks/useRewrite'
 import { addActivityToCalendar, isGoogleConnected } from '../../services/googleCalendarService'
-
-const API_BASE_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:3000'
+import { API_BASE_URL } from '@/config/apiBase'
 
 type EmployeeRecommendation = {
   id: string

@@ -1,14 +1,15 @@
 fastapi
-uvicorn
-sentence-transformers
-torch
+uvicorn[standard]
 scikit-learn
 numpy
 anthropic
 python-dotenv
 pydantic
-spacy
 scipy
-pytest
 redis
+spacy
+pytest
+--extra-index-url https://download.pytorch.org/whl/cpu
+torch==2.1.0+cpu
+sentence-transformers==2.7.0
 

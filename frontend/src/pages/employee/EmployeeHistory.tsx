@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useData } from '../../context/DataContext'
 import StatusBadge from '../../components/shared/StatusBadge'
 import { History, Calendar, Target } from 'lucide-react'
+import { API_BASE_URL } from '@/config/apiBase'
 
 function mapEmployeeStatusLabel(status: string): string {
   const s = String(status ?? '').toUpperCase()
@@ -16,7 +17,6 @@ export default function EmployeeHistory() {
   const { fetchWithAuth } = useData()
   const [rows, setRows] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
-  const API_BASE_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:3000'
 
   const myRecs = useMemo(
     () => rows.filter((r) => ['ACCEPTED', 'DECLINED', 'NOTIFIED', 'MANAGER_APPROVED'].includes(String(r?.status ?? ''))),

@@ -1,0 +1,49 @@
+# Règles d’alerte Prometheus — groupe jenkins-alertes (Jenkins + CPU).
+#
+# IMPORTANT (grille + Jenkins réel) :
+# - Les métriques jenkins_* viennent du plugin Prometheus pour Jenkins.
+# - Les noms exacts peuvent varier selon la version du plugin ; en cas d’alerte vide dans /alerts,
+#   ouvre http://JENKINS:8080/prometheus et adapte l’expr au préfixe réel (ex. default_jenkins_…).
+
+groups:
+  - name: jenkins-alertes
+    rules:
+      # Détection de builds en échec (compteur plugin Jenkins — ajuster le nom si besoin)
+      # `for` aligné sur JenkinsDown pour notifier vite (Alertmanager group_wait reste court).
+      - alert: JenkinsBuildFailed
+        expr: jenkins_builds_failed_build_count > 0
+        for: 2s
+        labels:
+          severity: critical
+        annotations:
+          summary: 'Build Jenkins en échec détecté'
+          description: |
+            Le compteur jenkins_builds_failed_build_count est strictement positif.
+            Vérifier la console du job concerné dans Jenkins et les métriques exposées sur /prometheus.
+
+      # Jenkins injoignable pour Prometheus (scrape DOWN)
+      # `for` court = notification plus rapide ; éviter 0s pour limiter les faux positifs (micro-coupures réseau).
+      - alert: JenkinsDown
+        expr: up{job="jenkins"} == 0
+        for: 2s
+        labels:
+          severity: critical
+        annotations:
+          summary: 'Jenkins ne répond pas aux scrapes Prometheus'
+          description: |
+            La cible du job "jenkins" est DOWN (plugin désactivé, mauvaise URL, firewall, ou Jenkins arrêté).
+            Vérifier Jenkins sur le port 8080 et metrics_path /prometheus.
+
+      # Charge CPU du processus scrapé (souvent celui de Jenkins si une seule cible avec cette série)
+      # Peut aussi refléter d’autres jobs selon les labels — à affiner avec job/instance si nécessaire.
+      # CPU : la série utilise encore rate(...[5m]) — le seuil ne peut pas « bouger » en 2s ; `for` permet juste un passage Firing rapide une fois la condition vraie.
+      - alert: HighCPU
+        expr: rate(process_cpu_seconds_total[5m]) > 0.8
+        for: 2s
+        labels:
+          severity: warning
+        annotations:
+          summary: 'Utilisation CPU élevée sur une cible scrapée'
+          description: |
+            rate(process_cpu_seconds_total[5m]) dépasse 0.8 sur au moins une série temporelle.
+            Identifier l’instance via les labels job et instance dans Prometheus.

@@ -3,8 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useData } from '../../context/DataContext'
 import { Bell, Check, Trash2, Award, Download, RefreshCw } from 'lucide-react'
 import { cn } from '../../../lib/utils'
-
-const API_BASE_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:3000'
+import { API_BASE_URL, getRealtimeBaseUrl } from '@/config/apiBase'
 
 type NotificationItem = {
   _id: string
@@ -103,7 +102,7 @@ export default function EmployeeNotifications() {
         catch { return '' }
       })()
       if (!userId) return
-      socket = io(API_BASE_URL, { query: { userId }, transports: ['websocket', 'polling'] })
+      socket = io(getRealtimeBaseUrl(), { query: { userId }, transports: ['websocket', 'polling'] })
       socket.on('notification_created', () => void loadAll())
     }).catch(() => {})
     return () => socket?.disconnect?.()

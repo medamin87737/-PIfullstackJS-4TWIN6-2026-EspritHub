@@ -4,6 +4,7 @@ import { useData } from '../../context/DataContext'
 import StatusBadge from '../../components/shared/StatusBadge'
 import { ArrowLeft, Check, Mail, Medal, Target, TrendingUp, User, X } from 'lucide-react'
 import { useToast } from '../../../hooks/use-toast'
+import { API_BASE_URL } from '@/config/apiBase'
 
 type ApiRecommendation = {
   _id: string
@@ -27,8 +28,6 @@ type ApiRecommendation = {
   absence_reason?: string | null
   parsed_activity?: { description?: string; required_skills?: { intitule: string; niveau_requis: number; poids: number }[] }
 }
-
-const API_BASE_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:3000'
 
 function normalizeScore(value: unknown): number {
   const n = Number(value ?? 0)

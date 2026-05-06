@@ -6,8 +6,7 @@ import StatCard from '../../components/shared/StatCard'
 import StatusBadge from '../../components/shared/StatusBadge'
 import { ClipboardList, Users, CheckCircle, Clock, ArrowRight } from 'lucide-react'
 import type { Activity, User } from '../../types'
-
-const API_BASE_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:3000'
+import { API_BASE_URL } from '@/config/apiBase'
 
 export default function ManagerDashboard() {
   const { fetchWithAuth, getUnreadCount } = useData()

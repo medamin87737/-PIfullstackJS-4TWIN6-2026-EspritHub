@@ -1,0 +1,58 @@
+# Configuration Prometheus — scrape + alerting vers Alertmanager.
+# Compatible Docker Desktop (Windows/WSL) : Jenkins joignable via host.docker.internal.
+
+global:
+  scrape_interval: 15s
+  # Doit être ≤ granularité voulue pour `for` (ex. 2s) sinon l’alerte ne peut pas passer Firing au bon rythme.
+  evaluation_interval: 2s
+
+# Fichier des règles d’alerte (monté en lecture seule par docker-compose)
+rule_files:
+  - /etc/prometheus/alert-rules.yml
+
+# Envoi des alertes déclenchées vers Alertmanager (service Docker du même compose)
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets:
+            - alertmanager:9093
+
+scrape_configs:
+  # 1) Auto-monitoring Prometheus (service DNS interne = nom du service compose)
+  - job_name: prometheus
+    static_configs:
+      - targets:
+          - prometheus:9090
+
+  # 2) Jenkins — nécessite le plugin « Prometheus metrics » et endpoint /prometheus
+  #    Si Jenkins tourne sur la machine hôte : host.docker.internal:8080 (Docker Desktop).
+  #    Sinon remplace par IP/host réel (VM, autre serveur).
+  - job_name: jenkins
+    metrics_path: /prometheus
+    scrape_interval: 2s
+    static_configs:
+      - targets:
+          - host.docker.internal:8080
+        labels:
+          env: local
+          stack: jenkins
+
+  # 3) Node exporter — métriques machine (CPU/RAM/disque) pour Grafana / dashboards
+  - job_name: node-exporter
+    scrape_interval: 15s
+    static_configs:
+      - targets:
+          - node-exporter:9100
+        labels:
+          env: local
+          stack: node
+
+  # 4) cAdvisor — conteneurs Docker visibles par le daemon (dashboard Grafana provisionné)
+  - job_name: cadvisor
+    scrape_interval: 15s
+    static_configs:
+      - targets:
+          - cadvisor:8080
+        labels:
+          env: local
+          stack: containers

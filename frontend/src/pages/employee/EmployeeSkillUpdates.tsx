@@ -1,8 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useData } from '../../context/DataContext'
 import { TrendingDown, TrendingUp } from 'lucide-react'
-
-const API_BASE_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:3000'
+import { API_BASE_URL } from '@/config/apiBase'
 
 type SkillUpdateRow = {
   activity_id: string

@@ -1,32 +1,59 @@
+# Projet Compose dédié : dans Docker Desktop le groupe s’appelle « skillup-application »
+# (distinct des autres stacks : Jenkins, SonarQube, tests manuels docker run, etc.).
+name: skillup-application
+
 services:
   mongo:
     image: mongo:6.0
-    container_name: skillup-mongo
+    container_name: skillup-app-mongo
     restart: always
+    labels:
+      com.skillup.stack: application
+      com.skillup.role: database
+    # 27017 souvent déjà pris par une autre stack Mongo → map hôte 27018 pour éviter le conflit.
+    # Les autres services utilisent toujours mongo:27017 sur le réseau Compose.
     ports:
-      - "27017:27017"
+      - "27018:27017"
     volumes:
       - mongo-data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand({ ping: 1 }).ok"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
 
   backend:
     build: ./backend
-    container_name: skillup-backend
+    container_name: skillup-app-backend
     restart: always
+    labels:
+      com.skillup.stack: application
+      com.skillup.role: api
+    # Si 3000 est déjà pris sur l’hôte (autre stack), exposer 3001→3000 dans le conteneur.
     ports:
-      - "3000:3000"
+      - "3001:3000"
     environment:
       MONGODB_URI: mongodb://mongo:27017/skillupdb
     depends_on:
-      - mongo
+      mongo:
+        condition: service_healthy
 
-  # VITE_API_URL = URL vue par le navigateur sur ta machine (pas le hostname Docker "backend")
+  # URL API figée pour le navigateur (PC) : jamais http://backend — le nom "backend" ne se résout pas hors réseau Compose.
+  # Clés Google optionnelles : variables d’environnement du shell ou fichier .env à côté de ce YAML (sans y mettre VITE_API_URL pour ne pas écraser localhost).
   frontend:
     build:
       context: ./frontend
       args:
-        - VITE_API_URL=http://localhost:3000
-    container_name: skillup-frontend
+        # Le navigateur appelle /users, /activities… ; Nginx proxy vers le service backend (pas de hostname Docker côté client).
+        VITE_USE_RELATIVE_API: "true"
+        VITE_GOOGLE_CLIENT_ID: ${VITE_GOOGLE_CLIENT_ID:-}
+        VITE_GOOGLE_API_KEY: ${VITE_GOOGLE_API_KEY:-}
+    container_name: skillup-app-frontend
     restart: always
+    labels:
+      com.skillup.stack: application
+      com.skillup.role: web
     ports:
       - "80:80"
     depends_on:

@@ -6,6 +6,7 @@ import DataTable from '../../components/shared/DataTable'
 import { Plus, Search, Sparkles, Pencil, Trash2, X, Check, Bot, Presentation, ArrowUpDown } from 'lucide-react'
 import type { Activity } from '../../types'
 import { useToast } from '../../../hooks/use-toast'
+import { API_BASE_URL } from '@/config/apiBase'
 
 export default function HRActivities() {
   const { activities, updateActivity, deleteActivity } = useData()
@@ -92,7 +93,7 @@ export default function HRActivities() {
         payload.endDate = new Date(editEndDate).toISOString()
       }
 
-      const res = await fetch(`http://localhost:3000/activities/${editing.id}`, {
+      const res = await fetch(`${API_BASE_URL}/activities/${editing.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
@@ -127,7 +128,7 @@ export default function HRActivities() {
     if (!deleteId) return
     setDeleteLoading(true)
     try {
-      const res = await fetch(`http://localhost:3000/activities/${deleteId}`, {
+      const res = await fetch(`${API_BASE_URL}/activities/${deleteId}`, {
         method: 'DELETE',
       })
       if (!res.ok) {
@@ -193,7 +194,7 @@ export default function HRActivities() {
             <span className="sr-only">Confirmer l activité</span>
           </Link>
           <a
-            href={`http://localhost:3000/activities/${a.id}/export-pptx`}
+            href={`${API_BASE_URL}/activities/${a.id}/export-pptx`}
             download
             title="Télécharger la présentation PPTX"
             aria-label={`Telecharger la presentation PPTX de ${a.title}`}

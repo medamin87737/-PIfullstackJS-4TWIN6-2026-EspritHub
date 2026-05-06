@@ -1,0 +1,104 @@
+# Stack observabilité SkillUp — INDÉPENDANT de docker-compose.yml racine (skillup-application).
+# Démarrage : depuis ce dossier →  docker compose up -d
+# Grafana provisionne la datasource Prometheus + le dashboard « SkillUp — Vue Docker & hôte » (sans Kubernetes).
+
+name: skillup-monitoring
+
+services:
+  prometheus:
+    image: prom/prometheus:v2.53.3
+    container_name: skillup-prom
+    restart: always
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.enable-lifecycle'
+      - '--web.console.libraries=/usr/share/prometheus/console_libraries'
+      - '--web.console.templates=/usr/share/prometheus/consoles'
+    ports:
+      - '9090:9090'
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./alert-rules.yml:/etc/prometheus/alert-rules.yml:ro
+      - prometheus-data:/prometheus
+    networks:
+      - monitoring
+    # Docker Desktop (Windows/WSL) : accès à Jenkins sur l’hôte (port 8080).
+    extra_hosts:
+      - 'host.docker.internal:host-gateway'
+
+  alertmanager:
+    image: prom/alertmanager:v0.27.0
+    container_name: skillup-alertmanager
+    restart: always
+    command:
+      - '--config.file=/etc/alertmanager/alertmanager.yml'
+      - '--storage.path=/alertmanager'
+    ports:
+      - '9093:9093'
+    volumes:
+      - ./alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro
+      - alertmanager-data:/alertmanager
+    networks:
+      - monitoring
+
+  grafana:
+    image: grafana/grafana:11.5.2
+    container_name: skillup-grafana
+    restart: always
+    ports:
+      - '3000:3000'
+    environment:
+      # Sécurité locale — à changer en prod ; documenté pour la grille / démo.
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: admin
+      GF_USERS_ALLOW_SIGN_UP: 'false'
+      GF_SERVER_ROOT_URL: '%(protocol)s://%(domain)s:%(http_port)s/'
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./provisioning/datasources:/etc/grafana/provisioning/datasources:ro
+      - ./provisioning/dashboards:/etc/grafana/provisioning/dashboards:ro
+      - ./dashboards:/etc/grafana/dashboards/skillup:ro
+    depends_on:
+      - prometheus
+      - alertmanager
+    networks:
+      - monitoring
+
+  node-exporter:
+    image: prom/node-exporter:v1.8.2
+    container_name: skillup-node-exporter
+    restart: always
+    command:
+      - '--path.rootfs=/host'
+    ports:
+      - '9100:9100'
+    volumes:
+      - '/:/host:ro'
+    networks:
+      - monitoring
+
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor:v0.49.1
+    container_name: skillup-cadvisor
+    restart: always
+    privileged: true
+    ports:
+      - '8081:8080'
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:ro
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      - monitoring
+
+networks:
+  monitoring:
+    driver: bridge
+
+volumes:
+  prometheus-data:
+  alertmanager-data:
+  grafana-data:

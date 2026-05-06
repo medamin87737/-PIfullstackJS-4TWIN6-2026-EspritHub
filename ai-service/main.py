@@ -31,9 +31,26 @@ app = FastAPI(title="HR AI Recommendation Service")
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
 app.include_router(recommendations_router)
 
-print("Loading SBERT model...")
-sbert_model = SentenceTransformer("paraphrase-multilingual-MiniLM-L12-v2")
-print("SBERT ready.")
+_sbert_model = None
+
+
+def get_sbert_model():
+  global _sbert_model
+  if _sbert_model is None:
+    import torch
+    _sbert_model = SentenceTransformer(
+      "paraphrase-multilingual-MiniLM-L12-v2",
+      device="cpu"
+    )
+    # Force CPU and reduce memory
+    torch.set_num_threads(1)
+  return _sbert_model
+
+
+@app.on_event("startup")
+def startup_event():
+  # Intentionally keep model lazy-loaded for lower startup memory usage.
+  return None
 
 anthropic_key = os.getenv("ANTHROPIC_API_KEY")
 claude_client = anthropic.Anthropic(api_key=anthropic_key) if anthropic and anthropic_key else None
@@ -444,6 +461,7 @@ def seniority_factor(emp: Employee) -> float:
 @app.post("/recommend", response_model=RecommendResponse)
 async def recommend(req: RecommendRequest):
   try:
+    get_sbert_model()
     if not req.employees:
       return RecommendResponse(
         parsed_activity=parse_hr_prompt_local(req.hr_prompt),
@@ -556,7 +574,12 @@ async def recommend(req: RecommendRequest):
 
 @app.get("/health")
 def health():
-  return {"status": "ok", "sbert": "paraphrase-multilingual-MiniLM-L12-v2"}
+  return {
+    "status": "ok",
+    "model": "paraphrase-multilingual-MiniLM-L12-v2",
+    "model_loaded": _sbert_model is not None,
+    "claude_available": claude_client is not None
+  }
 
 
 @app.post("/feedback")

@@ -10,14 +10,15 @@ const GOOGLE_API_KEY = import.meta.env.VITE_GOOGLE_API_KEY || '';
 const SCOPES = 'https://www.googleapis.com/auth/calendar.events';
 const GOOGLE_CONFIGURED = Boolean(GOOGLE_CLIENT_ID && GOOGLE_API_KEY);
 
-// Vérifier que les clés sont définies
+// Intégration optionnelle : pas d’erreur en prod si les clés manquent.
 if (!GOOGLE_CLIENT_ID || !GOOGLE_API_KEY) {
-  console.error('❌ ERREUR: Les clés Google Calendar ne sont pas configurées!');
-  console.error('Créez un fichier .env dans frontend/ avec:');
-  console.error('VITE_GOOGLE_CLIENT_ID=votre-client-id');
-  console.error('VITE_GOOGLE_API_KEY=votre-api-key');
-} else {
-  console.log('✅ Clés Google Calendar chargées');
+  if (import.meta.env.DEV) {
+    console.info(
+      '[Google Calendar] Clés non définies (optionnel). VITE_GOOGLE_CLIENT_ID / VITE_GOOGLE_API_KEY dans frontend/.env ou build-args Docker.',
+    )
+  }
+} else if (import.meta.env.DEV) {
+  console.info('[Google Calendar] Clés chargées.')
 }
 
 // Charger l'API Google

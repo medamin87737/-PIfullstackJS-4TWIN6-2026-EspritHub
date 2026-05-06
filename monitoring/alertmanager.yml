@@ -1,0 +1,30 @@
+# Alertmanager — routage des alertes Prometheus vers Discord.
+#
+# Discord attend un format précis : Alertmanager ≥ 0.26 expose discord_configs (webhook Discord officiel).
+# Une webhook_configs HTTP « brute » envoie le JSON Alertmanager, souvent rejeté par Discord (HTTP 400).
+# Configuration ci-dessous : équivalent production pour notifier Discord via l’URL webhook.
+
+global:
+  resolve_timeout: 5m
+
+route:
+  receiver: discord-notifications
+  group_by: ['alertname', 'severity']
+  # 0s : pas d’attente avant la 1re notification (aligné avec `for: 2s` côté Prometheus).
+  group_wait: 0s
+  group_interval: 5m
+  repeat_interval: 1h
+
+receivers:
+  - name: discord-notifications
+    # Webhook Discord : remplace YOUR_WEBHOOK_HERE par ton URL complète.
+    # Ne committe pas de vrai secret : utilise .env / fichier local gitignored si besoin.
+    discord_configs:
+      - webhook_url: 'https://discord.com/api/webhooks/YOUR_WEBHOOK_HERE'
+        send_resolved: true
+
+    # Variante demandée sur certaines grilles : webhook_configs HTTP générique.
+    # Souvent incompatible avec l’API Discord sans passerelle ; préférer discord_configs ci-dessus.
+    # webhook_configs:
+    #   - url: 'https://discord.com/api/webhooks/YOUR_WEBHOOK_HERE'
+    #     send_resolved: true

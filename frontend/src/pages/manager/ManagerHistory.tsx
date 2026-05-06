@@ -3,6 +3,7 @@ import { useData } from '../../context/DataContext'
 import StatusBadge from '../../components/shared/StatusBadge'
 import { History, Calendar } from 'lucide-react'
 import type { Activity } from '../../types'
+import { API_BASE_URL } from '@/config/apiBase'
 
 export default function ManagerHistory() {
   const { fetchWithAuth } = useData()
@@ -12,8 +13,7 @@ export default function ManagerHistory() {
   useEffect(() => {
     const load = async () => {
       try {
-        const baseUrl = import.meta.env.VITE_API_URL ?? 'http://localhost:3000'
-        const res = await fetchWithAuth(`${baseUrl}/manager/activities`)
+        const res = await fetchWithAuth(`${API_BASE_URL}/manager/activities`)
         if (!res.ok) throw new Error(`HTTP ${res.status}`)
         const payload = await res.json()
         const rows = Array.isArray(payload?.activities) ? payload.activities : []

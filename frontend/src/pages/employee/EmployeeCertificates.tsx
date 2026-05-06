@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback, useMemo } from 'react'
 import { useData } from '../../context/DataContext'
 import { Award, Download, RefreshCw, Search, BookOpen, Loader2 } from 'lucide-react'
 import { cn } from '../../../lib/utils'
+import { API_BASE_URL } from '@/config/apiBase'
 
 // Icône LinkedIn SVG inline
 function LinkedInIcon({ className }: { className?: string }) {
@@ -11,8 +12,6 @@ function LinkedInIcon({ className }: { className?: string }) {
     </svg>
   )
 }
-
-const API_BASE_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:3000'
 
 type Certificate = {
   _id: string

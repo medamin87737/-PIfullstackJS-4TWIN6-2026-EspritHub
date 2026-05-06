@@ -4,8 +4,7 @@ import StatusBadge from '../../components/shared/StatusBadge'
 import DataTable from '../../components/shared/DataTable'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
 import { useEffect, useState } from 'react'
-
-const API_BASE_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:3000'
+import { API_BASE_URL } from '@/config/apiBase'
 
 type ActivitySkillRow = {
   id: string

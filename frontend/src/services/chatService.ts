@@ -1,9 +1,8 @@
 import { ChatMessageRequest, ChatMessageResponse } from '../types/chat.types';
+import { API_BASE_URL } from '@/config/apiBase';
 
 class ChatService {
-  private readonly baseUrl = import.meta.env.VITE_API_URL 
-    ? `${import.meta.env.VITE_API_URL}/chat`
-    : 'http://localhost:3000/chat';
+  private readonly baseUrl = `${API_BASE_URL.replace(/\/$/, '')}/chat`;
 
   async sendMessage(message: string, activityId: string): Promise<string> {
     try {

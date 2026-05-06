@@ -3,9 +3,9 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 import { useData } from '../../context/DataContext'
 import StatCard from '../../components/shared/StatCard'
 import { TrendingUp, Target, ClipboardList, CheckCircle } from 'lucide-react'
+import { API_BASE_URL } from '@/config/apiBase'
 
 const COLORS = ['hsl(27, 92%, 54%)', 'hsl(222, 60%, 33%)', 'hsl(160, 60%, 45%)', 'hsl(43, 74%, 66%)', 'hsl(340, 75%, 55%)']
-const API_BASE_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:3000'
 type ApiRec = { status?: string; score_total?: number; activity?: { id?: string } }
 type ApiComp = { intitule?: string; hierarchie_eval?: number; auto_eval?: number }
 

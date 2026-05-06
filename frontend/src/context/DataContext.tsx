@@ -2,8 +2,7 @@ import { createContext, useContext, useState, useCallback, useEffect, type React
 import type { User, Department, Activity, Recommendation, Notification, QuestionCompetence, UserStatus, NotificationType } from '../types'
 import { useAuth } from './AuthContext'
 import { toast } from '../../hooks/use-toast'
-
-const API_BASE_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:3000'
+import { API_BASE_URL } from '@/config/apiBase'
 
 function getAuthStorage(): Storage {
   return localStorage.getItem('auth_remember_me') === 'true' ? localStorage : sessionStorage

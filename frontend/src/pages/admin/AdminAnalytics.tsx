@@ -3,8 +3,8 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 import { useData } from '../../context/DataContext'
 import StatCard from '../../components/shared/StatCard'
 import { TrendingUp, Target, Users, Brain } from 'lucide-react'
+import { API_BASE_URL } from '@/config/apiBase'
 
-const API_BASE_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:3000'
 type ApiCompetence = {
   intitule: string
   type: string

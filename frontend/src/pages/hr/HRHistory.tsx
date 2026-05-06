@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useData } from '../../context/DataContext'
 import StatusBadge from '../../components/shared/StatusBadge'
 import { History, Calendar, MapPin, Users, LayoutList, ChartColumn } from 'lucide-react'
+import { API_BASE_URL } from '@/config/apiBase'
 
 function mapActionLabel(action: string): string {
   const a = String(action ?? '').toLowerCase()
@@ -25,7 +26,6 @@ function mapResult(after: any): string {
 
 export default function HRHistory() {
   const { fetchWithAuth } = useData()
-  const API_BASE_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:3000'
   const [logs, setLogs] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [layout, setLayout] = useState<'text' | 'stats'>('text')

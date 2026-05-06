@@ -5,8 +5,7 @@ import { useAuth } from '../../context/AuthContext'
 import StatusBadge from '../../components/shared/StatusBadge'
 import { Calendar, MapPin, Users, ArrowRight, Presentation, Upload, X, ArrowUpDown } from 'lucide-react'
 import type { Activity } from '../../types'
-
-const API_BASE_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:3000'
+import { API_BASE_URL } from '@/config/apiBase'
 
 export default function ManagerActivities() {
   const { fetchWithAuth } = useData()
@@ -72,8 +71,7 @@ export default function ManagerActivities() {
         return
       }
       try {
-        const baseUrl = import.meta.env.VITE_API_URL ?? 'http://localhost:3000'
-        const res = await fetchWithAuth(`${baseUrl}/manager/activities`)
+        const res = await fetchWithAuth(`${API_BASE_URL}/manager/activities`)
         if (!res.ok) throw new Error(`HTTP ${res.status}`)
         const payload = await res.json()
         const rows = Array.isArray(payload?.activities) ? payload.activities : []

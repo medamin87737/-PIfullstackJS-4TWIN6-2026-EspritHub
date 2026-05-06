@@ -4,6 +4,7 @@ import { useData } from '../../context/DataContext'
 import StatusBadge from '../../components/shared/StatusBadge'
 import { ArrowLeft, Sparkles, Send, Zap, Target, Medal, MessageSquare, TrendingUp, FileCheck, FileDown, FileSpreadsheet, Loader2, Mic, MicOff, Smartphone, Award, Check, Plus } from 'lucide-react'
 import { useToast } from '../../../hooks/use-toast'
+import { API_BASE_URL, getRealtimeBaseUrl } from '@/config/apiBase'
 import { useSpellCheck } from '../../hooks/useSpellCheck'
 import { useSpeechRecognition } from '../../hooks/useSpeechRecognition'
 import {
@@ -15,8 +16,6 @@ import {
   normalizeScore,
   normalizeSkillKey,
 } from './hrRecommendationsNormalize'
-
-const API_BASE_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:3000'
 
 type ApiRecommendation = {
   _id: string
@@ -743,7 +742,7 @@ export default function HRRecommendations() {
           try { return JSON.parse(atob((token ?? '').split('.')[1] ?? ''))?.sub ?? '' }
           catch { return '' }
         })()
-        socket = io(API_BASE_URL, { query: { userId }, transports: ['websocket', 'polling'] })
+        socket = io(getRealtimeBaseUrl(), { query: { userId }, transports: ['websocket', 'polling'] })
         socket.on('export_ready', (data: { activityId: string; format: string; message: string }) => {
           toast({
             title: '📥 Export prêt',

@@ -2,6 +2,16 @@ import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import path from 'path'
 
+/** Backend Nest sur la machine hôte : Docker Compose publie souvent 3001→3000. Nest local pur → http://localhost:3000 */
+const devApiTarget =
+  process.env.VITE_DEV_PROXY_TARGET || 'http://localhost:3001'
+
+const backendProxy = {
+  target: devApiTarget,
+  changeOrigin: true,
+  secure: false,
+} as const
+
 export default defineConfig({
   plugins: [react()],
   resolve: {
@@ -14,11 +24,15 @@ export default defineConfig({
     host: true,
     strictPort: true,
     proxy: {
-      '/api': {
-        target: 'http://localhost:3000',
-        changeOrigin: true,
-        secure: false,
-      },
+      '/api': { ...backendProxy },
+      '/users': { ...backendProxy },
+      '/manager': { ...backendProxy },
+      '/activities': { ...backendProxy },
+      '/chat': { ...backendProxy },
+      '/notifications': { ...backendProxy },
+      '/audit': { ...backendProxy },
+      '/departments': { ...backendProxy },
+      '/socket.io': { ...backendProxy, ws: true },
     },
   },
   build: {
